@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>MyAnimeList</title>
+</head>
+<body>
+        <div id="MyAnimeListConfigurationPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+            <div data-role="content">
+                <div class="content-primary">
+                    <form id="MyAnimeListConfigurationForm">
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="titleLanguage">Title Language</label>
+                            <select is="emby-select" id="titleLanguage" name="titleLanguage" class="emby-select-withcolor emby-select">
+                                <option id="optLanguageLocalized" value="Localized">Localized</option>
+                                <option id="optLanguageJapanese" value="Japanese">Japanese</option>
+                                <option id="optLanguageJapaneseRomaji" value="JapaneseRomaji">Romaji</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="originalTitleLanguage">Original Title Language</label>
+                            <select is="emby-select" id="originalTitleLanguage" name="originalTitleLanguage" class="emby-select-withcolor emby-select">
+                                <option id="optLanguageLocalized" value="Localized">Localized</option>
+                                <option id="optLanguageJapanese" value="Japanese">Japanese</option>
+                                <option id="optLanguageJapaneseRomaji" value="JapaneseRomaji">Romaji</option>
+                            </select>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="filterPeopleByLanguage">Filter People by Language Preference</label>
+                            <select is="emby-select" id="filterPeopleByLanguage" name="filterPeopleByLanguage" class="emby-select-withcolor emby-select">
+                                <option id="optLanguageLocalized" value="Localized">Localized</option>
+                                <option id="optLanguageJapanese" value="Japanese">Japanese</option>
+                                <option id="optLanguageAll" value="All">Do not filter</option>
+                            </select>
+                            <div class="fieldDescription">This setting will only keep people with chosen language. Choosing Localized will retain everybody except Japanese VAs.</div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="chkMaxPeople">Max People</label>
+                            <input id="chkMaxPeople" name="chkMaxPeople" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">Set this to zero to remove any limit.</div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="chkMaxGenres">Max Genres</label>
+                            <input id="chkMaxGenres" name="chkMaxGenres" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">Set this to zero to remove any limit.</div>
+                        </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="animeDefaultGenre">Anime Default Genre Name</label>
+                            <select is="emby-select" id="animeDefaultGenre" name="animeDefaultGenre" class="emby-select-withcolor emby-select">
+                                <option id="optDefaultGenreNone" value="None">None</option>
+                                <option id="optDefaultGenreAnime" value="Anime">Anime</option>
+                                <option id="optDefaultGenreAnimation" value="Animation">Animation</option>
+                            </select>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="chkAniDbRateLimit">AniDB Rate Limit</label>
+                            <input id="chkAniDbRateLimit" name="chkAniDbRateLimit" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">This will prevent IP bans for requesting data too quickly.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="chkAniDbReplaceGraves" name="chkAniDbReplaceGraves" type="checkbox" is="emby-checkbox" />
+                                <span>AniDB Replace Grave Characters</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="chkMyAnimeListShowSpoilerTags" name="chkMyAnimeListShowSpoilerTags" type="checkbox" is="emby-checkbox" />
+                                <span>Display Tags that are marked as spoilers</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="chkUseAnitomyLibrary" name="chkUseAnitomyLibrary" type="checkbox" is="emby-checkbox" />
+                                <span>Use the Anitomy library to resolve titles</span>
+                            </label>
+                        </div>
+                        <div>
+                            <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                                <span>Save</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script type="text/javascript">
+                var MyAnimeListConfigurationPage = {
+                    pluginUniqueId: "1bd22884-44be-40f3-ad95-fc4a7834ba2c",
+
+                    loadConfiguration: function () {
+                        Dashboard.showLoadingMsg();
+
+                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                            document.getElementById('titleLanguage').value = config.TitlePreference;
+                            document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
+                            document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
+                            document.getElementById('chkMaxPeople').value = config.MaxPeople;
+                            document.getElementById('chkMaxGenres').value = config.MaxGenres;
+                            document.getElementById('animeDefaultGenre').value = config.AnimeDefaultGenre;
+                            document.getElementById('chkAniDbRateLimit').value = config.AniDbRateLimit;
+                            document.getElementById('chkAniDbReplaceGraves').checked = config.AniDbReplaceGraves;
+                            document.getElementById('chkMyAnimeListShowSpoilerTags').checked = config.MyAnimeListShowSpoilerTags;
+                            document.getElementById('chkUseAnitomyLibrary').checked = config.UseAnitomyLibrary;
+
+                            Dashboard.hideLoadingMsg();
+                        });
+                    },
+
+                    saveConfiguration: function () {
+                        Dashboard.showLoadingMsg();
+
+                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                            config.TitlePreference = document.getElementById('titleLanguage').value;
+                            config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;
+                            config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
+                            config.MaxPeople = document.getElementById('chkMaxPeople').value;
+                            config.MaxGenres = document.getElementById('chkMaxGenres').value;
+                            config.AnimeDefaultGenre = document.getElementById('animeDefaultGenre').value;
+                            config.AniDbRateLimit = document.getElementById('chkAniDbRateLimit').value;
+                            config.AniDbReplaceGraves = document.getElementById('chkAniDbReplaceGraves').checked;
+                            config.MyAnimeListShowSpoilerTags = document.getElementById('chkMyAnimeListShowSpoilerTags').checked;
+                            config.UseAnitomyLibrary = document.getElementById('chkUseAnitomyLibrary').checked;
+
+                            ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                            });
+                        });
+                    },
+                };
+
+                document.getElementById('MyAnimeListConfigurationPage').addEventListener('pageshow', function () {
+                    MyAnimeListConfigurationPage.loadConfiguration();
+                });
+
+                document.getElementById('MyAnimeListConfigurationForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    MyAnimeListConfigurationPage.saveConfiguration();
+                });
+            </script>
+        </div>
+    </body>
+    </html>

@@ -1,0 +1,20 @@
+name: "MyAnimeList"
+guid: "1bd22884-44be-40f3-ad95-fc4a7834ba2c"
+imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-MyAnimeList.png"
+version: 9
+targetAbi: "10.9.0.0"
+framework: "net8.0"
+owner: "jellyfin"
+overview: "MyAnimeList metadata provider"
+description: >
+  MyAnimeList metadata provider
+
+category: "Metadata"
+artifacts:
+  - "Jellyfin.Plugin.MyAnimeList.dll"
+changelog: |-
+  - Limit amount of people in metadata search result (#68) @AkaTenshi
+  - Feature: Decouples VA filter from the title language, and moves to the new MyAnimeList StaffLanguage API key (#65) @mmshivesh
+
+  ### Dependency updates ###
+  - Update dependency AnitomySharp.NET6 to v0.5.1 (#64) @renovate
