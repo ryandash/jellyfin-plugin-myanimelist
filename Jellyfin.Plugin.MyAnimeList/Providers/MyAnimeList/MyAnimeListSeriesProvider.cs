@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities.TV;
@@ -9,8 +8,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList;
 
 //API v2
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList

@@ -1,7 +1,0 @@
-_extends: jellyfin-meta-plugins
-
-template: |
-
-  ## :sparkles: What's New
-
-  $CHANGES

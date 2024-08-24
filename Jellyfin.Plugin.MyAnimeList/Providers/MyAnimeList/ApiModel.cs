@@ -1,15 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using Jellyfin.Data.Enums;
-using MediaBrowser.Model.Providers;
-using MediaBrowser.Model.Entities;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities.Movies;
-using Jellyfin.Plugin.MyAnimeList.Configuration;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Providers;
+using System;
+using System.Linq;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
@@ -198,7 +194,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         {
             IEnumerable<string> genres = anime.Genres.Select(g => g.Name);
             PluginConfiguration config = Plugin.Instance.Configuration;
-            
+
             if (config.AnimeDefaultGenre != AnimeDefaultGenreType.None)
             {
                 genres = genres

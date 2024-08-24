@@ -1,0 +1,20 @@
+[
+    {
+        "category": "Metadata",
+        "guid": "ed04e975-f906-4b58-a250-705550810623",
+        "name": "myanimelist",
+        "description": "myanimelist metadata provider",
+        "owner": "Ryan Dash",
+        "overview": "myanimelist metadata provider",
+        "versions": [
+            {
+                "checksum": "4A4EA3D36EE767D62F4BEE76AB86BFBF",
+                "changelog": "Added Basics",
+                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v1/myanimelist_1.0.0.0.zip",
+                "timestamp": "2024-08-24 06:20:00",
+                "targetAbi": "10.9.9.0",
+                "version": "1.0.0.0"
+            }
+        ]
+    }
+]

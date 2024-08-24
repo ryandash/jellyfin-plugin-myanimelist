@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
