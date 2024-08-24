@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.MyAnimeList.Configuration
 {
@@ -42,9 +42,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             MaxPeople = 0;
             MaxGenres = 5;
             AnimeDefaultGenre = AnimeDefaultGenreType.Anime;
-            AniDbRateLimit = 2000;
-            AniDbReplaceGraves = true;
-            MyAnimeListShowSpoilerTags = true;
             UseAnitomyLibrary = false;
         }
 
@@ -59,12 +56,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public int MaxGenres { get; set; }
 
         public AnimeDefaultGenreType AnimeDefaultGenre { get; set; }
-
-        public int AniDbRateLimit { get; set; }
-
-        public bool AniDbReplaceGraves { get; set; }
-
-        public bool MyAnimeListShowSpoilerTags { get; set; }
 
         public bool UseAnitomyLibrary { get; set; }
 

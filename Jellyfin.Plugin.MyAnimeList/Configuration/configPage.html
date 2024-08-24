@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -53,23 +53,6 @@
                                 <option id="optDefaultGenreAnimation" value="Animation">Animation</option>
                             </select>
                         </div>
-                        <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="chkAniDbRateLimit">AniDB Rate Limit</label>
-                            <input id="chkAniDbRateLimit" name="chkAniDbRateLimit" type="number" is="emby-input" min="0" />
-                            <div class="fieldDescription">This will prevent IP bans for requesting data too quickly.</div>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="chkAniDbReplaceGraves" name="chkAniDbReplaceGraves" type="checkbox" is="emby-checkbox" />
-                                <span>AniDB Replace Grave Characters</span>
-                            </label>
-                        </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="chkMyAnimeListShowSpoilerTags" name="chkMyAnimeListShowSpoilerTags" type="checkbox" is="emby-checkbox" />
-                                <span>Display Tags that are marked as spoilers</span>
-                            </label>
-                        </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input id="chkUseAnitomyLibrary" name="chkUseAnitomyLibrary" type="checkbox" is="emby-checkbox" />
@@ -87,7 +70,7 @@
 
             <script type="text/javascript">
                 var MyAnimeListConfigurationPage = {
-                    pluginUniqueId: "1bd22884-44be-40f3-ad95-fc4a7834ba2c",
+                    pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
 
                     loadConfiguration: function () {
                         Dashboard.showLoadingMsg();
@@ -99,9 +82,6 @@
                             document.getElementById('chkMaxPeople').value = config.MaxPeople;
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
                             document.getElementById('animeDefaultGenre').value = config.AnimeDefaultGenre;
-                            document.getElementById('chkAniDbRateLimit').value = config.AniDbRateLimit;
-                            document.getElementById('chkAniDbReplaceGraves').checked = config.AniDbReplaceGraves;
-                            document.getElementById('chkMyAnimeListShowSpoilerTags').checked = config.MyAnimeListShowSpoilerTags;
                             document.getElementById('chkUseAnitomyLibrary').checked = config.UseAnitomyLibrary;
 
                             Dashboard.hideLoadingMsg();
@@ -118,9 +98,6 @@
                             config.MaxPeople = document.getElementById('chkMaxPeople').value;
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
                             config.AnimeDefaultGenre = document.getElementById('animeDefaultGenre').value;
-                            config.AniDbRateLimit = document.getElementById('chkAniDbRateLimit').value;
-                            config.AniDbReplaceGraves = document.getElementById('chkAniDbReplaceGraves').checked;
-                            config.MyAnimeListShowSpoilerTags = document.getElementById('chkMyAnimeListShowSpoilerTags').checked;
                             config.UseAnitomyLibrary = document.getElementById('chkUseAnitomyLibrary').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {

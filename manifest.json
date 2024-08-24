@@ -8,10 +8,10 @@
         "overview": "myanimelist metadata provider",
         "versions": [
             {
-                "checksum": "4A4EA3D36EE767D62F4BEE76AB86BFBF",
+                "checksum": "FFFBE453F1360360804CE060DE1C8A4C",
                 "changelog": "Added Basics",
                 "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v1/myanimelist_1.0.0.0.zip",
-                "timestamp": "2024-08-24 06:20:00",
+                "timestamp": "2024-08-24 00:00:00",
                 "targetAbi": "10.9.9.0",
                 "version": "1.0.0.0"
             }
