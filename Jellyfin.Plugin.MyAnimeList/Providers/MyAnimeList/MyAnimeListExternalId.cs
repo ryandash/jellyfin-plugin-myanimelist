@@ -1,4 +1,4 @@
-﻿using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -21,6 +21,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             => ExternalIdMediaType.Series;
 
         public string UrlFormatString
-            => "https://MyAnimeList.co/anime/{0}/";
+            => "https://MyAnimeList.net/anime/{0}/";
     }
 }

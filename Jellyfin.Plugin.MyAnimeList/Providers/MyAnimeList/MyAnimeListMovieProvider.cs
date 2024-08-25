@@ -36,8 +36,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (!string.IsNullOrEmpty(straid))
             {
                 long aid = long.Parse(straid);
-                media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
-                media.characters = (await _jikan.GetAnimeCharactersAsync(aid, cancellationToken)).Data;
+                media.anime = (await _jikan.GetAnimeAsync(aid)).Data;
+                media.characters = (await _jikan.GetAnimeCharactersAsync(aid)).Data;
             }
             else
             {
@@ -81,7 +81,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 long aid = long.Parse(straid);
                 MediaSearchResult aid_result = new MediaSearchResult();
-                aid_result.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                aid_result.anime = (await _jikan.GetAnimeAsync(aid).ConfigureAwait(false)).Data;
                 if (aid_result.anime != null)
                 {
                     results.Add(aid_result.ToSearchResult());
@@ -90,7 +90,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (!string.IsNullOrEmpty(searchInfo.Name))
             {
-                ICollection<MediaSearchResult> animeList = (ICollection<MediaSearchResult>)(await _jikan.SearchAnimeAsync(searchInfo.Name, cancellationToken)).Data;
+                ICollection<MediaSearchResult> animeList = (ICollection<MediaSearchResult>)(await _jikan.SearchAnimeAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false)).Data;
                 if (animeList != null)
                 {
                     foreach (var media in animeList)

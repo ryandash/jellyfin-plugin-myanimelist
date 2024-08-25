@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 long aid = long.Parse(straid);
                 Media media = new Media();
-                media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                media.anime = (await _jikan.GetAnimeAsync(aid)).Data;
                 if (media != null)
                 {
                     if (media.GetImageUrl() != null)

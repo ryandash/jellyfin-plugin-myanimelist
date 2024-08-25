@@ -12,6 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     using Jellyfin.Plugin.MyAnimeList.Configuration;
     using Jellyfin.Plugin.MyAnimeList.Providers;
     using JikanDotNet;
+    using JikanDotNet.Config;
     using System.Collections.Generic;
 
     /// <summary>
@@ -217,7 +218,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         {
             PluginConfiguration config = Plugin.Instance.Configuration;
             int duration = GetDuration(anime.Duration);
-            var result = new Series
+            Series result = new()
             {
                 Name = this.GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = this.GetPreferredTitle(config.OriginalTitlePreference, "en"),
