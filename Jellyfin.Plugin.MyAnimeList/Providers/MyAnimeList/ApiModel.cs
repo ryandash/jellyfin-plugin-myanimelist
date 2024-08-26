@@ -12,8 +12,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     using Jellyfin.Plugin.MyAnimeList.Configuration;
     using Jellyfin.Plugin.MyAnimeList.Providers;
     using JikanDotNet;
-    using JikanDotNet.Config;
     using System.Collections.Generic;
+
+    public static class NewJikan
+    {
+        public static Jikan _jikan = new Jikan();
+
+    }
 
     /// <summary>
     /// A slimmed down version of Media to avoid confusion and reduce
@@ -51,7 +56,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         /// <returns></returns>
         public string GetImageUrl()
         {
-            return anime.Images.JPG.MaximumImageUrl ?? anime.Images.JPG.LargeImageUrl ?? anime.Images.JPG.MediumImageUrl ?? anime.Images.JPG.SmallImageUrl;
+            return anime.Images.JPG.ImageUrl ?? anime.Images.JPG.MaximumImageUrl ?? anime.Images.JPG.LargeImageUrl ?? anime.Images.JPG.MediumImageUrl ?? anime.Images.JPG.SmallImageUrl;
         }
 
         /// <summary>

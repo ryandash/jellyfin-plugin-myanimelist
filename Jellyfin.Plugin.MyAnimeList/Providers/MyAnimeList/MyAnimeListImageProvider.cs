@@ -17,7 +17,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private readonly Jikan _jikan;
         public MyAnimeListImageProvider()
         {
-            _jikan = new Jikan();
+            _jikan = NewJikan._jikan;
         }
 
         public string Name => "MyAnimeList";
@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 long aid = long.Parse(straid);
                 Media media = new Media();
-                media.anime = (await _jikan.GetAnimeAsync(aid)).Data;
+                media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
                 if (media != null)
                 {
                     if (media.GetImageUrl() != null)

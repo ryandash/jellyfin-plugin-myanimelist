@@ -1,12 +1,11 @@
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
-using JikanDotNet.Config;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
-using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +23,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public MyAnimeListSeriesProvider(ILogger<MyAnimeListSeriesProvider> logger)
         {
             _log = logger;
-            _jikan = new Jikan();
+            _jikan = NewJikan._jikan;
         }
 
         public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
@@ -37,8 +36,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (!string.IsNullOrEmpty(straid))
             {
                 long aid = long.Parse(straid);
-                media.anime = (await _jikan.GetAnimeAsync(aid)).Data;
-                media.characters = (await _jikan.GetAnimeCharactersAsync(aid)).Data;
+                media.anime = (await _jikan.GetAnimeAsync(aid, CancellationToken.None)).Data;
+                media.characters = (await _jikan.GetAnimeCharactersAsync(aid, CancellationToken.None)).Data;
             }
             else
             {
@@ -49,18 +48,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 }
 
                 _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
-                ICollection<Anime> animeList = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data;
+                Anime anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data.Where(a => !a.Type.Equals(AnimeType.Movie.ToString())).FirstOrDefault();
 
-                if (animeList != null)
+                if (anime != null)
                 {
-                    Anime bestAnime = DictionaryExtensions.GetBestAnime(searchName, animeList);
-                    if (bestAnime?.MalId != null)
-                    {
-                        long aid = bestAnime.MalId.Value;
-                        info.ProviderIds.Add(ProviderNames.MyAnimeList, aid.ToString());
-                        media.anime = (await _jikan.GetAnimeAsync(aid)).Data;
-                        media.characters = (await _jikan.GetAnimeCharactersAsync(aid)).Data;
-                    }
+                    long aid = anime.MalId.Value;
+                    info.ProviderIds.Add(ProviderNames.MyAnimeList, aid.ToString());
+                    media.anime = (await _jikan.GetAnimeAsync(aid, CancellationToken.None)).Data;
+                    media.characters = (await _jikan.GetAnimeCharactersAsync(aid, CancellationToken.None)).Data;
                 }
             }
 
@@ -70,10 +65,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 result.Item = media.ToSeries();
                 result.People = media.GetPeopleInfo();
                 result.Provider = ProviderNames.MyAnimeList;
-                result.RemoteImages = new List<(string, ImageType)>
-                {
-                    (media.GetImageUrl(), ImageType.Primary)
-                };
             }
 
             return result;
