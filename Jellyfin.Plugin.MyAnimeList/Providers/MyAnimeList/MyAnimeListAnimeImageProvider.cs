@@ -12,10 +12,10 @@ using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
-    public class MyAnimeListImageProvider : IRemoteImageProvider
+    public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
     {
         private readonly Jikan _jikan;
-        public MyAnimeListImageProvider()
+        public MyAnimeListAnimeImageProvider()
         {
             _jikan = NewJikan._jikan;
         }
@@ -26,17 +26,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
-            return new[] { ImageType.Primary, ImageType.Backdrop };
+            return new[] { ImageType.Primary };
         }
 
-        public Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
+        public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
-            var seriesId = item.GetProviderId(ProviderNames.MyAnimeList);
-            return GetImages(seriesId, cancellationToken);
-        }
-
-        public async Task<IEnumerable<RemoteImageInfo>> GetImages(string straid, CancellationToken cancellationToken)
-        {
+            var straid = item.GetProviderId(ProviderNames.MyAnimeList);
             var list = new List<RemoteImageInfo>();
 
             if (!string.IsNullOrEmpty(straid))
@@ -44,6 +39,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 long aid = long.Parse(straid);
                 Media media = new Media();
                 media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                ICollection<ImagesSet> pictures = (await _jikan.GetAnimePicturesAsync(aid, cancellationToken)).Data;
                 if (media != null)
                 {
                     if (media.GetImageUrl() != null)

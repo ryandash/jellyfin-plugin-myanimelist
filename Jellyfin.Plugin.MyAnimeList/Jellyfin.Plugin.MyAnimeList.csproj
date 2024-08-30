@@ -3,15 +3,12 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.9.9" />
-    <PackageReference Include="JikanDotNet" Version="2.7.0" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.9.10" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="AnitomySharp.NET6" Version="0.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,8 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AnitomySharp\AnitomySharp\AnitomySharp.csproj" />
-    <ProjectReference Include="..\..\jikan.net-master\JikanDotNet\JikanDotNet.csproj" />
+    <Reference Include="AnitomySharp">
+      <HintPath>..\..\AnitomySharp\AnitomySharp\bin\Debug\net7.0\AnitomySharp.dll</HintPath>
+    </Reference>
+    <Reference Include="JikanDotNet">
+      <HintPath>..\..\jikan.net\JikanDotNet\bin\Debug\net8.0\JikanDotNet.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

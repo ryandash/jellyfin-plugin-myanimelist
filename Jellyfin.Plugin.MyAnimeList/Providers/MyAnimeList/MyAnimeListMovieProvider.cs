@@ -10,8 +10,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-
-//API v2
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class MyAnimeListMovieProvider : IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
@@ -37,8 +35,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (!string.IsNullOrEmpty(straid))
             {
                 long aid = long.Parse(straid);
-                media.anime = (await _jikan.GetAnimeAsync(aid, CancellationToken.None)).Data;
-                media.characters = (await _jikan.GetAnimeCharactersAsync(aid, CancellationToken.None)).Data;
+                media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                media.characters = (await _jikan.GetAnimeCharactersAsync(aid, cancellationToken)).Data;
             }
             else
             {
@@ -57,8 +55,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 {
                     long aid = anime.MalId.Value;
                     info.ProviderIds.Add(ProviderNames.MyAnimeList, aid.ToString());
-                    media.anime = (await _jikan.GetAnimeAsync(aid, CancellationToken.None)).Data;
-                    media.characters = (await _jikan.GetAnimeCharactersAsync(aid, CancellationToken.None)).Data;
+                    media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                    media.characters = (await _jikan.GetAnimeCharactersAsync(aid, cancellationToken)).Data;
                 }
             }
 
@@ -81,7 +79,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 long aid = long.Parse(straid);
                 MediaSearchResult aid_result = new MediaSearchResult();
-                aid_result.anime = (await _jikan.GetAnimeAsync(aid).ConfigureAwait(false)).Data;
+                aid_result.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
                 if (aid_result.anime != null)
                 {
                     results.Add(aid_result.ToSearchResult());
@@ -106,7 +104,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
             var httpClient = Plugin.Instance.GetHttpClient();
-            return await httpClient.GetAsync(url).ConfigureAwait(false);
+            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         }
     }
 }

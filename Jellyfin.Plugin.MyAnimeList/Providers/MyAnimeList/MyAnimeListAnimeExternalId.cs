@@ -6,7 +6,7 @@ using MediaBrowser.Model.Providers;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
-    public class MyAnimeListExternalId : IExternalId
+    public class MyAnimeListAnimeExternalId : IExternalId
     {
         public bool Supports(IHasProviderIds item)
             => item is Series || item is Movie;
@@ -21,6 +21,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             => ExternalIdMediaType.Series;
 
         public string UrlFormatString
-            => "https://MyAnimeList.net/anime/{0}/";
+            => "https://myanimelist.net/anime/{0}/";
     }
 }

@@ -5,10 +5,6 @@ VisualStudioVersion = 17.11.35208.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jellyfin.Plugin.MyAnimeList", "Jellyfin.Plugin.MyAnimeList\Jellyfin.Plugin.MyAnimeList.csproj", "{D0C0C5C6-96A2-4027-B299-5D881568F908}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnitomySharp", "..\AnitomySharp\AnitomySharp\AnitomySharp.csproj", "{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JikanDotNet", "..\jikan.net-master\JikanDotNet\JikanDotNet.csproj", "{8D010106-03E4-4D7A-AFE8-11B9D775E997}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,22 +21,6 @@ Global
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|x64.ActiveCfg = Release|Any CPU
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|x64.Build.0 = Release|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Debug|x64.Build.0 = Debug|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Release|x64.ActiveCfg = Release|Any CPU
-		{E508F16E-DFE5-4F7F-9AE6-5CC183F4F542}.Release|x64.Build.0 = Release|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Debug|x64.Build.0 = Debug|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Release|x64.ActiveCfg = Release|Any CPU
-		{8D010106-03E4-4D7A-AFE8-11B9D775E997}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
