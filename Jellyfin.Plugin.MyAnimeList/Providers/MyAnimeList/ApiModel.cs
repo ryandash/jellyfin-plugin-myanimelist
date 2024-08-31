@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public string GetImageUrl()
         {
             var jpg = anime.Images.JPG;
-            return jpg.ImageUrl ?? jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.SmallImageUrl;
+            return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl ;
         }
 
         public DateTime? GetStartDate() => anime.Aired.From;
