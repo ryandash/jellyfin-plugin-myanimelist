@@ -5,6 +5,7 @@
 This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/).
 
 Folders must be formatted as shown below to get valid season information:
+For accurate data use the anime name from MyAnimeList and Season 01 or the season 01 anime's name with the anime's season number
 ```
 Anime
 ├── Anime Name A
@@ -29,7 +30,20 @@ Anime
         ├── Anime Name B S02E01-E02.mkv
         └── Anime Name B S02E03.mkv
 ```
-
+e.g. of folders with file
+```
+Anime
+├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen
+│   ├── Season 01
+│   │   ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen S01E01.mkv
+```
+or 
+```
+Anime
+├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka
+│   ├── Season 01
+│   │   ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
+```
 ## Installation
 
 ### Automatic (recommended)
