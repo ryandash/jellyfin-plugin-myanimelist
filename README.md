@@ -41,7 +41,7 @@ or
 ```
 Anime
 ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka
-│   ├── Season 01
+│   ├── Season 05
 │   │   ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
 ```
 ## Installation
