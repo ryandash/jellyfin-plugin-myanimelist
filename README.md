@@ -4,6 +4,32 @@
 
 This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/).
 
+Folders must be formatted as shown below to get valid season information:
+```
+Anime
+├── Anime Name A
+│   ├── Season 00
+│   │   ├── Some Special.mkv
+│   │   ├── Anime Name A S00E01.mkv
+│   │   └── Anime Name A S00E02.mkv
+│   ├── Season 01
+│   │   ├── Anime Name A S01E01-E02.mkv
+│   │   ├── Anime Name A S01E03.mkv
+│   │   └── Anime Name A S01E04.mkv
+│   └── Season 02
+│       ├── Anime Name A S02E01.mkv
+│       ├── Anime Name A S02E02.mkv
+│       ├── Anime Name A S02E03 Part 1.mkv
+│       └── Anime Name A S02E03 Part 2.mkv
+└── Anime Name B
+    ├── Season 01
+    |   ├── Anime Name B S01E01.mkv
+    |   └── Anime Name B S01E02.mkv
+    └── Season 02
+        ├── Anime Name B S02E01-E02.mkv
+        └── Anime Name B S02E03.mkv
+```
+
 ## Installation
 
 ### Automatic (recommended)
@@ -19,18 +45,18 @@ This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jik
 
 1. Download a version from the [releases tab](https://github.com/jellyfin/jellyfin-plugin-anilist/releases) that matches your Jellyfin version.
 2. Extract the zip file.
-3. Copy the dll files into `plugins/myanimelist` (see above official documentation on where to find the [plugins](https://jellyfin.org/docs/general/server/plugins/) folder).
+3. Copy the dll files into `plugins/myanimelist` (see [official](https://jellyfin.org/docs/general/server/plugins/) documentation on where to find the plugins folder).
 4. Restart your Jellyfin instance.
 5. Navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
 
 ### Building from visual studio
 
-1. Git clone the latest version of this repository, [AnitomySharp](https://github.com/tabratton/AnitomySharp), and [jikan.net](https://github.com/Ervie/jikan.net), or any fork of the repositories
+1. Git clone the latest version of this repository, [AnitomySharp](https://github.com/Xabis/AnitomySharp), and [jikan.net](https://github.com/Ervie/jikan.net), or any fork of the repositories
 2. Download and install visual studio with .Net desktop development
 3. Build AnitomySharp and jikan.net
 4. Open my repository solution and add the missing references and build
 5. Copy all dll files from the output bin directory to Jellyfins Plugin directory under plugins/myanimelist
-6. Restart Jellyfin Server and navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
+6. Restart Jellyfin Server (Administration> Dashboard > Restart) and navigate to Plugins in Jellyfin (Administration > Dashboard > My Plugins) to verify installation.
 
 ## Licence
 

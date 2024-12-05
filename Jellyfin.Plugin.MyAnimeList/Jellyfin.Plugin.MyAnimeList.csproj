@@ -3,15 +3,24 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <Version>3.0.0.0</Version>
-    <AssemblyVersion>3.0.0.0</AssemblyVersion>
-    <FileVersion>3.0.0.0</FileVersion>
+    <Version>4.0.0.0</Version>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <FileVersion>4.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <IsPublishable>False</IsPublishable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.9.10" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.10.3" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,7 +30,7 @@
 
   <ItemGroup>
     <Reference Include="AnitomySharp">
-      <HintPath>..\..\AnitomySharp\AnitomySharp\bin\Debug\net7.0\AnitomySharp.dll</HintPath>
+      <HintPath>..\..\AnitomySharp\AnitomySharp\bin\Debug\net8.0\AnitomySharp.dll</HintPath>
     </Reference>
     <Reference Include="JikanDotNet">
       <HintPath>..\..\jikan.net\JikanDotNet\bin\Debug\net8.0\JikanDotNet.dll</HintPath>

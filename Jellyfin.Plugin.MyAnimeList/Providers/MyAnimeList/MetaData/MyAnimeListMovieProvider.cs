@@ -10,7 +10,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
+namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class MyAnimeListMovieProvider : IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
     {

@@ -7,6 +7,7 @@ using MediaBrowser.Model.Providers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SeasonTV = MediaBrowser.Controller.Entities.TV.Season;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
@@ -43,7 +44,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public string GetImageUrl()
         {
             var jpg = anime.Images.JPG;
-            return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl ;
+            return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl;
         }
 
         public DateTime? GetStartDate() => anime.Aired.From;
@@ -162,7 +163,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 PremiereDate = GetStartDate(),
                 EndDate = GetEndDate(),
                 CommunityRating = GetRating(),
-                RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : (long?)null,
+                RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
                 Genres = GetGenres().ToArray(),
                 Studios = GetStudioNames().ToArray(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
@@ -191,6 +192,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Genres = GetGenres().ToArray(),
                 Studios = GetStudioNames().ToArray(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
+            };
+        }
+
+        public SeasonTV ToSeason(int seasonNumber)
+        {
+            var config = Plugin.Instance.Configuration;
+            var duration = GetDuration(anime.Duration);
+            return new SeasonTV
+            {
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                Overview = anime.Synopsis,
+                ProductionYear = GetStartDate().Value.Year,
+                PremiereDate = GetStartDate(),
+                EndDate = GetEndDate(),
+                CommunityRating = GetRating(),
+                RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
+                Genres = GetGenres().ToArray(),
+                Studios = GetStudioNames().ToArray(),
+                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
+                IndexNumber = seasonNumber
             };
         }
     }
