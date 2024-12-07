@@ -53,12 +53,6 @@
                                 <option id="optDefaultGenreAnimation" value="Animation">Animation</option>
                             </select>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="chkUseAnitomyLibrary" name="chkUseAnitomyLibrary" type="checkbox" is="emby-checkbox" />
-                                <span>Use the Anitomy library to resolve titles</span>
-                            </label>
-                        </div>
                         <div>
                             <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                                 <span>Save</span>
@@ -82,7 +76,6 @@
                             document.getElementById('chkMaxPeople').value = config.MaxPeople;
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
                             document.getElementById('animeDefaultGenre').value = config.AnimeDefaultGenre;
-                            document.getElementById('chkUseAnitomyLibrary').checked = config.UseAnitomyLibrary;
 
                             Dashboard.hideLoadingMsg();
                         });
@@ -98,7 +91,6 @@
                             config.MaxPeople = document.getElementById('chkMaxPeople').value;
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
                             config.AnimeDefaultGenre = document.getElementById('animeDefaultGenre').value;
-                            config.UseAnitomyLibrary = document.getElementById('chkUseAnitomyLibrary').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
                                 Dashboard.processPluginConfigurationUpdateResult(result);

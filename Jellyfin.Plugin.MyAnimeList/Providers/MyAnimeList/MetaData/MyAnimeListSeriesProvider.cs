@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
             else
             {
-                string searchName = Anitomy.AnitomyHelper.ExtractAnimeTitle(info.Name);
+                string searchName = Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(info.Name));
 
                 _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
                 var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data
