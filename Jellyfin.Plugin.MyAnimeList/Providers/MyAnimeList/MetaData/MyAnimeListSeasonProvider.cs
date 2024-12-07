@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var result = new MetadataResult<Season>();
             Anime media = new Anime();
             PluginConfiguration config = Plugin.Instance.Configuration;
-            string straid = info.SeriesProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
+            string straid = info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
             int seasonNumber = 1;
 
             if (!string.IsNullOrEmpty(straid))
