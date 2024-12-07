@@ -1,0 +1,146 @@
+on:
+  workflow_dispatch:
+    inputs:
+      dotnet-version:
+        required: false
+        default: "8.0.x"
+        description: "The .NET version to setup for the build"
+        type: string
+      dotnet-target:
+        required: false
+        default: "net8.0"
+        description: "The .NET target framework to build the projects with"
+        type: string
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Repository
+        uses: actions/checkout@v4
+        with:
+          path: main_repo
+
+      - name: Checkout AnitomySharp Repository
+        uses: actions/checkout@v4
+        with:
+          repository: Xabis/AnitomySharp
+          path: AnitomySharp
+
+      - name: Checkout JikanDotNet Repository
+        uses: actions/checkout@v4
+        with:
+          repository: Ervie/jikan.net
+          path: jikan.net
+
+      - name: Build AnitomySharp
+        run: dotnet build AnitomySharp/AnitomySharp --configuration Debug
+
+      - name: Build JikanDotNet
+        run: dotnet build jikan.net/JikanDotNet --configuration Debug
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "${{ inputs.dotnet-version }}"
+
+      - name: Restore Dependencies and Build Main Repo
+        run: dotnet build main_repo --configuration Release --framework ${{ inputs.dotnet-target }}
+
+      - name: Extract Version from csproj
+        id: extract_version
+        run: |
+          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" main_repo/**/*.csproj)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Extract Target ABI from Jellyfin.Controller Package
+        id: extract_abi
+        run: |
+          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" main_repo/**/*.csproj)
+          echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
+
+      - name: Upload DLL Files Only
+        run: |
+          # Find and zip all DLL files from the bin/Release directory, excluding obj
+          find main_repo -path '*/bin/Release/*.dll' -exec zip -j myanimelist_${{ env.VERSION }}.zip {} +
+
+      - name: Upload Artifact to GitHub Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: myanimelist_${{ env.VERSION }}
+          retention-days: 30
+          path: myanimelist_${{ env.VERSION }}.zip
+
+      - name: Generate MD5 Checksum for ZIP
+        id: checksum
+        run: |
+          CHECKSUM=$(md5sum myanimelist_${{ env.VERSION }}.zip | awk '{ print $1 }')
+          echo "CHECKSUM=${CHECKSUM}" >> $GITHUB_ENV
+
+      - name: Update Manifest File
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          VERSION=${{ env.VERSION }}
+          CHECKSUM=${{ env.CHECKSUM }}
+          TARGET_ABI=${{ env.TARGET_ABI }}
+          SOURCE_URL="https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v${VERSION}/myanimelist_${VERSION}.zip"
+          CHANGELOG_URL="https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v${VERSION}"
+
+          # Update manifest.json with extracted data
+          jq --arg version "$VERSION" \
+             --arg changelog "$CHANGELOG_URL" \
+             --arg checksum "$CHECKSUM" \
+             --arg sourceUrl "$SOURCE_URL" \
+             --arg targetAbi "$TARGET_ABI" \
+             --arg timestamp "$TIMESTAMP" \
+             '.[0].versions = [{
+                changelog: $changelog,
+                checksum: $checksum,
+                sourceUrl: $sourceUrl,
+                targetAbi: $targetAbi,
+                timestamp: $timestamp,
+                version: $version
+              }] + .[0].versions' \
+             main_repo/manifest.json > main_repo/manifest-updated.json
+
+          mv main_repo/manifest-updated.json main_repo/manifest.json
+
+      - name: Get Changelog
+        id: changelog
+        run: |
+          cd main_repo
+          git fetch --tags
+          LAST_TAG=$(git tag -l | sort -V | tail -n 1)
+          echo "LAST_TAG: $LAST_TAG"
+          CHANGES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%h %s")
+
+          # Output the changelog
+          echo "CHANGES: $CHANGES"
+
+          # Store the changelog in an environment variable for later steps
+          echo "CHANGELOG=$CHANGES" >> $GITHUB_ENV
+          echo "Changelog stored in CHANGELOG environment variable"
+
+      - name: Create GitHub Release and Upload Artifacts
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ env.VERSION }}
+          name: "Version ${{ env.VERSION }}"
+          body: ${{ env.CHANGELOG }}
+          draft: false
+          prerelease: false
+          artifacts: "myanimelist_${{ env.VERSION }}.zip"
+          artifactContentType: "application/zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: commit manifest to main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update manifest"
+          branch: main
+          file_pattern: 'manifest.json'
+          repository: main_repo
+          commit_user_name: "GitHub Actions Bot"
+          skip_dirty_check: true
