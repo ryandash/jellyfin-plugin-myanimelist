@@ -8,6 +8,14 @@
     "overview": "myanimelist metadata provider",
     "versions": [
       {
+        "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v5.2",
+        "checksum": "f22a6948365697d5687c594814bbf00a",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5.2/myanimelist_5.2.zip",
+        "targetAbi": "10.10.3",
+        "timestamp": "2024-12-07T23:02:01Z",
+        "version": "5.2"
+      },
+      {
         "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v5.0.0.2",
         "checksum": "5da4e99c939754c0ec8c4f92bb9160a3",
         "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5.0.0.2/myanimelist_5.0.0.2.zip",
