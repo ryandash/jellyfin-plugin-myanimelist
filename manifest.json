@@ -1,60 +1,68 @@
 [
-    {
-        "category": "Metadata",
-        "guid": "ed04e975-f906-4b58-a250-705550810623",
-        "name": "myanimelist",
-        "description": "myanimelist metadata provider",
-        "owner": "Ryan Dash",
-        "overview": "myanimelist metadata provider",
-        "versions": [
-            {
-                "changelog": "Make Anitomy a requirement",
-                "checksum": "EFF88D3693111B0F41254E0DD577AC32",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5.1/myanimelist_5.0.0.1.zip",
-                "targetAbi": "10.10.3.0",
-                "timestamp": "2024-12-07 00:00:00",
-                "version": "5.0.0.1"
-            },
-            {
-                "changelog": "Cleaned up a lot of log errors, Add episode provider",
-                "checksum": "F5E62D5AD537BC55CF8CA264F0D68F67",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5/myanimelist_5.0.0.0.zip",
-                "targetAbi": "10.10.3.0",
-                "timestamp": "2024-12-07 00:00:00",
-                "version": "5.0.0.0"
-            },
-            {
-                "changelog": "Use correct images, Add season provider with hacky solution",
-                "checksum": "5EAFD6A6DC85EC8E4AF3F1D81DCC7476",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v4/myanimelist_4.0.0.0.zip",
-                "targetAbi": "10.10.3.0",
-                "timestamp": "2024-12-04 00:00:00",
-                "version": "4.0.0.0"
-            },
-            {
-                "changelog": "Code Cleanup",
-                "checksum": "4CFB160A3820B6160D7DDA797ED07D34",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v3/myanimelist_3.0.0.0.zip",
-                "targetAbi": "10.9.10.0",
-                "timestamp": "2024-08-30 00:00:00",
-                "version": "3.0.0.0"
-            },
-            {
-                "changelog": "Fix TooManyRequests bug",
-                "checksum": "468D453942126A79688F38C7FB204F38",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v2/myanimelist_2.0.0.0.zip",
-                "targetAbi": "10.9.9.0",
-                "timestamp": "2024-08-26 00:00:00",
-                "version": "2.0.0.0"
-            },
-            {
-                "changelog": "Added Basics",
-                "checksum": "FFFBE453F1360360804CE060DE1C8A4C",
-                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v1/myanimelist_1.0.0.0.zip",
-                "targetAbi": "10.9.9.0",
-                "timestamp": "2024-08-24 00:00:00",
-                "version": "1.0.0.0"
-            }
-        ]
-    }
+  {
+    "category": "Metadata",
+    "guid": "ed04e975-f906-4b58-a250-705550810623",
+    "name": "myanimelist",
+    "description": "myanimelist metadata provider",
+    "owner": "Ryan Dash",
+    "overview": "myanimelist metadata provider",
+    "versions": [
+      {
+        "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v5.0.0.2",
+        "checksum": "5da4e99c939754c0ec8c4f92bb9160a3",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5.0.0.2/myanimelist_5.0.0.2.zip",
+        "targetAbi": "10.10.3",
+        "timestamp": "2024-12-07T22:33:00Z",
+        "version": "5.0.0.2"
+      },
+      {
+        "changelog": "Make Anitomy a requirement",
+        "checksum": "EFF88D3693111B0F41254E0DD577AC32",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5.1/myanimelist_5.0.0.1.zip",
+        "targetAbi": "10.10.3.0",
+        "timestamp": "2024-12-07 00:00:00",
+        "version": "5.0.0.1"
+      },
+      {
+        "changelog": "Cleaned up a lot of log errors, Add episode provider",
+        "checksum": "F5E62D5AD537BC55CF8CA264F0D68F67",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5/myanimelist_5.0.0.0.zip",
+        "targetAbi": "10.10.3.0",
+        "timestamp": "2024-12-07 00:00:00",
+        "version": "5.0.0.0"
+      },
+      {
+        "changelog": "Use correct images, Add season provider with hacky solution",
+        "checksum": "5EAFD6A6DC85EC8E4AF3F1D81DCC7476",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v4/myanimelist_4.0.0.0.zip",
+        "targetAbi": "10.10.3.0",
+        "timestamp": "2024-12-04 00:00:00",
+        "version": "4.0.0.0"
+      },
+      {
+        "changelog": "Code Cleanup",
+        "checksum": "4CFB160A3820B6160D7DDA797ED07D34",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v3/myanimelist_3.0.0.0.zip",
+        "targetAbi": "10.9.10.0",
+        "timestamp": "2024-08-30 00:00:00",
+        "version": "3.0.0.0"
+      },
+      {
+        "changelog": "Fix TooManyRequests bug",
+        "checksum": "468D453942126A79688F38C7FB204F38",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v2/myanimelist_2.0.0.0.zip",
+        "targetAbi": "10.9.9.0",
+        "timestamp": "2024-08-26 00:00:00",
+        "version": "2.0.0.0"
+      },
+      {
+        "changelog": "Added Basics",
+        "checksum": "FFFBE453F1360360804CE060DE1C8A4C",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v1/myanimelist_1.0.0.0.zip",
+        "targetAbi": "10.9.9.0",
+        "timestamp": "2024-08-24 00:00:00",
+        "version": "1.0.0.0"
+      }
+    ]
+  }
 ]
