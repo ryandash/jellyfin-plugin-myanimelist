@@ -8,6 +8,14 @@
         "overview": "myanimelist metadata provider",
         "versions": [
             {
+                "changelog": "Cleaned up a lot of log errors, Add episode provider",
+                "checksum": "F5E62D5AD537BC55CF8CA264F0D68F67",
+                "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v5/myanimelist_5.0.0.0.zip",
+                "targetAbi": "10.10.3.0",
+                "timestamp": "2024-12-07 00:00:00",
+                "version": "5.0.0.0"
+            },
+            {
                 "changelog": "Use correct images, Add season provider with hacky solution",
                 "checksum": "5EAFD6A6DC85EC8E4AF3F1D81DCC7476",
                 "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v4/myanimelist_4.0.0.0.zip",

@@ -20,9 +20,60 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public static Jikan _jikan = new Jikan();
     }
 
-    public class MediaSearchResult
+    public class EpisodeSearchResult
     {
-        public Anime anime;
+        public AnimeEpisode episode { get; set; }
+
+        public string GetPreferredTitle(TitlePreferenceType preference, string language)
+        {
+            return preference switch
+            {
+                TitlePreferenceType.Localized => language switch
+                {
+                    "en" => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese,
+                    "jap" => episode.TitleJapanese ?? episode.TitleRomanji ?? episode.Title,
+                    _ => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese
+                },
+                TitlePreferenceType.Japanese => episode.TitleJapanese ?? episode.TitleRomanji ?? episode.Title,
+                _ => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese
+            };
+        }
+
+        public DateTime? GetDate() => episode.Aired;
+
+        internal Episode ToEpisode()
+        {
+            var config = Plugin.Instance.Configuration;
+            return new Episode
+            {
+                IndexNumber = (int)episode.MalId,
+                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                ProductionYear = GetDate().HasValue ? GetDate().Value.Year: null,
+                EndDate = GetDate(),
+                RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
+                Overview = episode.Synopsis
+            };
+        }
+
+        public RemoteSearchResult ToSearchResult()
+        {
+            var config = Plugin.Instance.Configuration;
+            return new RemoteSearchResult
+            {
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                ProductionYear = GetDate().HasValue ? GetDate().Value.Year : null,
+                PremiereDate = GetDate(),
+                SearchProviderName = ProviderNames.MyAnimeList,
+                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } }
+            };
+        }
+    }
+
+    public class AnimeSearchResult
+    {
+        public JikanDotNet.Anime anime;
 
         public string GetPreferredTitle(TitlePreferenceType preference, string language)
         {
@@ -49,28 +100,29 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public DateTime? GetStartDate() => anime.Aired.From;
 
+        public float GetRating() => (float)((anime.Score ?? 0) / 10f);
+
+        public DateTime? GetEndDate() => anime.Aired.To;
+
         public RemoteSearchResult ToSearchResult()
         {
             var config = Plugin.Instance.Configuration;
             return new RemoteSearchResult
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
-                ProductionYear = GetStartDate().Value.Year,
+                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
                 PremiereDate = GetStartDate(),
                 ImageUrl = GetImageUrl(),
                 SearchProviderName = ProviderNames.MyAnimeList,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
         }
+        public List<string> GetStudioNames() => anime.Studios.Select(node => node.Name).ToList();
     }
 
-    public class Media : MediaSearchResult
+    public class Anime : AnimeSearchResult
     {
         public ICollection<AnimeCharacter> characters { get; set; }
-
-        public float GetRating() => (float)((anime.Score ?? 0) / 10f);
-
-        public DateTime? GetEndDate() => anime.Aired.To;
 
         private int GetDuration(string duration)
         {
@@ -101,8 +153,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return totalMinutes;
         }
-
-        public List<string> GetStudioNames() => anime.Studios.Select(node => node.Name).ToList();
 
         public List<PersonInfo> GetPeopleInfo()
         {
@@ -159,7 +209,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().Value.Year,
+                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
                 PremiereDate = GetStartDate(),
                 EndDate = GetEndDate(),
                 CommunityRating = GetRating(),
@@ -185,7 +235,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().Value.Year,
+                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
                 PremiereDate = GetStartDate(),
                 EndDate = GetEndDate(),
                 CommunityRating = GetRating(),
@@ -204,7 +254,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().Value.Year,
+                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
                 PremiereDate = GetStartDate(),
                 EndDate = GetEndDate(),
                 CommunityRating = GetRating(),

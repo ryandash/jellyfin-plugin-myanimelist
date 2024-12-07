@@ -1,3 +1,4 @@
+using Emby.Naming.TV;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Season = MediaBrowser.Controller.Entities.TV.Season;
@@ -30,50 +32,66 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Season>();
-            Media media = new Media();
+            Anime media = new Anime();
             PluginConfiguration config = Plugin.Instance.Configuration;
-            string straid = info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
+            string straid = info.SeriesProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
+            int seasonNumber = 1;
 
             if (!string.IsNullOrEmpty(straid))
             {
+                _log.LogInformation("Start MyAnimeList... Searching({straid})", straid);
                 media = (await GetAnimeInfo(long.Parse(straid), cancellationToken));
+                seasonNumber = info.IndexNumber.HasValue ? info.IndexNumber.Value : 1;
             }
             else
             {
                 string[] splitPath = info.Path.Split("\\");
-                string searchName = Anitomy.AnitomyHelper.ExtractAnimeTitle(
-                    MyAnimelistSearchHelper.PreprocessTitle(splitPath[splitPath.Length - 2])
-                );
-                int seasonNumber = int.Parse(Anitomy.AnitomyHelper.ExtractSeasonNumber(splitPath[splitPath.Length - 1]));
-                Anime anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data.Where(a => !a.Type.Equals(AnimeType.Movie.ToString())).FirstOrDefault();
-                long aid = anime.MalId.Value;
-                for (int i = 1; i < seasonNumber; i++)
+                string part1 = splitPath[^1];
+                string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
+                    ? Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2]))
+                    : Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(part1));
+
+                _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
+                if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))
                 {
-                    RelatedEntry entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))
-                        .Data
-                        .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-
-                    if (entry == null) break;
-
-                    aid = entry.Entry.FirstOrDefault()?.MalId ?? aid;
-
-                    anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
-                    if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)))
+                    int season;
+                    if (int.TryParse(Anitomy.AnitomyHelper.ExtractSeasonNumber(part1), out season))
                     {
-                        seasonNumber++;
+                        seasonNumber = season;
                     }
                 }
+                JikanDotNet.Anime anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data
+                    .Where(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()))
+                    .FirstOrDefault();
 
                 if (anime != null)
                 {
-                    media = GetAnimeInfo(anime.MalId.Value, cancellationToken).Result;
+                    long aid = anime.MalId.Value;
+                    for (int i = 1; i < seasonNumber; i++)
+                    {
+                        RelatedEntry entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))
+                            .Data
+                            .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
+
+                        if (entry == null) break;
+
+                        aid = entry.Entry.FirstOrDefault()?.MalId ?? aid;
+
+                        anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                        if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            seasonNumber++;
+                        }
+
+                    }
+                    media = (await GetAnimeInfo(aid, cancellationToken));
                 }
             }
 
             if (media.anime != null)
             {
                 result.HasMetadata = true;
-                result.Item = media.ToSeason(info.IndexNumber.Value);
+                result.Item = media.ToSeason(seasonNumber);
                 result.People = media.GetPeopleInfo();
                 result.Provider = ProviderNames.MyAnimeList;
             }
@@ -81,15 +99,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<Media> GetAnimeInfo(long aid, CancellationToken cancellationToken)
+        private async Task<Anime> GetAnimeInfo(long aid, CancellationToken cancellationToken)
         {
-            Media media = new Media();
+            Anime media = new Anime();
             media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
             media.characters = (await _jikan.GetAnimeCharactersAsync(aid, cancellationToken)).Data;
             return media;
         }
-
-
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeasonInfo searchInfo, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
@@ -97,7 +113,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (!string.IsNullOrEmpty(straid))
             {
                 long aid = long.Parse(straid);
-                MediaSearchResult aid_result = new MediaSearchResult();
+                AnimeSearchResult aid_result = new AnimeSearchResult();
                 aid_result.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
                 if (aid_result.anime != null)
                 {
@@ -107,7 +123,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (!string.IsNullOrEmpty(searchInfo.Name))
             {
-                ICollection<MediaSearchResult> animeList = (ICollection<MediaSearchResult>)(await _jikan.SearchAnimeAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false)).Data;
+                ICollection<AnimeSearchResult> animeList = (ICollection<AnimeSearchResult>)(await _jikan.SearchAnimeAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false)).Data;
                 if (animeList != null)
                 {
                     foreach (var media in animeList)

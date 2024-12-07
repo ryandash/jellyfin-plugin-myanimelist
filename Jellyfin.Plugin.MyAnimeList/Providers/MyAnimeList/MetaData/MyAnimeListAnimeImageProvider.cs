@@ -38,58 +38,72 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
-            var straid = item.GetProviderId(ProviderNames.MyAnimeList);
             var list = new List<RemoteImageInfo>();
-            PluginConfiguration config = Plugin.Instance.Configuration;
-
-            if (!string.IsNullOrEmpty(straid))
+            var straid = item.GetProviderId(ProviderNames.MyAnimeList);
+            if (string.IsNullOrEmpty(straid))
             {
-                Media media = new Media();
-                long aid = long.Parse(straid);
+                return list;
+            }
 
-                if (item is Season season)
+            PluginConfiguration config = Plugin.Instance.Configuration;
+            Anime media = new Anime();
+            long aid = long.Parse(straid);
+
+            if (item is Season season && season?.Path != null)
+            {
+                int seasonNumber = 1;
+                string[] splitPath = season.Path.Split("\\");
+                string part1 = splitPath[^1];
+                string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
+                    ? Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2]))
+                    : Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(part1));
+
+                _log.LogInformation("Start MyAnimeList... Searching({searchName})", searchName);
+                if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))
                 {
-                    string[] splitPath = season.Path.Split("\\");
-                    string searchName = Anitomy.AnitomyHelper.ExtractAnimeTitle(
-                        MyAnimelistSearchHelper.PreprocessTitle(splitPath[splitPath.Length - 2])
-                    );
-                    int seasonNumber = int.Parse(Anitomy.AnitomyHelper.ExtractSeasonNumber(splitPath[splitPath.Length - 1]));
-                    for (int i = 1; i < seasonNumber; i++)
+                    int seasonNum;
+                    if (int.TryParse(Anitomy.AnitomyHelper.ExtractSeasonNumber(part1), out seasonNum))
                     {
-                        RelatedEntry entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))
-                            .Data
-                            .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-
-                        if (entry == null) break;
-
-                        aid = entry.Entry.FirstOrDefault()?.MalId ?? aid;
-
-                        var anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
-                        if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)))
-                        {
-                            seasonNumber++;
-                        }
+                        seasonNumber = seasonNum;
                     }
                 }
 
-                media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
-                _ = (await _jikan.GetAnimePicturesAsync(aid, cancellationToken)).Data;
-                if (media != null)
+                for (int i = 1; i < seasonNumber; i++)
                 {
-                    if (media.GetImageUrl() != null)
-                    {
+                    var entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))?.Data
+                        .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
 
-                        list.Add(new RemoteImageInfo
-                        {
-                            ProviderName = Name,
-                            Type = ImageType.Primary,
-                            Url = media.GetImageUrl()
-                        });
+                    if (entry?.Entry?.FirstOrDefault()?.MalId == null)
+                        break;
+
+                    aid = entry.Entry.FirstOrDefault()?.MalId ?? aid;
+
+                    var anime = await _jikan.GetAnimeAsync(aid, cancellationToken);
+                    if (anime?.Data?.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true)
+                    {
+                        seasonNumber++;
                     }
                 }
             }
+
+            media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
+            if (media.anime != null)
+            {
+                var images = await _jikan.GetAnimePicturesAsync(aid, cancellationToken);
+                if (images?.Data != null && media.GetImageUrl() != null)
+                {
+                    list.Add(new RemoteImageInfo
+                    {
+                        ProviderName = Name,
+                        Type = ImageType.Primary,
+                        Url = media.GetImageUrl()
+                    });
+                }
+            }
+
             return list;
         }
+
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
