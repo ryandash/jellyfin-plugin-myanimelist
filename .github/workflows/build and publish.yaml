@@ -121,7 +121,8 @@ jobs:
         with:
           commit_message: "Update manifest"
           branch: main
-          file_pattern: 'main_repo/manifest.json'
+          file_pattern: 'manifest.json'
+          repository: main_repo
           commit_user_name: "GitHub Actions Bot"
           commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
           commit_author: "ryandash <ryandash@users.noreply.github.com>"
