@@ -39,19 +39,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (!string.IsNullOrEmpty(straid))
             {
-                _log.LogInformation("Start MyAnimeList... Searching({straid})", straid);
+                _log.LogInformation("Populating Season metadata for: {straid}", straid);
                 media = (await GetAnimeInfo(long.Parse(straid), cancellationToken));
                 seasonNumber = info.IndexNumber.HasValue ? info.IndexNumber.Value : 1;
             }
             else
             {
+                if (info.Path == null)
+                {
+                    return result;
+                }
                 string[] splitPath = info.Path.Split("\\");
                 string part1 = splitPath[^1];
                 string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2]))
-                    : Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(part1));
+                    ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
+                    : MyAnimelistSearchHelper.PreprocessTitle(part1);
 
-                _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
+                _log.LogInformation("Populating Season metadata for: {Name}", searchName);
                 if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))
                 {
                     int season;
@@ -91,7 +95,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (media.anime != null)
             {
                 result.HasMetadata = true;
-                result.Item = media.ToSeason(seasonNumber);
+                result.Item = media.ToSeason(info.Name, seasonNumber);
                 result.People = media.GetPeopleInfo();
                 result.Provider = ProviderNames.MyAnimeList;
             }

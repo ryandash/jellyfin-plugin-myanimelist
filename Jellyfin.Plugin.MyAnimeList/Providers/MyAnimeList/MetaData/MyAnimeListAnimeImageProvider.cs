@@ -1,3 +1,4 @@
+using ICU4N.Util;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities;
@@ -52,11 +53,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (item is Season season && season?.Path != null)
             {
                 int seasonNumber = 1;
+                if (season.Path == null)
+                {
+                    return list;
+                }
                 string[] splitPath = season.Path.Split("\\");
                 string part1 = splitPath[^1];
                 string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2]))
-                    : Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(part1));
+                    ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
+                    : MyAnimelistSearchHelper.PreprocessTitle(part1);
 
                 _log.LogInformation("Start MyAnimeList... Searching({searchName})", searchName);
                 if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))

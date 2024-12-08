@@ -35,14 +35,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (!string.IsNullOrEmpty(straid))
             {
+                _log.LogInformation("Populating Series metadata for: {straid}", straid);
                 media = await GetAnimeInfo(long.Parse(straid), cancellationToken);
-                _log.LogInformation("Start MyAnimeList... Searching({straid})", straid);
             }
             else
             {
-                string searchName = Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(info.Name));
-
-                _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
+                string searchName = MyAnimelistSearchHelper.PreprocessTitle(info.Name);
+                _log.LogInformation("Populating Series metadata for: {Name}", searchName);
                 var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken)).Data
                     .Where(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()))
                     .FirstOrDefault();

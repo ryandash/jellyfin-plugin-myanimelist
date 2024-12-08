@@ -1,0 +1,71 @@
+name: Automated Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v4
+      with:
+          token: ${{ secrets.AUTOMATED_DEPENDENCY_UPDATES_TOKEN }}
+
+    - name: Setup
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Tools
+      id: tools
+      run: dotnet tool install --global dotnet-outdated-tool
+
+    - name: Update
+      id: update
+      run: |
+        OUTPUT=$(dotnet outdated)
+        if [[ $OUTPUT =~ "No outdated dependencies were detected" ]]; then
+            echo "updated=false" >> $GITHUB_ENV
+        else
+            # Extract dependency name and version (adjust regex as needed)
+            DEPENDENCY_NAME=$(echo "$OUTPUT" | grep -oP '^\S+' | head -n 1)
+            NEW_VERSION=$(echo "$OUTPUT" | grep -oP '-> \K\S+' | head -n 1)
+            echo "Dependency to update: $DEPENDENCY_NAME to $NEW_VERSION"
+            dotnet outdated -u
+            echo "updated=true" >> $GITHUB_ENV
+            echo "dependency_name=$DEPENDENCY_NAME" >> $GITHUB_ENV
+            echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+    - name: Test
+      id: test
+      if: ${{ env.updated == 'true' }}
+      run: dotnet test -c Release -v minimal
+
+    - name: Create branch for dependency update
+      id: create_branch
+      if: ${{ env.updated == 'true' }}
+      run: |
+        # Construct a branch name from the dependency name and version
+        BRANCH_NAME="update-${{ env.dependency_name }}-to-v${{ env.new_version }}"
+        git checkout -b $BRANCH_NAME
+        echo "Branch created: $BRANCH_NAME"
+        echo "branch_name=$BRANCH_NAME" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Push changes to the new branch
+      id: push
+      if: ${{ env.updated == 'true' }}
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+        commit_user_name: github-actions[bot]
+        commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+        commit_message: Automated Dependency Updates
+        branch: ${{ env.branch_name }}

@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (!string.IsNullOrEmpty(malId) && info.IndexNumber.HasValue)
             {
-                _log.LogInformation("Start MyAnimeList... Searching({malId})", malId);
+                _log.LogInformation("Populating Episode metadata for: {malId}", malId);
                 try
                 {
                     episode = await GetAnimeEpisodeInfo(long.Parse(malId), info.IndexNumber.Value, cancellationToken);
@@ -52,13 +52,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             else
             {
                 int seasonNumber = 1;
+                if (info.Path == null)
+                {
+                    return result;
+                }
                 string[] splitPath = info.Path.Split("\\");
                 string part1 = splitPath[^1];
                 string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2]))
-                    : Anitomy.AnitomyHelper.ExtractAnimeTitle(MyAnimelistSearchHelper.PreprocessTitle(part1));
-
-                _log.LogInformation("Start MyAnimeList... Searching({searchName})", searchName);
+                    ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
+                    : MyAnimelistSearchHelper.PreprocessTitle(part1);
+                _log.LogInformation("Populating Episode metadata for: {Name}", searchName);
                 if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))
                 {
                     int season;

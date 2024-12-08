@@ -3,12 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <Version>5.2</Version>
-    <AssemblyVersion>5.2</AssemblyVersion>
-    <FileVersion>5.2</FileVersion>
+    <Version>5.3</Version>
+    <AssemblyVersion>5.3</AssemblyVersion>
+    <FileVersion>5.3</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <BaseOutputPath>%UserProfile%\AppData\Local\jellyfin\plugins\myanimelist</BaseOutputPath>
     <Optimize>False</Optimize>
     <IsPublishable>False</IsPublishable>
   </PropertyGroup>

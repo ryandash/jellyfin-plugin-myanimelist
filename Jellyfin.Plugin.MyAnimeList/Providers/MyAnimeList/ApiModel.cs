@@ -98,11 +98,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl;
         }
 
-        public DateTime? GetStartDate() => anime.Aired.From;
+        public DateTime? GetAiredDate(bool isStartDate = true) => isStartDate ? anime.Aired.From : anime.Aired.To;
 
-        public float GetRating() => (float)((anime.Score ?? 0) / 10f);
-
-        public DateTime? GetEndDate() => anime.Aired.To;
+        public float GetRating() => (float)(anime.Score ?? 0.0);
 
         public RemoteSearchResult ToSearchResult()
         {
@@ -110,8 +108,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return new RemoteSearchResult
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
-                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
-                PremiereDate = GetStartDate(),
+                ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
+                PremiereDate = GetAiredDate(),
                 ImageUrl = GetImageUrl(),
                 SearchProviderName = ProviderNames.MyAnimeList,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
@@ -209,9 +207,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
-                PremiereDate = GetStartDate(),
-                EndDate = GetEndDate(),
+                ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
+                PremiereDate = GetAiredDate(),
+                EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
                 RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
                 Genres = GetGenres().ToArray(),
@@ -235,9 +233,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
-                PremiereDate = GetStartDate(),
-                EndDate = GetEndDate(),
+                ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
+                PremiereDate = GetAiredDate(),
+                EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
                 Genres = GetGenres().ToArray(),
                 Studios = GetStudioNames().ToArray(),
@@ -245,18 +243,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        public SeasonTV ToSeason(int seasonNumber)
+        public SeasonTV ToSeason(string title, int seasonNumber)
         {
             var config = Plugin.Instance.Configuration;
             var duration = GetDuration(anime.Duration);
             return new SeasonTV
             {
-                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                Name = title,
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
-                ProductionYear = GetStartDate().HasValue ? GetStartDate().Value.Year : null,
-                PremiereDate = GetStartDate(),
-                EndDate = GetEndDate(),
+                ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
+                PremiereDate = GetAiredDate(),
+                EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
                 RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
                 Genres = GetGenres().ToArray(),
