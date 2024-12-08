@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <BaseOutputPath>%UserProfile%\AppData\Local\jellyfin\plugins\myanimelist</BaseOutputPath>
+    <BaseOutputPath>$(USERPROFILE)\AppData\Local\jellyfin\plugins\myanimelist</BaseOutputPath>
     <Optimize>False</Optimize>
     <IsPublishable>False</IsPublishable>
   </PropertyGroup>
