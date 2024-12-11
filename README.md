@@ -69,9 +69,9 @@ Anime
 1. Git clone the latest version of this repository, [AnitomySharp](https://github.com/Xabis/AnitomySharp), and [jikan.net](https://github.com/Ervie/jikan.net), or any fork of the repositories
 2. Download and install visual studio with .Net desktop development
 3. Build AnitomySharp and jikan.net
-4. Open my repository solution and add the missing references and build
-5. Copy all dll files from the output bin directory to Jellyfins Plugin directory under plugins/myanimelist
-6. Restart Jellyfin Server (Administration> Dashboard > Restart) and navigate to Plugins in Jellyfin (Administration > Dashboard > My Plugins) to verify installation.
+4. Open my repository solution and add any missing references and build
+5. By default a debug build should output to `$(USERPROFILE)\AppData\Local\jellyfin\plugins\myanimelist`, if not then Copy all dll files from the output directory to [Jellyfins Plugin directory](https://jellyfin.org/docs/general/server/plugins/) under plugins/myanimelist
+7. Restart Jellyfin Server (Administration> Dashboard > Restart) and navigate to Plugins in Jellyfin (Administration > Dashboard > My Plugins) to verify installation.
 
 ## Licence
 
