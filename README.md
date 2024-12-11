@@ -1,4 +1,4 @@
-<h1 align="center">Jellyfin MyAnimeList Plugin</h1>
+<h1 align="center">Jellyfin MyAnimeList Metadata Plugin</h1>
 
 ## About
 
