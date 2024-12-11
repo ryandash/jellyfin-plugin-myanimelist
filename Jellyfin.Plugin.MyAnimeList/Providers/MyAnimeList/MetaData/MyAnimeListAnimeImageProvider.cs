@@ -1,5 +1,3 @@
-using ICU4N.Util;
-using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -46,13 +44,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 return list;
             }
 
-            PluginConfiguration config = Plugin.Instance.Configuration;
-            Anime media = new Anime();
             long aid = long.Parse(straid);
 
-            if (item is Season season && season?.Path != null)
+            if (item is Season season)
             {
-                int seasonNumber = 1;
                 if (season.Path == null)
                 {
                     return list;
@@ -63,34 +58,25 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
                     : MyAnimelistSearchHelper.PreprocessTitle(part1);
 
-                _log.LogInformation("Start MyAnimeList... Searching({searchName})", searchName);
-                if (part1.Contains("season", StringComparison.OrdinalIgnoreCase))
-                {
-                    int seasonNum;
-                    if (int.TryParse(Anitomy.AnitomyHelper.ExtractSeasonNumber(part1), out seasonNum))
-                    {
-                        seasonNumber = seasonNum;
-                    }
-                }
-
+                int seasonNumber = season.IndexNumber.Value;
+                _log.LogInformation("Populating Images metadata for: {Name} Season#{season}", searchName, seasonNumber);
                 for (int i = 1; i < seasonNumber; i++)
                 {
                     var entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))?.Data
                         .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-
-                    if (entry?.Entry?.FirstOrDefault()?.MalId == null)
-                        break;
-
-                    aid = entry.Entry.FirstOrDefault()?.MalId ?? aid;
-
-                    var anime = await _jikan.GetAnimeAsync(aid, cancellationToken);
-                    if (anime?.Data?.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true)
+                    if (entry == null) break;
+                    MalUrl malurl = entry.Entry.FirstOrDefault();
+                    if (malurl == null) break;
+                    aid = malurl.MalId;
+                    var anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
+                    if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true)
                     {
                         seasonNumber++;
                     }
                 }
             }
 
+            Anime media = new Anime();
             media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
             if (media.anime != null)
             {
@@ -108,7 +94,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             return list;
         }
-
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {

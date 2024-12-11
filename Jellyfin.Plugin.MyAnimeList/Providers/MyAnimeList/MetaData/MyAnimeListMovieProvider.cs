@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             string straid = info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
             if (!string.IsNullOrEmpty(straid))
             {
-                _log.LogInformation("Start MyAnimeList... Searching({straid})", straid);
+                _log.LogInformation("Populating Movie metadata for: {aid}", straid);
                 long aid = long.Parse(straid);
                 media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
                 media.characters = (await _jikan.GetAnimeCharactersAsync(aid, cancellationToken)).Data;
@@ -42,8 +42,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             else
             {
                 string searchName = MyAnimelistSearchHelper.PreprocessTitle(info.Name);
-
-                _log.LogInformation("Start MyAnimeList... Searching({Name})", searchName);
+                _log.LogInformation("Populating Movie metadata for: {Name}", searchName);
                 AnimeSearchConfig searchConfig = new AnimeSearchConfig();
                 searchConfig.Query = searchName;
                 searchConfig.Type = AnimeType.Movie;

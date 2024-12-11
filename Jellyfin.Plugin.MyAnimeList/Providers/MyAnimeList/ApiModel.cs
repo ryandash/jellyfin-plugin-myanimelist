@@ -50,7 +50,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
-                ProductionYear = GetDate().HasValue ? GetDate().Value.Year: null,
+                ProductionYear = GetDate().HasValue ? GetDate().Value.Year : null,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
                 Overview = episode.Synopsis
@@ -243,13 +243,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        public SeasonTV ToSeason(string title, int seasonNumber)
+        public SeasonTV ToSeason()
         {
             var config = Plugin.Instance.Configuration;
             var duration = GetDuration(anime.Duration);
             return new SeasonTV
             {
-                Name = title,
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
                 Overview = anime.Synopsis,
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
@@ -260,7 +259,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Genres = GetGenres().ToArray(),
                 Studios = GetStudioNames().ToArray(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
-                IndexNumber = seasonNumber
             };
         }
     }
