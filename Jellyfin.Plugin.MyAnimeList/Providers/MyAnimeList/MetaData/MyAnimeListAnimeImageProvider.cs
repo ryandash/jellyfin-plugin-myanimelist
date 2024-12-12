@@ -6,9 +6,7 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,50 +30,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
-            return new[] { ImageType.Primary };
+            return [ImageType.Primary];
         }
 
         public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
             var list = new List<RemoteImageInfo>();
-            var straid = item.GetProviderId(ProviderNames.MyAnimeList);
-            if (string.IsNullOrEmpty(straid))
+            var malId = item.GetProviderId(ProviderNames.MyAnimeList);
+            if (string.IsNullOrEmpty(malId))
             {
                 return list;
             }
 
-            long aid = long.Parse(straid);
-
-            if (item is Season season)
-            {
-                if (season.Path == null || !season.IndexNumber.HasValue)
-                {
-                    return list;
-                }
-                string[] splitPath = season.Path.Split("\\");
-                string part1 = splitPath[^1];
-                string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
-                    : MyAnimelistSearchHelper.PreprocessTitle(part1);
-
-                int seasonNumber = season.IndexNumber.Value;
-                _log.LogInformation("Populating Images metadata for: {Name} Season#{season}", searchName, seasonNumber);
-                for (int i = 1; i < seasonNumber; i++)
-                {
-                    var entry = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken))?.Data
-                        .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-                    if (entry == null) break;
-                    MalUrl malurl = entry.Entry.FirstOrDefault();
-                    if (malurl == null) break;
-                    aid = malurl.MalId;
-                    var anime = (await _jikan.GetAnimeAsync(aid, cancellationToken)).Data;
-                    if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true)
-                    {
-                        seasonNumber++;
-                    }
-                }
-            }
-
+            long aid = long.Parse(malId);
+            _log.LogInformation("Populating Images metadata for: {malId}", aid);
             Anime media = new Anime();
             media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
             if (media.anime != null)

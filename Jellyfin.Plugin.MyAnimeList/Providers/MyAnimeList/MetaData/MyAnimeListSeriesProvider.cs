@@ -1,5 +1,4 @@
 using Jellyfin.Plugin.MyAnimeList.Anitomy;
-using Jellyfin.Plugin.MyAnimeList.Configuration;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
@@ -49,7 +48,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (!string.IsNullOrEmpty(malId))
             {
                 var aid = long.Parse(malId);
-                _log.LogInformation("Populating Series metadata for: {straid}", malId);
+                _log.LogInformation("Populating Series metadata for: {straid}", aid);
                 media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
             }
             else

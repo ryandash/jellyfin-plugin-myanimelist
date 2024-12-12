@@ -38,8 +38,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             var anime = await GetAnimeInfoAsync(malId, info, cancellationToken).ConfigureAwait(false);
             if (anime == null) return result;
-
-            var (episodeNumber, part) = await GetEpisodeAndPartNumberAsync(info, anime, malIDPartSeason, cancellationToken).ConfigureAwait(false);
+            var (episodeNumber, _) = await GetEpisodeAndPartNumberAsync(info, anime, malIDPartSeason, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -66,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (!string.IsNullOrEmpty(malId))
             {
                 var aid = long.Parse(malId);
-                _log.LogInformation("Populating Episode Anime info for: {malId}", malId);
+                _log.LogInformation("Populating Episode Anime info for: {malId}", aid);
                 return (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
             }
 
@@ -102,7 +101,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 aid = malurl.MalId;
                 anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
 
-                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)))
+                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) || !anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase))
                 {
                     seasonNumber++;
                 }

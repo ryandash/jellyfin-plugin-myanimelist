@@ -51,7 +51,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (!string.IsNullOrEmpty(malId))
             {
                 var aid = long.Parse(malId);
-                _log.LogInformation("Populating Season metadata for: {straid}", malId);
+                _log.LogInformation("Populating Season metadata for: {straid}", aid);
                 media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
             }
             else
@@ -88,7 +88,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 aid = malurl.MalId;
                 anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
 
-                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)))
+                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) || !anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase))
                 {
                     seasonNumber++;
                 }
