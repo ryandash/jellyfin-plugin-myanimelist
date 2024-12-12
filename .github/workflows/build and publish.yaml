@@ -100,7 +100,7 @@ jobs:
           cd main_repo
           git fetch --tags
           LAST_TAG=$(git tag -l | sort -V | tail -n 1)
-          git log ${LAST_TAG}..HEAD --pretty=format:"%h %B" --no-merges > main_repo/CHANGELOG.txt
+          git log ${LAST_TAG}..HEAD --pretty=format:"%h %B" --no-merges > CHANGELOG.txt
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
