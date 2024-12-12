@@ -71,7 +71,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
 
             if (info.Path == null || !info.ParentIndexNumber.HasValue) return null;
-            AnitomyHelper animeInfo = new AnitomyHelper(info.Name);
+            string[] splitPath = info.Path.Split("\\");
+            string part1 = splitPath[^2];
+            string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
+                ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^3])
+                : MyAnimelistSearchHelper.PreprocessTitle(part1);
+            AnitomyHelper animeInfo = new AnitomyHelper(searchName);
             _log.LogInformation("Populating Episode Anime info for: {Name}", animeInfo.AnimeTitle);
 
             var anime = (await _jikan.SearchAnimeAsync(animeInfo.AnimeTitle, cancellationToken).ConfigureAwait(false))?.Data
