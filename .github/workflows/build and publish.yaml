@@ -100,8 +100,7 @@ jobs:
           cd main_repo
           git fetch --tags
           LAST_TAG=$(git tag -l | sort -V | tail -n 1)
-          CHANGES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%h %s")
-          echo "CHANGELOG=${CHANGES}" >> $GITHUB_ENV
+          git log ${LAST_TAG}..HEAD --pretty=format:"%h %B" --no-merges > main_repo/CHANGELOG.txt
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
@@ -121,7 +120,7 @@ jobs:
         with:
           commit_message: "Update manifest"
           branch: main
-          file_pattern: 'manifest.json'
+          file_pattern: 'manifest.json CHANGELOG.txt'
           repository: main_repo
           commit_user_name: "GitHub Actions Bot"
           commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
