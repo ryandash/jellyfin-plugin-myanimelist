@@ -48,7 +48,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (item is Season season)
             {
-                if (season.Path == null)
+                if (season.Path == null || !season.IndexNumber.HasValue)
                 {
                     return list;
                 }

@@ -1,31 +1,22 @@
 using AnitomySharp;
-using System;
 using System.Linq;
 
 namespace Jellyfin.Plugin.MyAnimeList.Anitomy
 {
     public class AnitomyHelper
     {
-        public static String ExtractAnimeTitle(string path)
+        public string AnimeTitle { get; }
+        public string EpisodeTitle { get; }
+        public int Episode { get; }
+        public int Season { get; }
+
+        public AnitomyHelper(string fileName)
         {
-            String input = path;
-            var elements = AnitomySharp.AnitomySharp.Parse(input);
-            return elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementAnimeTitle).Value;
-        }
-        public static String ExtractEpisodeTitle(string path)
-        {
-            var elements = AnitomySharp.AnitomySharp.Parse(path);
-            return elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementEpisodeTitle).Value;
-        }
-        public static String ExtractEpisodeNumber(string path)
-        {
-            var elements = AnitomySharp.AnitomySharp.Parse(path);
-            return elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementEpisodeNumber).Value;
-        }
-        public static String ExtractSeasonNumber(string path)
-        {
-            var elements = AnitomySharp.AnitomySharp.Parse(path);
-            return elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementAnimeSeason).Value;
+            var elements = AnitomySharp.AnitomySharp.Parse(fileName);
+            AnimeTitle = elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementAnimeTitle)?.Value;
+            EpisodeTitle = elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementEpisodeTitle)?.Value;
+            Episode = int.TryParse(elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementEpisodeNumber)?.Value, out int episode) ? episode : 0;
+            Season = int.TryParse(elements.FirstOrDefault(p => p.Category == Element.ElementCategory.ElementAnimeSeason)?.Value, out int season) ? season : 0;
         }
     }
 }
