@@ -60,6 +60,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
                 Overview = episode.Synopsis
+                
             };
         }
 

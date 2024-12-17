@@ -34,11 +34,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var result = new MetadataResult<Episode>();
             var episode = new EpisodeSearchResult();
             var malId = info.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
-            var malIDPartSeason = info.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeListSeason);
 
             var anime = await GetAnimeInfoAsync(malId, info, cancellationToken).ConfigureAwait(false);
             if (anime == null) return result;
-            (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, malIDPartSeason, cancellationToken).ConfigureAwait(false);
+            (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
             try
             {
                 episode.episode = (await _jikan.GetAnimeEpisodeAsync(anime.MalId.Value, episodeNumber, cancellationToken).ConfigureAwait(false)).Data;
@@ -54,9 +53,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
 
             anime = (await _jikan.GetAnimeAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
-
             result.HasMetadata = true;
             result.Item = episode.ToEpisode(anime.Episodes?.ToString().Length ?? 4);
+            result.Item.IndexNumber = info.IndexNumber;
+            result.Item.ParentIndexNumber = info.ParentIndexNumber.HasValue ? info.ParentIndexNumber.Value : 1;
             result.Provider = ProviderNames.MyAnimeList;
             return result;
         }
@@ -111,7 +111,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         }
 
         private async Task<(int episodeNumber, long? malID)> GetEpisodeNumberAsync(
-    EpisodeInfo info, JikanDotNet.Anime anime, string malIDPartSeason, CancellationToken cancellationToken)
+    EpisodeInfo info, JikanDotNet.Anime anime, CancellationToken cancellationToken)
         {
             int episodeNumber = info.IndexNumber.Value;
 
@@ -126,6 +126,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
 
             int tempEpisodeNumber = (int)(episodeNumber - anime.Episodes);
+            var malIDPartSeason = info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeListSeason);
 
             if (!string.IsNullOrEmpty(malIDPartSeason))
             {
@@ -137,7 +138,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (sequel != null)
             {
-                info.SeasonProviderIds.Add(ProviderNames.MyAnimeListSeason, sequel.MalId.ToString());
+                info.ProviderIds[ProviderNames.MyAnimeListSeason] =  sequel.MalId.ToString();
                 return (tempEpisodeNumber, sequel.MalId);
             }
 
