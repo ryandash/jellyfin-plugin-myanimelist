@@ -1,7 +1,4 @@
-70de3b7 Fix movies, some bugs + cleanup
+9a8ffdc Version bump
 
-- Fixes a bug caused by copy/paste on movie provider preventing any proper movie metadata
-- Minor refactoring
-- Adjust externalId to use with https://github.com/ryandash/jellyfin-myanimelist-sync
-- Remove Anitomy due to false positive matches with titles containing numbers (Probably won't be added back again)
-- Add number to valid generated episode titles to maintain order
+- bump version to 5.7
+This version should not work with my other plugin
