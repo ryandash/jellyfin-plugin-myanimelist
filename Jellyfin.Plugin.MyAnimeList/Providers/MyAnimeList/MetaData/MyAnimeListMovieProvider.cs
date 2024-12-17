@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Anitomy;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
@@ -52,11 +51,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
             else
             {
-                AnitomyHelper animeInfo = new AnitomyHelper(MyAnimelistSearchHelper.PreprocessTitle(info.Name));
-                _log.LogInformation("Populating Movie metadata for: {Name}", animeInfo.AnimeTitle);
-                media.anime = (await _jikan.SearchAnimeAsync(animeInfo.AnimeTitle, cancellationToken).ConfigureAwait(false)).Data
-                    .Where(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()))
-                    .FirstOrDefault();
+                string searchName = MyAnimeListSearchHelper.PreprocessTitle(info.Name);
+                _log.LogInformation("Populating Movie metadata for: {Name}", searchName);
+
+                media.anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
+                        .FirstOrDefault(a => a.Type.Equals(AnimeType.Movie.ToString()));
             }
             media.characters = (await _jikan.GetAnimeCharactersAsync(media.anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
             return media;

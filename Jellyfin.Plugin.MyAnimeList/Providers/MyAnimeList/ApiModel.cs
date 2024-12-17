@@ -41,16 +41,22 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public DateTime? GetDate() => episode.Aired;
 
-        internal Episode ToEpisode()
+        internal Episode ToEpisode(int totalDigits)
         {
             var config = Plugin.Instance.Configuration;
+            var malIdStr = "#" + episode.MalId.ToString($"D{totalDigits}") + " - ";
+
+            string GetFormattedTitle(TitlePreferenceType titlePreference) =>
+                string.IsNullOrEmpty(GetPreferredTitle(titlePreference, "en"))
+                ? null
+                : malIdStr + GetPreferredTitle(titlePreference, "en");
+
             return new Episode
             {
-                IndexNumber = (int)episode.MalId,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
-                Name = GetPreferredTitle(config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
-                ProductionYear = GetDate().HasValue ? GetDate().Value.Year : null,
+                Name = GetFormattedTitle(config.TitlePreference),
+                OriginalTitle = GetFormattedTitle(config.OriginalTitlePreference),
+                ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
                 Overview = episode.Synopsis

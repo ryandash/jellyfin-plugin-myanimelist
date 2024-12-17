@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
-    public class MyAnimelistSearchHelper
+    public class MyAnimeListSearchHelper
     {
         public static String PreprocessTitle(String path)
         { //Remove items that will always cause MyAnimeList to fail

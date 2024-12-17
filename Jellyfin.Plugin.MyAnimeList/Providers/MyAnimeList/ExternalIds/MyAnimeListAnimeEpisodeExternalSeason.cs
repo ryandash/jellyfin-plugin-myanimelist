@@ -14,7 +14,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
 
         public string Key => ProviderNames.MyAnimeListSeason;
 
-        public ExternalIdMediaType? Type => null;
+        public ExternalIdMediaType? Type => ExternalIdMediaType.Season;
 
         public string UrlFormatString => "https://myanimelist.net/anime/{0}/";
     }

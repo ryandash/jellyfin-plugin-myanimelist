@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Anitomy;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
@@ -60,11 +59,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 string[] splitPath = info.Path.Split("\\");
                 string part1 = splitPath[^1];
                 string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? MyAnimelistSearchHelper.PreprocessTitle(splitPath[^2])
-                    : MyAnimelistSearchHelper.PreprocessTitle(part1);
-                AnitomyHelper animeInfo = new AnitomyHelper(searchName);
-                var anime = (await _jikan.SearchAnimeAsync(animeInfo.AnimeTitle, cancellationToken).ConfigureAwait(false))?.Data
-                            .FirstOrDefault(a => !a.Type.Equals(AnimeType.Movie.ToString()));
+                    ? MyAnimeListSearchHelper.PreprocessTitle(splitPath[^2])
+                    : MyAnimeListSearchHelper.PreprocessTitle(part1);
+                _log.LogInformation("Populating Season Anime info for: {Name}", searchName);
+
+                var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
+                        .FirstOrDefault(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()));
                 media.anime = await GetAnimeBySeasonAsync(anime, info.IndexNumber.Value, cancellationToken).ConfigureAwait(false);
             }
             media.characters = (await _jikan.GetAnimeCharactersAsync(media.anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
@@ -88,7 +88,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 aid = malurl.MalId;
                 anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
 
-                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) || !anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase))
+                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) ||
+    !(anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase) || anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase)))
                 {
                     seasonNumber++;
                 }
