@@ -1,1 +1,7 @@
-ebe63ff Update manifest.json
+70de3b7 Fix movies, some bugs + cleanup
+
+- Fixes a bug caused by copy/paste on movie provider preventing any proper movie metadata
+- Minor refactoring
+- Adjust externalId to use with https://github.com/ryandash/jellyfin-myanimelist-sync
+- Remove Anitomy due to false positive matches with titles containing numbers (Probably won't be added back again)
+- Add number to valid generated episode titles to maintain order
