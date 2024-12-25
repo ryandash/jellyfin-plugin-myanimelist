@@ -1,4 +1,5 @@
-9a8ffdc Version bump
+2ea10e8 Remove MyAnimeListSeason + filter Jikan search results
 
-- bump version to 5.7
-This version should not work with my other plugin
+- Remove unused MyAnimeListSeason
+- Filter the search results for Jikan to prevent anime that have not aired yet (This can cause potential issues if MAL aired data is wrong but resolves some impossible search results from Jikan. If there are enough issues then I can allow early aired anime by allowing 2 weeks before the aired data.)
+- Remove log error message
