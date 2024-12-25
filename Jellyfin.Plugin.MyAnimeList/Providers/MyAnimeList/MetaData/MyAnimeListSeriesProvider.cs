@@ -2,6 +2,7 @@ using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -56,7 +57,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _log.LogInformation("Populating Series metadata for: {Name}", searchName);
 
                 media.anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
-                        .FirstOrDefault(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()));
+                        .FirstOrDefault(a => (a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString())) && a.Aired.From.HasValue && a.Aired.From.Value.Date <= DateTime.Now.Date);
             }
             media.characters = (await _jikan.GetAnimeCharactersAsync(media.anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
             return media;

@@ -64,7 +64,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _log.LogInformation("Populating Season Anime info for: {Name}", searchName);
 
                 var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
-                        .FirstOrDefault(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()));
+                        .FirstOrDefault(a => (a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString())) && a.Aired.From.HasValue && a.Aired.From.Value.Date <= DateTime.Now.Date);
                 media.anime = await GetAnimeBySeasonAsync(anime, info.IndexNumber.Value, cancellationToken).ConfigureAwait(false);
             }
             media.characters = (await _jikan.GetAnimeCharactersAsync(media.anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;

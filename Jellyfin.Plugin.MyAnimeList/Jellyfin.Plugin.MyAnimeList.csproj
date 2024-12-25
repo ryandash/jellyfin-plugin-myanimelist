@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <Version>5.7</Version>
-    <AssemblyVersion>5.7</AssemblyVersion>
-    <FileVersion>5.7</FileVersion>
+    <Version>5.8</Version>
+    <AssemblyVersion>5.8</AssemblyVersion>
+    <FileVersion>5.8</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

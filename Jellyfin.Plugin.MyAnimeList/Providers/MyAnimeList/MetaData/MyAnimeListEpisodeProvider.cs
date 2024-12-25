@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
@@ -78,8 +77,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 : MyAnimeListSearchHelper.PreprocessTitle(part1);
             _log.LogInformation("Populating Episode Anime info for: {Name}", searchName);
 
+            // Allows all non movies and anime that have at least started airing
             var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
-                        .FirstOrDefault(a => a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString()));
+                        .FirstOrDefault(a => (a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString())) && a.Aired.From.HasValue && a.Aired.From.Value.Date <= DateTime.Now.Date);
             return await GetAnimeBySeasonAsync(anime, info.ParentIndexNumber.Value, cancellationToken).ConfigureAwait(false);
         }
 
@@ -115,12 +115,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             int episodeNumber = info.IndexNumber.Value;
 
-            if (anime.Episodes == null)
-            {
-                _log.LogError("Jikan did not find the correct anime. It found: {name} {id}", anime.Titles.First().Title, anime.MalId.ToString());
-            }
-
-            if (episodeNumber <= anime.Episodes)
+            if (anime.Episodes == null || episodeNumber <= anime.Episodes)
             {
                 return (episodeNumber, anime.MalId);
             }
@@ -138,7 +133,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (sequel != null)
             {
-                info.ProviderIds[ProviderNames.MyAnimeListSeason] =  sequel.MalId.ToString();
+                info.ProviderIds[ProviderNames.MyAnimeListSeason] = sequel.MalId.ToString();
                 return (tempEpisodeNumber, sequel.MalId);
             }
 
