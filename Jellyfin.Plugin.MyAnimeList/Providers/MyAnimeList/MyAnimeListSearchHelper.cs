@@ -12,7 +12,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     {
         private readonly Jikan _jikan;
 
-        public MyAnimeListSearchHelper(Jikan _jikan) {
+        public MyAnimeListSearchHelper(Jikan _jikan)
+        {
             this._jikan = _jikan;
         }
 
