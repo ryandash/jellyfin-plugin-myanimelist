@@ -14,10 +14,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     using Jellyfin.Plugin.MyAnimeList.Configuration;
     using Jellyfin.Plugin.MyAnimeList.Providers;
     using JikanDotNet;
+    using System.Net.Http;
+    using System.Text.Json;
+    using System.Threading.Tasks;
 
-    public static class NewJikan
+    public static class JikanSingleton
     {
-        public static Jikan _jikan = new Jikan();
+        private static readonly Lazy<Jikan> _jikanInstance = new Lazy<Jikan>(() => new Jikan());
+
+        public static Jikan Instance => _jikanInstance.Value;
     }
 
     public class EpisodeSearchResult
@@ -267,6 +272,58 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Studios = GetStudioNames().ToArray(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
             };
+        }
+    }
+
+    public static class MALNameSearch
+    {
+        private static readonly HttpClient client = new HttpClient();
+        public class Payload
+        {
+            public string Media_type { get; set; }
+        }
+
+        public class Item
+        {
+            public int Id { get; set; }
+            public Payload Payload { get; set; }
+        }
+
+        public class Category
+        {
+            public List<Item> Items { get; set; }
+        }
+
+        public class Root
+        {
+            public List<Category> Categories { get; set; }
+        }
+
+        private static string MyAnimeListSearchApi = "https://myanimelist.net/search/prefix.json?type=anime&keyword=";
+
+        public static async Task<long?> GetFirstAnimeID(string searchTerm, bool isMovie)
+        {
+            string url = MyAnimeListSearchApi + Uri.EscapeDataString(searchTerm);
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return searchResult?.Categories?
+                .SelectMany(category => category.Items)
+                .FirstOrDefault(item => isMovie
+                    ? item.Payload?.Media_type == "Movie"
+                    : item.Payload?.Media_type != "Movie")
+                ?.Id ?? null;
+            }
+
+            return null;
         }
     }
 }

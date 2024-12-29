@@ -20,8 +20,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         private readonly ILogger _log;
         public MyAnimeListAnimeImageProvider(ILogger<MyAnimeListAnimeImageProvider> logger)
         {
-            _jikan = NewJikan._jikan;
             _log = logger;
+            _jikan = JikanSingleton.Instance;
         }
 
         public string Name => "MyAnimeList";

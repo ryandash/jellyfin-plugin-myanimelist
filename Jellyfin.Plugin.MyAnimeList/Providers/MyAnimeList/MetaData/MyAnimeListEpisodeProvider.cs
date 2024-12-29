@@ -25,18 +25,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger)
         {
             _log = logger;
-            _jikan = NewJikan._jikan;
+            _jikan = JikanSingleton.Instance;
         }
 
         public async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<Episode>();
-            var episode = new EpisodeSearchResult();
-            var malId = info.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
+            MetadataResult<Episode> result = new MetadataResult<Episode>();
+            if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
-            var anime = await GetAnimeInfoAsync(malId, info, cancellationToken).ConfigureAwait(false);
+
+            var anime = await GetAnimeInfoAsync(info, cancellationToken).ConfigureAwait(false);
             if (anime == null) return result;
             (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
+
+            EpisodeSearchResult episode = new EpisodeSearchResult();
             try
             {
                 episode.episode = (await _jikan.GetAnimeEpisodeAsync(anime.MalId.Value, episodeNumber, cancellationToken).ConfigureAwait(false)).Data;
@@ -45,13 +47,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             {
                 // It is normal for some episode data to not exist on myanimelist
             }
-
-            if (episode == null || episode.episode == null)
-            {
-                return result;
-            }
+            if (episode == null || episode.episode == null) return result;
 
             anime = (await _jikan.GetAnimeAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
+            if (anime == null) return result;
+
             result.HasMetadata = true;
             result.Item = episode.ToEpisode(anime.Episodes?.ToString().Length ?? 4);
             result.Item.IndexNumber = info.IndexNumber;
@@ -60,54 +60,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<JikanDotNet.Anime> GetAnimeInfoAsync(string malId, EpisodeInfo info, CancellationToken cancellationToken)
+        private async Task<JikanDotNet.Anime> GetAnimeInfoAsync(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            if (!string.IsNullOrEmpty(malId))
-            {
-                var aid = long.Parse(malId);
-                _log.LogInformation("Populating Episode Anime info for: {malId}", aid);
-                return (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
-            }
+            long? aid = MyAnimeListSearchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            if (!aid.HasValue || info.Path == null || !info.IndexNumber.HasValue) return null;
 
-            if (info.Path == null || !info.ParentIndexNumber.HasValue) return null;
-            string[] splitPath = info.Path.Split("\\");
-            string part1 = splitPath[^2];
-            string searchName = part1.Contains("season", StringComparison.OrdinalIgnoreCase)
-                ? MyAnimeListSearchHelper.PreprocessTitle(splitPath[^3])
-                : MyAnimeListSearchHelper.PreprocessTitle(part1);
-            _log.LogInformation("Populating Episode Anime info for: {Name}", searchName);
-
-            // Allows all non movies and anime that have at least started airing
-            var anime = (await _jikan.SearchAnimeAsync(searchName, cancellationToken).ConfigureAwait(false))?.Data
-                        .FirstOrDefault(a => (a.Type == null || !a.Type.Equals(AnimeType.Movie.ToString())) && a.Aired.From.HasValue && a.Aired.From.Value.Date <= DateTime.Now.Date);
-            return await GetAnimeBySeasonAsync(anime, info.ParentIndexNumber.Value, cancellationToken).ConfigureAwait(false);
-        }
-
-        private async Task<JikanDotNet.Anime> GetAnimeBySeasonAsync(JikanDotNet.Anime anime, int seasonNumber, CancellationToken cancellationToken)
-        {
-            if (anime == null) return null;
-
-            long aid = anime.MalId.Value;
-            for (int i = 1; i < seasonNumber; i++)
-            {
-                var relation = (await _jikan.GetAnimeRelationsAsync(aid, cancellationToken).ConfigureAwait(false))?.Data
-                               .FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-                if (relation == null) break;
-
-                var malurl = relation.Entry.FirstOrDefault();
-                if (malurl == null) break;
-
-                aid = malurl.MalId;
-                anime = (await _jikan.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false)).Data;
-
-                if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) ||
-    !(anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase) || anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase)))
-                {
-                    seasonNumber++;
-                }
-            }
-
-            return anime;
+            _log.LogInformation("Populating Episode Anime info for: {malId}", aid);
+            return (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
         }
 
         private async Task<(int episodeNumber, long? malID)> GetEpisodeNumberAsync(
@@ -140,29 +99,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return (episodeNumber, anime.MalId);
         }
 
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo searchInfo, CancellationToken cancellationToken)
+        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-
-            var malId = searchInfo.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList);
-            if (!string.IsNullOrEmpty(malId))
+            long? aid = MyAnimeListSearchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            if (aid.HasValue)
             {
-                var aid = long.Parse(malId);
-                var episode = (await _jikan.GetAnimeEpisodeAsync(aid, searchInfo.IndexNumber.Value, cancellationToken).ConfigureAwait(false)).Data;
-
-                if (episode != null)
+                AnimeSearchResult aid_result = new AnimeSearchResult();
+                aid_result.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
+                if (aid_result.anime != null)
                 {
-                    results.Add(new EpisodeSearchResult { episode = episode }.ToSearchResult());
-                }
-            }
-
-            if (!string.IsNullOrEmpty(searchInfo.Name))
-            {
-                var animeList = (await _jikan.SearchAnimeAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false)).Data;
-
-                if (animeList != null)
-                {
-                    results.AddRange(animeList.Select(anime => new AnimeSearchResult { anime = anime }.ToSearchResult()));
+                    results.Add(aid_result.ToSearchResult());
                 }
             }
 
