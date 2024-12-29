@@ -15,6 +15,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         private readonly ILogger<MyAnimeListSeriesProvider> _log;
         private readonly Jikan _jikan;
+        private MyAnimeListSearchHelper _searchHelper;
         public int Order => -2;
         public string Name => "MyAnimeList";
 
@@ -22,11 +23,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             _log = logger;
             _jikan = JikanSingleton.Instance;
+            _searchHelper = new MyAnimeListSearchHelper(_jikan);
         }
 
         public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
         {
-            long? aid = MyAnimeListSearchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
             MetadataResult<Series> result = new MetadataResult<Series>();
             if (!aid.HasValue) return result;
             Anime media = await GetAnimeInfoAsync(aid.Value, cancellationToken);
@@ -53,7 +55,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo info, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-            long? aid = MyAnimeListSearchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
 
             if (aid.HasValue)
             {

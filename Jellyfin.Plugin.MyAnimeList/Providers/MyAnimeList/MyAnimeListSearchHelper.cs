@@ -10,9 +10,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class MyAnimeListSearchHelper
     {
-        private static readonly Jikan _jikan = JikanSingleton.Instance;
+        private readonly Jikan _jikan;
 
-        public static async Task<long?> GetAnimeIdAsync(ItemLookupInfo info, CancellationToken cancellationToken)
+        public MyAnimeListSearchHelper(Jikan _jikan) {
+            this._jikan = _jikan;
+        }
+
+        public async Task<long?> GetAnimeIdAsync(ItemLookupInfo info, CancellationToken cancellationToken)
         {
             string malId = info switch
             {
@@ -34,7 +38,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return malIdFromName;
         }
 
-        private static string GetSearchName(ItemLookupInfo info)
+        private string GetSearchName(ItemLookupInfo info)
         {
             string[] splitPath = info.Path.Split('\\');
             return info switch
@@ -49,7 +53,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        public static async Task<long?> NameToMalIdAsync(string searchName, bool isMovie)
+        public async Task<long?> NameToMalIdAsync(string searchName, bool isMovie)
         {
             searchName = Regex.Replace(searchName, @"(\s|\.)S[0-9]{1,2}", string.Empty); // Remove season designation
             searchName = Regex.Replace(searchName, @"\s*~(\w|[0-9]|\s)+~", string.Empty); // Remove ALT NAME
@@ -61,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return await MALNameSearch.GetFirstAnimeID(searchName, isMovie);
         }
 
-        private static async Task<long?> GetAnimeBySeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
+        private async Task<long?> GetAnimeBySeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
         {
             for (int currentSeason = 1; currentSeason < seasonNumber; currentSeason++)
             {
