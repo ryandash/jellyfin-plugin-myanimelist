@@ -25,8 +25,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 _ => info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList)
             };
 
-            if (!string.IsNullOrEmpty(malId))
+            var config = Plugin.Instance.Configuration;
+            if (!string.IsNullOrEmpty(malId) && !config.IgnoreMetadata)
+            {
                 return long.Parse(malId);
+            }
 
             string searchName = GetSearchName(info);
             long? malIdFromName = await NameToMalIdAsync(searchName, info is MovieInfo);
@@ -50,6 +53,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 EpisodeInfo => splitPath[^2].Contains("season", StringComparison.OrdinalIgnoreCase)
                     ? splitPath[^3]
                     : splitPath[^2],
+                SeriesInfo => splitPath[^1],
+                MovieInfo => splitPath[^1],
                 _ => info.Name
             };
         }

@@ -56,5 +56,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         public AnimeDefaultGenreType AnimeDefaultGenre { get; set; }
 
+        /// <summary>
+        /// Determines whether existing metadata should be ignored.
+        /// </summary>
+        public bool IgnoreMetadata { get; set; }
     }
 }

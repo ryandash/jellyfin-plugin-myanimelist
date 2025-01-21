@@ -53,6 +53,12 @@
                                 <option id="optDefaultGenreAnimation" value="Animation">Animation</option>
                             </select>
                         </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
+                                <span>Check this to ignore existing metadata when fetching new data.</span>
+                            </label>
+                        </div>
                         <div>
                             <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                                 <span>Save</span>
@@ -76,6 +82,7 @@
                             document.getElementById('chkMaxPeople').value = config.MaxPeople;
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
                             document.getElementById('animeDefaultGenre').value = config.AnimeDefaultGenre;
+                            document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
 
                             Dashboard.hideLoadingMsg();
                         });
@@ -91,6 +98,7 @@
                             config.MaxPeople = document.getElementById('chkMaxPeople').value;
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
                             config.AnimeDefaultGenre = document.getElementById('animeDefaultGenre').value;
+                            config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
                                 Dashboard.processPluginConfigurationUpdateResult(result);
