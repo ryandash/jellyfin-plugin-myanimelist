@@ -1,1 +1,5 @@
-64566f7 Update MyAnimeListSearchHelper.cs
+dc5cbb8 Fix searching bug
+
+- Searching for anime using the folder name instead of the title specified on Jellyfin. If another provider or the user changes the title to a different language then the search can be using invalid data.
+
+- Add option to not use saved MyAnimeList Id metadata and instead always search using the folder name.
