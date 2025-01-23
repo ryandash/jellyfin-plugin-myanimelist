@@ -53,12 +53,14 @@
                                 <option id="optDefaultGenreAnimation" value="Animation">Animation</option>
                             </select>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
-                                <span>Check this to ignore existing metadata when fetching new data.</span>
-                            </label>
-                        </div>
+                        <label class="emby-checkbox-label">
+                            <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
+                            <span>Ignore existing metadata when fetching new data.</span>
+                        </label>
+                        <label class="emby-checkbox-label">
+                            <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
+                            <span>Enable more debug information.</span>
+                        </label>
                         <div>
                             <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                                 <span>Save</span>
@@ -83,6 +85,7 @@
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
                             document.getElementById('animeDefaultGenre').value = config.AnimeDefaultGenre;
                             document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
+                            document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
                             Dashboard.hideLoadingMsg();
                         });
@@ -99,6 +102,7 @@
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
                             config.AnimeDefaultGenre = document.getElementById('animeDefaultGenre').value;
                             config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
+                            config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
                                 Dashboard.processPluginConfigurationUpdateResult(result);

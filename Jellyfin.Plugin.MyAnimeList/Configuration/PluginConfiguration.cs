@@ -60,5 +60,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         /// Determines whether existing metadata should be ignored.
         /// </summary>
         public bool IgnoreMetadata { get; set; }
+
+        public bool EnableDebug { get; set; }
     }
 }

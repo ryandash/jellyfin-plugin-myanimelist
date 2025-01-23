@@ -1,3 +1,4 @@
+using ICU4N.Util;
 using JikanDotNet;
 using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Providers;
@@ -64,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         private async Task<JikanDotNet.Anime> GetAnimeInfoAsync(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             if (!aid.HasValue || info.Path == null || !info.IndexNumber.HasValue) return null;
 
             _log.LogInformation("Populating Episode Anime info for: {malId}", aid);
@@ -103,19 +104,21 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            var results = new List<RemoteSearchResult>();
-            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            var result = new List<RemoteSearchResult>();
+            if (info.Path == null || !info.IndexNumber.HasValue) return result;
+
+            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             if (aid.HasValue)
             {
-                AnimeSearchResult aid_result = new AnimeSearchResult();
-                aid_result.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-                if (aid_result.anime != null)
+                var searchResult = new AnimeSearchResult();
+                searchResult.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
+                if (searchResult.anime != null)
                 {
-                    results.Add(aid_result.ToSearchResult());
+                    result.Add(searchResult.ToSearchResult());
                 }
             }
 
-            return results;
+            return result;
         }
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)

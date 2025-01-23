@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)
         {
-            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             MetadataResult<Series> result = new MetadataResult<Series>();
             if (!aid.HasValue) return result;
             Anime media = await GetAnimeInfoAsync(aid.Value, cancellationToken);
@@ -54,20 +54,21 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeriesInfo info, CancellationToken cancellationToken)
         {
-            var results = new List<RemoteSearchResult>();
-            long? aid = _searchHelper.GetAnimeIdAsync(info, cancellationToken).Result;
+            var result = new List<RemoteSearchResult>();
+            if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
+            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             if (aid.HasValue)
             {
-                AnimeSearchResult result = new AnimeSearchResult();
-                result.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-                if (result.anime != null)
+                var searchResult = new AnimeSearchResult();
+                searchResult.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
+                if (searchResult.anime != null)
                 {
-                    results.Add(result.ToSearchResult());
+                    result.Add(searchResult.ToSearchResult());
                 }
             }
 
-            return results;
+            return result;
         }
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
