@@ -41,7 +41,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonLanguageFilterPreference = LanguageFilterType.All;
             MaxPeople = 0;
             MaxGenres = 5;
-            AnimeDefaultGenre = AnimeDefaultGenreType.Anime;
         }
 
         public TitlePreferenceType TitlePreference { get; set; }
@@ -54,13 +53,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         public int MaxGenres { get; set; }
 
-        public AnimeDefaultGenreType AnimeDefaultGenre { get; set; }
-
-        /// <summary>
-        /// Determines whether existing metadata should be ignored.
-        /// </summary>
         public bool IgnoreMetadata { get; set; }
 
         public bool EnableDebug { get; set; }
+
+        public bool IgnoreBestAttempt { get; set; }
     }
 }

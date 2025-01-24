@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
@@ -30,7 +31,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             long? malId = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             MetadataResult<Movie> result = new MetadataResult<Movie>();
             if (!malId.HasValue) return result;
-            Anime media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
+
+            var media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
             if (media == null || media.anime == null) return result;
 
             result.HasMetadata = true;
@@ -43,7 +45,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         private async Task<Anime> GetAnimeInfoAsync(long malId, MovieInfo info, CancellationToken cancellationToken)
         {
             _log.LogInformation("Populating Movie metadata for: {straid}", malId);
-            Anime media = new Anime
+            var media = new Anime
             {
                 anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data,
                 characters = (await _jikan.GetAnimeCharactersAsync(malId, cancellationToken).ConfigureAwait(false)).Data

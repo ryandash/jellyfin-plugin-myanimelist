@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -44,7 +45,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             long aid = long.Parse(malId);
             _log.LogInformation("Populating Images metadata for: {malId}", aid);
-            Anime media = new Anime();
+            var media = new Anime();
             media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
             if (media.anime != null)
             {

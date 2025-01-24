@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
@@ -33,7 +34,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             long? malId = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             if (!malId.HasValue) return result;
-            Anime media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
+
+            var media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
             if (media.anime == null) return result;
 
             result.HasMetadata = true;
@@ -46,7 +48,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         private async Task<Anime> GetAnimeInfoAsync(long malId, SeasonInfo info, CancellationToken cancellationToken)
         {
             _log.LogInformation("Populating Season metadata for: {straid}", malId);
-            Anime media = new Anime
+            var media = new Anime
             {
                 anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data,
                 characters = (await _jikan.GetAnimeCharactersAsync(malId, cancellationToken).ConfigureAwait(false)).Data

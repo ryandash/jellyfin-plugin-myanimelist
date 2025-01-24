@@ -1,4 +1,4 @@
-using ICU4N.Util;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Providers;
@@ -36,11 +36,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             MetadataResult<Episode> result = new MetadataResult<Episode>();
             if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
-
             var anime = await GetAnimeInfoAsync(info, cancellationToken).ConfigureAwait(false);
             if (anime == null) return result;
-            (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
 
+            (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
             EpisodeSearchResult episode = new EpisodeSearchResult();
             try
             {
