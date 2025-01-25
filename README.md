@@ -2,7 +2,7 @@
 
 ## About
 
-This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/).
+This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/) and MyAnimeList.
 
 Folders must be formatted as shown below to get valid season information.\
 For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.\
@@ -51,7 +51,7 @@ Anime
 1. Navigate to Settings > Admin Dashboard > Plugins > Repositories
 2. Add a new repository with a `Repository URL` of `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/main/manifest.json`. The name can be anything you like.
 3. Save, and navigate to Catalogue.
-4. myanimelist should be present. Click on it and install the latest version.
+4. Myanimelist should be present. Click on it and install the latest version.
 5. Navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
 
 ### Manual
@@ -66,9 +66,9 @@ Anime
 
 ### Building from visual studio
 
-1. Git clone the latest version of this repository, [AnitomySharp](https://github.com/Xabis/AnitomySharp), and [jikan.net](https://github.com/Ervie/jikan.net), or any fork of the repositories
+1. Git clone the latest version of this repository and [jikan.net](https://github.com/Ervie/jikan.net) or any fork
 2. Download and install visual studio with .Net desktop development
-3. Build AnitomySharp and jikan.net
+3. Build jikan.net
 4. Open my repository solution and add any missing references and build
 5. By default a debug build should output to `$(USERPROFILE)\AppData\Local\jellyfin\plugins\myanimelist`, if not then Copy all dll files from the output directory to [Jellyfins Plugin directory](https://jellyfin.org/docs/general/server/plugins/) under plugins/myanimelist
 7. Restart Jellyfin Server (Administration> Dashboard > Restart) and navigate to Plugins in Jellyfin (Administration > Dashboard > My Plugins) to verify installation.
