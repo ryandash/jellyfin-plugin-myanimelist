@@ -1,3 +1,5 @@
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using JikanDotNet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +11,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public static class MyAnimeListApi
     {
-        private static readonly HttpClient client = new HttpClient();
+        private static readonly HttpClient _client = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(5)
+        };
+        private static readonly Jikan _jikan = JikanSingleton.Instance;
+
+        private const string MyAnimeListSearchApi = "https://myanimelist.net/search/prefix.json?type=anime&keyword=";
 
         public class Root
         {
@@ -24,7 +32,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public class Item
         {
             public int id { get; set; }
-            public string name { get; set; }
             public Payload payload { get; set; }
         }
 
@@ -33,41 +40,57 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             public string media_type { get; set; }
         }
 
-        private static string MyAnimeListSearchApi = "https://myanimelist.net/search/prefix.json?type=anime&keyword=";
-
-        public static async Task<long?> GetFirstAnimeID(string searchTerm, bool isMovie, bool ignoreBestAttempt)
+        public static async Task<long?> GetBestAnimeID(string searchTerm, bool isMovie, bool ignoreBestAttempt)
         {
-            string url = MyAnimeListSearchApi + Uri.EscapeDataString(searchTerm);
-            HttpResponseMessage response = await client.GetAsync(url);
-
-            if (response.IsSuccessStatusCode)
+            string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
+            var response = await _client.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
             {
-                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return null;
+            }
 
-                var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse, new JsonSerializerOptions
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            Func<string, bool> mediaTypeCondition = isMovie
+                ? mediaType => string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase)
+                : mediaType => !string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase);
+
+            var filteredItems = searchResult.categories
+                .SelectMany(category => category.items)
+                .Where(item => mediaTypeCondition(item.payload.media_type))
+                .ToList();
+
+            long? backupID = null;
+            foreach (var item in filteredItems)
+            {
+                var animeDetails = await _jikan.GetAnimeAsync(item.id);
+                foreach (var title in animeDetails.Data.Titles)
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    string originalTitle = title.Title;
+                    string normalizedTitle = originalTitle.Replace(":", string.Empty);
 
-                var filteredItems = searchResult.categories
-                    .SelectMany(category => category.items)
-                    .Where(item => isMovie
-                        ? item.payload.media_type == "Movie"
-                        : item.payload.media_type != "Movie");
+                    if (string.Equals(originalTitle, searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(normalizedTitle, searchTerm, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return item.id;
+                    }
 
-                var foundItem = filteredItems.FirstOrDefault(item => item.name.Equals(searchTerm, StringComparison.OrdinalIgnoreCase));
-
-                if (foundItem != null)
-                {
-                    return foundItem.id;
-                }
-                else if (!ignoreBestAttempt)
-                {
-                    return filteredItems.FirstOrDefault()?.id ?? null;
+                    if (backupID == null && originalTitle.Contains(':'))
+                    {
+                        int colonIndex = originalTitle.IndexOf(':');
+                        string firstPart = originalTitle[..colonIndex].Trim();
+                        if (string.Equals(firstPart, searchTerm, StringComparison.OrdinalIgnoreCase))
+                        {
+                            backupID = item.id;
+                        }
+                    }
                 }
             }
 
-            return null;
+            return backupID ?? (ignoreBestAttempt ? null : filteredItems.FirstOrDefault()?.id);
         }
     }
 }

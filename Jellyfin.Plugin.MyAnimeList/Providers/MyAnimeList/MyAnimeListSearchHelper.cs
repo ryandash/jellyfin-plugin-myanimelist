@@ -45,15 +45,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             string searchName = GetSearchName(info);
             if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
-            long? malIdFromName = await NameToMalIdAsync(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt);
+            long? malIdFromName = await NameToMalIdAsync(searchName, info is MovieInfo, config.IgnoreBestAttempt);
+
             if (malIdFromName.HasValue)
             {
                 if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
-                if ((info is SeasonInfo || info is EpisodeInfo || info is SeriesInfo) && malIdFromName.HasValue)
+                if (info is SeasonInfo || info is EpisodeInfo || info is SeriesInfo)
                 {
                     return await GetAnimeBySeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
                 }
+            } else
+            {
+                if (enableDebug) _log.LogInformation("Could not find MalID for: {searchName}", searchName);
             }
+
             return malIdFromName;
         }
 
@@ -68,7 +73,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 EpisodeInfo => splitPath[^2].Contains("season", StringComparison.OrdinalIgnoreCase)
                     ? splitPath[^3]
                     : splitPath[^2],
-                SeriesInfo or MovieInfo => splitPath[^1],
+                SeriesInfo => splitPath[^1],
+                MovieInfo => splitPath.Length > 2 ? splitPath[^2] : splitPath[^1],
                 _ => info.Name
             };
         }
@@ -80,7 +86,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private static readonly Regex HashRegex = new Regex(@"#", RegexOptions.Compiled);
         private static readonly Regex JellyfinFolderFormatRegex = new Regex(@"\([0-9]{4}\)\s*\[(\w|[0-9]|-)+\]$", RegexOptions.Compiled);
 
-        public async Task<long?> NameToMalIdAsync(ILogger _log, string searchName, bool isMovie, bool ignoreFirstChoice)
+        public async Task<long?> NameToMalIdAsync(string searchName, bool isMovie, bool ignoreFirstChoice)
         {
             searchName = SeasonRegex.Replace(searchName, string.Empty);               // Remove season designation
             searchName = AltNameRegex.Replace(searchName, string.Empty);              // Remove ALT NAME
@@ -88,10 +94,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             searchName = AmpersandRegex.Replace(searchName, " and ");                 // Replace "&" with "and"
             searchName = HashRegex.Replace(searchName, " ");                          // Replace "#" with space
             searchName = JellyfinFolderFormatRegex.Replace(searchName, string.Empty); // Truncate Jellyfin folder format
-            searchName = searchName.Replace("×", "x");                                // Replace Multiply "×" with "x"
-            searchName = searchName.Trim();
 
-            return await MyAnimeListApi.GetFirstAnimeID(searchName, isMovie, ignoreFirstChoice);
+            return await MyAnimeListApi.GetBestAnimeID(searchName.Trim(), isMovie, ignoreFirstChoice);
         }
 
         private async Task<long?> GetAnimeBySeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)
@@ -115,7 +119,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
 
             var animeTitle = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data.Titles.First().Title;
-
             if (enableDebug) _log.LogInformation("New name: {animeTitle}", animeTitle);
             if (enableDebug) _log.LogInformation("New MalID: {searchName}", malId);
 
