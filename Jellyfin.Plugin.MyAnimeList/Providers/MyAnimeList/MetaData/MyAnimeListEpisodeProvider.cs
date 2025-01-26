@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var anime = await GetAnimeInfoAsync(info, cancellationToken).ConfigureAwait(false);
             if (anime == null) return result;
 
-            (var episodeNumber, anime.MalId) = await GetEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
+            (var episodeNumber, anime.MalId) = await GetSeasonEpisodeNumberAsync(info, anime, cancellationToken).ConfigureAwait(false);
             EpisodeSearchResult episode = new EpisodeSearchResult();
             try
             {
@@ -49,7 +49,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             {
                 // It is normal for some episode data to not exist on myanimelist
             }
-            if (episode == null || episode.episode == null) return result;
+            if (episode.episode == null) return result;
 
             anime = (await _jikan.GetAnimeAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)).Data;
             if (anime == null) return result;
@@ -71,7 +71,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
         }
 
-        private async Task<(int episodeNumber, long? malID)> GetEpisodeNumberAsync(
+        private async Task<(int episodeNumber, long? malID)> GetSeasonEpisodeNumberAsync(
     EpisodeInfo info, JikanDotNet.Anime anime, CancellationToken cancellationToken)
         {
             int episodeNumber = info.IndexNumber.Value;

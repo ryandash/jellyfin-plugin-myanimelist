@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
+namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
     public static class MyAnimeListApi
     {

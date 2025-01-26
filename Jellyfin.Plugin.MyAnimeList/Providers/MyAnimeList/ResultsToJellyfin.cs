@@ -17,46 +17,29 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     {
         public AnimeEpisode episode { get; set; }
 
-        public string GetPreferredTitle(TitlePreferenceType preference, string language)
-        {
-            return preference switch
-            {
-                TitlePreferenceType.Localized => language switch
-                {
-                    "en" => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese,
-                    "jap" => episode.TitleJapanese ?? episode.TitleRomanji ?? episode.Title,
-                    _ => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese
-                },
-                TitlePreferenceType.Japanese => episode.TitleJapanese ?? episode.TitleRomanji ?? episode.Title,
-                _ => episode.Title ?? episode.TitleRomanji ?? episode.TitleJapanese
-            };
-        }
-
         public DateTime? GetDate() => episode.Aired;
 
         internal Episode ToEpisode(int totalDigits)
         {
-            var config = Plugin.Instance.Configuration;
+            _ = Plugin.Instance.Configuration;
 
             return new Episode
             {
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
-                Name = GetPreferredTitle(config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                Name = episode.Title,
                 ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
                 Overview = episode.Synopsis
-
             };
         }
 
         public RemoteSearchResult ToSearchResult()
         {
-            var config = Plugin.Instance.Configuration;
+            _ = Plugin.Instance.Configuration;
             return new RemoteSearchResult
             {
-                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                Name = episode.Title,
                 ProductionYear = GetDate().HasValue ? GetDate().Value.Year : null,
                 PremiereDate = GetDate(),
                 SearchProviderName = ProviderNames.MyAnimeList,

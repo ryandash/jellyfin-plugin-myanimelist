@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
@@ -54,7 +55,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 {
                     return await GetAnimeBySeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
                 }
-            } else
+            }
+            else
             {
                 if (enableDebug) _log.LogInformation("Could not find MalID for: {searchName}", searchName);
             }
