@@ -46,14 +46,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             string searchName = GetSearchName(info);
             if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
-            long? malIdFromName = await NameToMalIdAsync(searchName, info is MovieInfo, config.IgnoreBestAttempt);
-
+            long? malIdFromName = await GetBestAnimeID(FilterName(searchName), info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
             if (malIdFromName.HasValue)
             {
                 if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
                 if (info is SeasonInfo || info is EpisodeInfo || info is SeriesInfo)
                 {
-                    return await GetAnimeBySeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
+                    return await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
                 }
             }
             else
@@ -88,7 +87,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private static readonly Regex HashRegex = new Regex(@"#", RegexOptions.Compiled);
         private static readonly Regex JellyfinFolderFormatRegex = new Regex(@"\([0-9]{4}\)\s*\[(\w|[0-9]|-)+\]$", RegexOptions.Compiled);
 
-        public async Task<long?> NameToMalIdAsync(string searchName, bool isMovie, bool ignoreFirstChoice)
+        public string FilterName(string searchName)
         {
             searchName = SeasonRegex.Replace(searchName, string.Empty);               // Remove season designation
             searchName = AltNameRegex.Replace(searchName, string.Empty);              // Remove ALT NAME
@@ -97,10 +96,53 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             searchName = HashRegex.Replace(searchName, " ");                          // Replace "#" with space
             searchName = JellyfinFolderFormatRegex.Replace(searchName, string.Empty); // Truncate Jellyfin folder format
 
-            return await MyAnimeListApi.GetBestAnimeID(searchName.Trim(), isMovie, ignoreFirstChoice);
+            return searchName.Trim();
         }
 
-        private async Task<long?> GetAnimeBySeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)
+        public async Task<long?> GetBestAnimeID(string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
+        {
+            var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
+
+            Func<string, bool> mediaTypeCondition = isMovie
+                ? mediaType => string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase)
+                : mediaType => !string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase);
+
+            var filteredAnime = searchResults.Data
+                .Where(anime => mediaTypeCondition(anime.Type))
+                .Select(anime => new
+                {
+                    anime.MalId,
+                    Titles = anime.Titles.Select(t => t.Title)
+                });
+
+            long? backupID = null; // Abbreviated anime folder names
+            foreach (var anime in filteredAnime)
+            {
+                foreach (var title in anime.Titles)
+                {
+                    string normalizedTitle = title.Replace(":", string.Empty);
+
+                    if (title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        normalizedTitle.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return anime.MalId;
+                    }
+
+                    if (backupID == null && title.Contains(':'))
+                    {
+                        string firstPart = title[..title.IndexOf(':')].Trim();
+                        if (firstPart.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+                        {
+                            backupID = anime.MalId;
+                        }
+                    }
+                }
+            }
+
+            return backupID ?? (ignoreBestAttempt ? null : await MyAnimeListApi.GetBestAttemptId(searchTerm, cancellationToken));
+        }
+
+        private async Task<long?> GetCurrentAnimeSeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)
         {
             for (int currentSeason = 1; currentSeason < seasonNumber; currentSeason++)
             {
