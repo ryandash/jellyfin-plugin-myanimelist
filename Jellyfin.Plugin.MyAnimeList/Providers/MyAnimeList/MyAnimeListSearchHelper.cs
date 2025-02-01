@@ -57,7 +57,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
             else
             {
-                if (enableDebug) _log.LogInformation("Could not find MalID for: {searchName}", searchName);
+                if (enableDebug) _log.LogError("Could not find MalID for: {searchName}", searchName);
             }
 
             return malIdFromName;
@@ -99,6 +99,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return searchName.Trim();
         }
 
+        private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
+
         public async Task<long?> GetBestAnimeID(string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
@@ -120,10 +122,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 foreach (var title in anime.Titles)
                 {
-                    string normalizedTitle = title.Replace(":", string.Empty);
+                    searchTerm = NormalizeRegex.Replace(searchTerm, string.Empty);
 
                     if (title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        normalizedTitle.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+                        NormalizeRegex.Replace(title, string.Empty).Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
                     {
                         return anime.MalId;
                     }
