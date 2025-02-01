@@ -1,6 +1,3 @@
-7fe88ac Minor Cleanup
+93a9be6 Solve more potential folder name issues
 
-- Shift Jikan Api to it's own class
-- Make an API folder
-- Move some classes to different packages
-- Cleanup
+- Replace all periods, colons, and exclamation marks when searching
