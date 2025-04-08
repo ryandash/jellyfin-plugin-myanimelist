@@ -66,7 +66,7 @@ Anime
 
 ### Building from visual studio
 
-1. Git clone the latest version of this repository and [jikan.net](https://github.com/Ervie/jikan.net) or any fork
+1. Git clone the latest version of this repository, [jikan.net](https://github.com/Ervie/jikan.net), and [FuzzierSharp](https://github.com/AtriaStar/FuzzierSharp)
 2. Download and install visual studio with .Net desktop development
 3. Build jikan.net
 4. Open my repository solution and add any missing references and build
