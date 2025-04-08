@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <Version>6.1.1</Version>
-    <AssemblyVersion>6.1.1</AssemblyVersion>
-    <FileVersion>6.1.1</FileVersion>
+    <Version>6.2.1</Version>
+    <AssemblyVersion>6.2.1</AssemblyVersion>
+    <FileVersion>6.2.1</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -19,7 +19,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.10.5" />
+    <PackageReference Include="FuzzierSharp" Version="3.0.1" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.10.7" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
@@ -32,6 +33,9 @@
   <ItemGroup>
     <Reference Include="JikanDotNet">
       <HintPath>..\..\jikan.net\JikanDotNet\bin\Debug\net8.0\JikanDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="JikanDotNet">
+      <HintPath>..\..\FuzzierSharp\FuzzierSharp\bin\Debug\netstandard2.0\FuzzierSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 

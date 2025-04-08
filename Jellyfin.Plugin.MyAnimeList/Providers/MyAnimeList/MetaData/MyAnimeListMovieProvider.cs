@@ -44,7 +44,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         private async Task<Anime> GetAnimeInfoAsync(long malId, MovieInfo info, CancellationToken cancellationToken)
         {
-            _log.LogInformation("Populating Movie metadata for: {straid}", malId);
             var media = new Anime
             {
                 anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data,

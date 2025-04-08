@@ -28,6 +28,12 @@ jobs:
           repository: Ervie/jikan.net
           path: jikan.net
 
+      - name: Checkout FuzzierSharp Repository
+        uses: actions/checkout@v4
+        with:
+          repository: AtriaStar/FuzzierSharp
+          path: FuzzierSharp
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -43,6 +49,9 @@ jobs:
 
       - name: Build JikanDotNet
         run: dotnet build jikan.net/JikanDotNet --configuration Debug
+
+      - name: Build FuzzierSharp
+        run: dotnet build FuzzierSharp/FuzzierSharp --configuration Debug
 
       - name: Restore Dependencies and Build Main Repo
         run: dotnet build main_repo --configuration Release --framework ${{ inputs.dotnet-target }}

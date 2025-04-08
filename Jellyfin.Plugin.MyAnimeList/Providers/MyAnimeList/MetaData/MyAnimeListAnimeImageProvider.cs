@@ -44,7 +44,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
 
             long aid = long.Parse(malId);
-            _log.LogInformation("Populating Images metadata for: {malId}", aid);
             var media = new Anime();
             media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
             if (media.anime != null)

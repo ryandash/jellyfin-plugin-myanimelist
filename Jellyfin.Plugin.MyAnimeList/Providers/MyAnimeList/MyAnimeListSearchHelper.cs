@@ -46,11 +46,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             string searchName = GetSearchName(info);
             if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
-            long? malIdFromName = await GetBestAnimeID(FilterName(searchName), info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
+            long? malIdFromName = await GetBestAnimeID(_log, FilterName(searchName), info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
             if (malIdFromName.HasValue)
             {
                 if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
-                if (info is SeasonInfo || info is EpisodeInfo || info is SeriesInfo)
+                if (info is SeasonInfo)
                 {
                     return await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
                 }
@@ -87,7 +87,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private static readonly Regex HashRegex = new Regex(@"#", RegexOptions.Compiled);
         private static readonly Regex JellyfinFolderFormatRegex = new Regex(@"\([0-9]{4}\)\s*\[(\w|[0-9]|-)+\]$", RegexOptions.Compiled);
 
-        public string FilterName(string searchName)
+        private string FilterName(string searchName)
         {
             searchName = SeasonRegex.Replace(searchName, string.Empty);               // Remove season designation
             searchName = AltNameRegex.Replace(searchName, string.Empty);              // Remove ALT NAME
@@ -101,7 +101,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
 
-        public async Task<long?> GetBestAnimeID(string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
+        private async Task<long?> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
 
@@ -117,31 +117,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     Titles = anime.Titles.Select(t => t.Title)
                 });
 
-            long? backupID = null; // Abbreviated anime folder names
+            searchTerm = NormalizeRegex.Replace(searchTerm, string.Empty);
             foreach (var anime in filteredAnime)
             {
                 foreach (var title in anime.Titles)
                 {
-                    searchTerm = NormalizeRegex.Replace(searchTerm, string.Empty);
-
-                    if (title.Equals(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        NormalizeRegex.Replace(title, string.Empty).Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    var similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(title, string.Empty), searchTerm);
+                    if (similarity >= 90 || title.Contains(searchTerm))
                     {
                         return anime.MalId;
-                    }
-
-                    if (backupID == null && title.Contains(':'))
-                    {
-                        string firstPart = title[..title.IndexOf(':')].Trim();
-                        if (firstPart.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
-                        {
-                            backupID = anime.MalId;
-                        }
                     }
                 }
             }
 
-            return backupID ?? (ignoreBestAttempt ? null : await MyAnimeListApi.GetBestAttemptId(searchTerm, cancellationToken));
+            return (ignoreBestAttempt ? null : await MyAnimeListApi.GetBestAttemptId(searchTerm, isMovie, cancellationToken));
         }
 
         private async Task<long?> GetCurrentAnimeSeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,9 +26,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         public class Item
         {
             public int id { get; set; }
+            public string name { get; set; }
+            public Payload payload { get; set; }
         }
 
-        public static async Task<long?> GetBestAttemptId(string searchTerm, CancellationToken cancellationToken)
+        public class Payload
+        {
+            public string media_type { get; set; }
+        }
+
+        public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, CancellationToken cancellationToken)
         {
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
@@ -38,7 +46,30 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
             var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse) ?? new Root();
 
-            return searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id;
+            Func<string, bool> mediaTypeCondition = isMovie
+                ? mediaType => string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase)
+                : mediaType => !string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase);
+
+            int highestSimilarity = 0;
+            var bestItem = (Item)null;
+
+            foreach (var category in searchResult.categories)
+            {
+                foreach (var item in category.items)
+                {
+                    if (!mediaTypeCondition(item.payload.media_type)) continue;
+
+                    var similarity = FuzzierSharp.Fuzz.Ratio(item.name, searchTerm);
+
+                    if (similarity > highestSimilarity)
+                    {
+                        highestSimilarity = similarity;
+                        bestItem = item;
+                    }
+                }
+            }
+
+            return highestSimilarity>90 ? bestItem?.id: searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id;
         }
     }
 }
