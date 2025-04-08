@@ -1,7 +1,1 @@
-a1dec2b Use Fuzzier for string comparison
-
-- Change to using FuzzierSharp instead of string equals to allow for some minor variations in strings without allowing too many false positives
-- Remove backup string and replace with a check if the title contains the searchName (Can produce false positives for poorly named anime but alllows simpler names)
-- Minor cleanup + reduce log spam
-- Fix bug where the wrong season and episode information could be added t Episode ExternalID
-- Jellyfin.Controller Version Bump
+920583f Merge branch 'main' of https://github.com/ryandash/jellyfin-plugin-myanimelist
