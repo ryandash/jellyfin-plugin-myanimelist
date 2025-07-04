@@ -2,7 +2,9 @@ using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -101,36 +103,70 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
 
-        private async Task<long?> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
+        private async Task<long?> GetBestAnimeID(
+    ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
+            string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty);
 
-            Func<string, bool> mediaTypeCondition = isMovie
-                ? mediaType => string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase)
-                : mediaType => !string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase);
+            long? bestBackupMalId = null;
+            int bestBackupSimilarity = -1;
 
-            var filteredAnime = searchResults.Data
-                .Where(anime => mediaTypeCondition(anime.Type))
-                .Select(anime => new
-                {
-                    anime.MalId,
-                    Titles = anime.Titles.Select(t => t.Title)
-                });
-
-            searchTerm = NormalizeRegex.Replace(searchTerm, string.Empty);
-            foreach (var anime in filteredAnime)
+            foreach (var anime in searchResults.Data)
             {
-                foreach (var title in anime.Titles)
+                bool isCorrectType = isMovie
+                    ? string.Equals(anime.Type, "Movie", StringComparison.OrdinalIgnoreCase)
+                    : !string.Equals(anime.Type, "Movie", StringComparison.OrdinalIgnoreCase);
+
+                if (!isCorrectType)
+                    continue;
+
+                foreach (var titleObj in anime.Titles)
                 {
-                    var similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(title, string.Empty), searchTerm);
-                    if (similarity >= 90 || title.Contains(searchTerm))
-                    {
+                    string title = titleObj.Title;
+                    string normalizedTitle = NormalizeRegex.Replace(title, string.Empty);
+
+                    // Case 1: direct similarity check
+                    int similarity = FuzzierSharp.Fuzz.Ratio(normalizedTitle, normalizedSearch);
+                    if (similarity >= 95)
                         return anime.MalId;
+
+                    // Case 2: if title contains ':', compare first part only
+                    if (title.Contains(':'))
+                    {
+                        string firstPart = title[..title.IndexOf(':')].Trim();
+                        if (!string.IsNullOrEmpty(firstPart))
+                        {
+                            string normalizedFirstPart = NormalizeRegex.Replace(firstPart, string.Empty);
+                            int partSimilarity = FuzzierSharp.Fuzz.Ratio(normalizedFirstPart, normalizedSearch);
+                            if (partSimilarity >= 95)
+                                return anime.MalId;
+
+                            if (partSimilarity > bestBackupSimilarity)
+                            {
+                                bestBackupMalId = anime.MalId;
+                                bestBackupSimilarity = partSimilarity;
+                                continue;
+                            }
+                        }
+                    }
+
+                    // Case 3: if title contains the searchTerm as substring
+                    if (title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) &&
+                        similarity > bestBackupSimilarity)
+                    {
+                        bestBackupMalId = anime.MalId;
+                        bestBackupSimilarity = similarity;
                     }
                 }
             }
 
-            return (ignoreBestAttempt ? null : await MyAnimeListApi.GetBestAttemptId(searchTerm, isMovie, cancellationToken));
+            if (bestBackupMalId.HasValue && !ignoreBestAttempt)
+                return bestBackupMalId;
+
+            return ignoreBestAttempt
+                ? null
+                : await MyAnimeListApi.GetBestAttemptId(searchTerm, isMovie, cancellationToken);
         }
 
         private async Task<long?> GetCurrentAnimeSeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,7 +68,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 }
             }
 
-            return highestSimilarity>90 ? bestItem?.id: searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id;
+            return highestSimilarity > 95 ? bestItem?.id : searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id;
         }
     }
 }
