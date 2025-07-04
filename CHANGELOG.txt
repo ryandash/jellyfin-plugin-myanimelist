@@ -1,1 +1,5 @@
-920583f Merge branch 'main' of https://github.com/ryandash/jellyfin-plugin-myanimelist
+0226e60 Handle abbreviated titles better
+
+- Get better results when the folder titles are abbreviated
+
+- Enforce more precise similarity between folder and MAL titles to reduce the number of false positives
