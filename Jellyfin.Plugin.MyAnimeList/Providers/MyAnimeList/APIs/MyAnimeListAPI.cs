@@ -58,7 +58,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 {
                     if (!mediaTypeCondition(item.payload.media_type)) continue;
 
-                    var similarity = FuzzierSharp.Fuzz.Ratio(item.name, searchTerm);
+                    var similarity = FuzzierSharp.Fuzz.Ratio(item.name.ToLowerInvariant(), searchTerm);
 
                     if (similarity > highestSimilarity)
                     {

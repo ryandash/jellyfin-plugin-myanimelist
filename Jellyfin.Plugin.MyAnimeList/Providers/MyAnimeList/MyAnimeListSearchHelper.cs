@@ -107,7 +107,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
-            string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty);
+            string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();
 
             long? bestBackupMalId = null;
             int bestBackupSimilarity = -1;
@@ -123,11 +123,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                 foreach (var titleObj in anime.Titles)
                 {
-                    string title = titleObj.Title;
-                    string normalizedTitle = NormalizeRegex.Replace(title, string.Empty);
+                    string title = titleObj.Title.ToLowerInvariant();
 
                     // Case 1: direct similarity check
-                    int similarity = FuzzierSharp.Fuzz.Ratio(normalizedTitle, normalizedSearch);
+                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(title, string.Empty), normalizedSearch);
                     if (similarity >= 95)
                         return anime.MalId;
 
@@ -166,7 +165,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return ignoreBestAttempt
                 ? null
-                : await MyAnimeListApi.GetBestAttemptId(searchTerm, isMovie, cancellationToken);
+                : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken);
         }
 
         private async Task<long?> GetCurrentAnimeSeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)
