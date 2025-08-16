@@ -15,7 +15,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         private readonly ILogger _log;
         private readonly Jikan _jikan;
-        private MyAnimeListSearchHelper _searchHelper;
+        private readonly MyAnimeListSearchHelper _searchHelper;
         public int Order => -2;
         public string Name => "MyAnimeList";
 
@@ -28,12 +28,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
         {
-            long? malId = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
             MetadataResult<Movie> result = new MetadataResult<Movie>();
-            if (!malId.HasValue) return result;
+            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return result;
 
-            var media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
-            if (media == null || media.anime == null) return result;
+            Anime media = new Anime
+            {
+                anime = anime,
+                characters = (await _jikan.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data
+            };
 
             result.HasMetadata = true;
             result.Item = media.ToMovie();
@@ -42,29 +45,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<Anime> GetAnimeInfoAsync(long malId, MovieInfo info, CancellationToken cancellationToken)
-        {
-            var media = new Anime
-            {
-                anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data,
-                characters = (await _jikan.GetAnimeCharactersAsync(malId, cancellationToken).ConfigureAwait(false)).Data
-            };
-            return media;
-        }
-
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo info, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
-            if (aid.HasValue)
-            {
-                AnimeSearchResult aid_result = new AnimeSearchResult();
-                aid_result.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-                if (aid_result.anime != null)
-                {
-                    results.Add(aid_result.ToSearchResult());
-                }
-            }
+            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return results;
+
+            AnimeSearchResult aid_result = new AnimeSearchResult();
+            aid_result.anime = anime;
+            results.Add(aid_result.ToSearchResult());
 
             return results;
         }

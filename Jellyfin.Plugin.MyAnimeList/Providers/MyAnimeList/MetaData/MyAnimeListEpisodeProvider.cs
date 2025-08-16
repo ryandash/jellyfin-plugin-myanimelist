@@ -19,7 +19,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         private readonly ILogger<MyAnimeListEpisodeProvider> _log;
         private readonly Jikan _jikan;
-        private MyAnimeListSearchHelper _searchHelper;
+        private readonly MyAnimeListSearchHelper _searchHelper;
 
         public int Order => -2;
         public string Name => "MyAnimeList";
@@ -36,8 +36,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             MetadataResult<Episode> result = new MetadataResult<Episode>();
             if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
-            var anime = await GetAnimeInfoAsync(info, cancellationToken).ConfigureAwait(false);
-            if (anime?.MalId == null) return result;
+            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return result;
 
             var (episodeNumber, seasonNumber, malId) = await GetSeasonEpisodeNumberAsync(
                 info.IndexNumber.Value,
@@ -59,9 +59,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
             if (episodeData == null) return result;
 
-            anime = (await _jikan.GetAnimeAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data;
-            if (anime == null) return result;
-
             episodeResult.episode = episodeData;
             result.HasMetadata = true;
             result.Item = episodeResult.ToEpisode(anime.Episodes?.ToString().Length ?? 4);
@@ -70,21 +67,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<JikanDotNet.Anime> GetAnimeInfoAsync(EpisodeInfo info, CancellationToken cancellationToken)
-        {
-            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
-            if (!aid.HasValue || info.Path == null || !info.IndexNumber.HasValue) return null;
-
-            return (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-        }
-
         private async Task<(int episodeNumber, int seasonNumber, long? malId)> GetSeasonEpisodeNumberAsync(
             int episodeNumber,
             int seasonNumber,
             JikanDotNet.Anime anime,
             CancellationToken cancellationToken)
         {
-            while (anime.Episodes != null && episodeNumber > anime.Episodes)
+            while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
             {
                 episodeNumber -= anime.Episodes.Value;
 
@@ -96,7 +85,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                 seasonNumber++;
                 var sequelAnime = (await _jikan.GetAnimeAsync(sequel.MalId, cancellationToken).ConfigureAwait(false))?.Data;
-                if (sequelAnime == null) break;
+                if (sequelAnime == null || !sequelAnime.Episodes.HasValue || sequelAnime.Episodes.Value == 0) break;
 
                 anime = sequelAnime;
             }
@@ -109,16 +98,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var result = new List<RemoteSearchResult>();
             if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
-            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
-            if (aid.HasValue)
-            {
-                var searchResult = new AnimeSearchResult();
-                searchResult.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-                if (searchResult.anime != null)
-                {
-                    result.Add(searchResult.ToSearchResult());
-                }
-            }
+            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return result;
+
+            var searchResult = new AnimeSearchResult();
+            searchResult.anime = anime;
+            result.Add(searchResult.ToSearchResult());
 
             return result;
         }

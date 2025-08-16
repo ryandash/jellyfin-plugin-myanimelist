@@ -16,7 +16,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         private readonly ILogger<MyAnimeListSeasonProvider> _log;
         private readonly Jikan _jikan;
-        private MyAnimeListSearchHelper _searchHelper;
+        private readonly MyAnimeListSearchHelper _searchHelper;
         public int Order => -2;
         public string Name => "MyAnimeList";
 
@@ -30,13 +30,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Season>();
-            if (info.Path == null || !info.IndexNumber.HasValue) return result;
+            if (string.IsNullOrEmpty(info.Path) || !info.IndexNumber.HasValue) return result;
 
-            long? malId = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
-            if (!malId.HasValue) return result;
+            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return result;
 
-            var media = await GetAnimeInfoAsync(malId.Value, info, cancellationToken).ConfigureAwait(false);
-            if (media.anime == null) return result;
+            Anime media = new Anime
+            {
+                anime = anime,
+                characters = (await _jikan.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data
+            };
 
             result.HasMetadata = true;
             result.Item = media.ToSeason();
@@ -45,31 +48,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<Anime> GetAnimeInfoAsync(long malId, SeasonInfo info, CancellationToken cancellationToken)
-        {
-            var media = new Anime
-            {
-                anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data,
-                characters = (await _jikan.GetAnimeCharactersAsync(malId, cancellationToken).ConfigureAwait(false)).Data
-            };
-            return media;
-        }
-
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(SeasonInfo info, CancellationToken cancellationToken)
         {
             var result = new List<RemoteSearchResult>();
             if (info.Path == null || !info.IndexNumber.HasValue) return result;
 
-            long? aid = _searchHelper.GetAnimeIdAsync(_log, info, cancellationToken).Result;
-            if (aid.HasValue)
-            {
-                var searchResult = new AnimeSearchResult();
-                searchResult.anime = (await _jikan.GetAnimeAsync(aid.Value, cancellationToken).ConfigureAwait(false)).Data;
-                if (searchResult.anime != null)
-                {
-                    result.Add(searchResult.ToSearchResult());
-                }
-            }
+            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            if (anime == null) return result;
+
+            var searchResult = new AnimeSearchResult();
+            searchResult.anime = anime;
+            result.Add(searchResult.ToSearchResult());
 
             return result;
         }

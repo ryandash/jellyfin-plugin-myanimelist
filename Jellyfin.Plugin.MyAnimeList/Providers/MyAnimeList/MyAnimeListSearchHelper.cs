@@ -2,7 +2,6 @@ using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +21,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             this._jikan = _jikan;
         }
 
-        public async Task<long?> GetAnimeIdAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
+        public async Task<JikanDotNet.Anime> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
         {
             string malId = info switch
             {
@@ -35,9 +34,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Original malID: {malID}", malId);
             if (!string.IsNullOrEmpty(malId))
             {
-                if (!config.IgnoreMetadata)
+                if (!config.IgnoreMetadata || info is EpisodeInfo)
                 {
-                    return long.Parse(malId);
+                    return (await _jikan.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false)).Data;
                 }
                 else
                 {
@@ -49,20 +48,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             string searchName = GetSearchName(info);
             if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
             long? malIdFromName = await GetBestAnimeID(_log, FilterName(searchName), info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
-            if (malIdFromName.HasValue)
-            {
-                if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
-                if (info is SeasonInfo)
-                {
-                    return await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken);
-                }
-            }
-            else
+            if (!malIdFromName.HasValue)
             {
                 if (enableDebug) _log.LogError("Could not find MalID for: {searchName}", searchName);
+                return null;
             }
 
-            return malIdFromName;
+            if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
+            return info switch
+            {
+                MovieInfo => (await _jikan.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)).Data,
+                _ => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
+            };
         }
 
         private string GetSearchName(ItemLookupInfo info)
@@ -168,31 +165,79 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken);
         }
 
-        private async Task<long?> GetCurrentAnimeSeasonAsync(ILogger _log, bool enableDebug, long malId, int seasonNumber, CancellationToken cancellationToken)
+        private async Task<JikanDotNet.Anime> GetCurrentAnimeSeasonAsync(
+    ILogger _log, bool enableDebug,
+    long malId, int seasonNumber, CancellationToken cancellationToken)
         {
+            var animeCache = new Dictionary<long, JikanDotNet.Anime>();
+            var relationCache = new Dictionary<long, ICollection<RelatedEntry>>();
+
+            async Task<JikanDotNet.Anime> GetAnimeAsync(long id)
+            {
+                if (!animeCache.TryGetValue(id, out var anime))
+                {
+                    anime = (await _jikan.GetAnimeAsync(id, cancellationToken).ConfigureAwait(false)).Data;
+                    animeCache[id] = anime;
+                }
+                return anime;
+            }
+
+            async Task<long?> GetRelatedAnimeIdAsync(long id, string relationType)
+            {
+                if (!relationCache.TryGetValue(id, out var relations))
+                {
+                    relations = (await _jikan.GetAnimeRelationsAsync(id, cancellationToken).ConfigureAwait(false)).Data;
+                    relationCache[id] = relations;
+                }
+
+                return relations
+                    .FirstOrDefault(r => string.Equals(r.Relation, relationType, StringComparison.OrdinalIgnoreCase))
+                    ?.Entry?.FirstOrDefault()?.MalId;
+            }
+
+            var anime = await GetAnimeAsync(malId);
+
+            if (anime.Titles.Any(t =>
+                    t.Title.Contains("2nd", StringComparison.OrdinalIgnoreCase) ||
+                    t.Title.Contains("Season 2", StringComparison.OrdinalIgnoreCase)))
+            {
+                var prequelId = await GetRelatedAnimeIdAsync(malId, "Prequel");
+                if (prequelId != null)
+                {
+                    malId = prequelId.Value;
+                    anime = await GetAnimeAsync(malId);
+                }
+            }
+
+            if (anime.Episodes == 1)
+            {
+                var sequelId = await GetRelatedAnimeIdAsync(malId, "Sequel");
+                if (sequelId != null)
+                {
+                    malId = sequelId.Value;
+                    anime = await GetAnimeAsync(malId);
+                }
+            }
+
             for (int currentSeason = 1; currentSeason < seasonNumber; currentSeason++)
             {
-                var relations = await _jikan.GetAnimeRelationsAsync(malId, cancellationToken).ConfigureAwait(false);
-                var sequelRelation = relations?.Data?.FirstOrDefault(r => r.Relation.Equals("Sequel", StringComparison.OrdinalIgnoreCase));
-                if (sequelRelation == null) break;
+                var sequelId = await GetRelatedAnimeIdAsync(malId, "Sequel");
+                if (sequelId == null) break;
 
-                var malUrl = sequelRelation.Entry.FirstOrDefault();
-                if (malUrl == null) break;
+                malId = sequelId.Value;
+                anime = await GetAnimeAsync(malId);
 
-                malId = malUrl.MalId;
-                var anime = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data;
                 if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) ||
-                    !(anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase) || anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase)))
+                    !(string.Equals(anime.Type, "TV", StringComparison.OrdinalIgnoreCase) ||
+                      string.Equals(anime.Type, "ONA", StringComparison.OrdinalIgnoreCase)))
                 {
                     seasonNumber++;
                 }
             }
 
-            var animeTitle = (await _jikan.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false)).Data.Titles.First().Title;
-            if (enableDebug) _log.LogInformation("New name: {animeTitle}", animeTitle);
-            if (enableDebug) _log.LogInformation("New MalID: {searchName}", malId);
-
-            return malId;
+            return anime;
         }
+
+
     }
 }
