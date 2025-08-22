@@ -1,3 +1,5 @@
+354b447 Update manifest
+
 0c5b544 Update build and publish.yaml
 
 26f1e1f Update manifest
