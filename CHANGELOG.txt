@@ -1,1 +1,23 @@
+0c5b544 Update build and publish.yaml
+
+26f1e1f Update manifest
+
 cb0c716 Update build and publish.yaml
+
+4535b41 Handle single episode between seasons
+
+- handle the situation where the sequel to a season could be just 1 episode causing the loop to end at the wrong season
+
+1fa39d4 Handle Incorrect Season from JikanAPI API
+
+- Handle the situations where searching an anime name using JikanAPI returns season 2 or episode 0 for an anime instead of season 1
+
+- Add a basic temp cache using dictionaries to avoid some unnecessary API calls due to going from prequel to sequel searching
+
+- Minor refactor to reduce API calls and improve performance and readability slightly
+
+2469cb7 Force comparisons in lowercase
+
+- Use lowercase string comparisons
+
+0248765 Update manifest
