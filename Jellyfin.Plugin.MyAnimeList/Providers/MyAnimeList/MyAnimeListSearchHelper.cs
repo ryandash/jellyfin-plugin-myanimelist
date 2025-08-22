@@ -228,6 +228,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 anime = await GetAnimeAsync(malId);
 
                 if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) ||
+                    anime.Episodes == 1 ||
                     !(string.Equals(anime.Type, "TV", StringComparison.OrdinalIgnoreCase) ||
                       string.Equals(anime.Type, "ONA", StringComparison.OrdinalIgnoreCase)))
                 {
@@ -237,7 +238,5 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return anime;
         }
-
-
     }
 }
