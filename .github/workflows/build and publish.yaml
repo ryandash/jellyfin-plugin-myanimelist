@@ -11,6 +11,11 @@ on:
         default: "net8.0"
         description: "The .NET target framework to build the projects with"
         type: string
+      release:
+        required: false
+        default: "false"
+        description: "Create GitHub release (true/false)"
+        type: string
 permissions:
   contents: write
 jobs:
@@ -100,14 +105,25 @@ jobs:
           cd main_repo
           git fetch --tags
           LAST_TAG=$(git tag -l | sort -V | tail -n 1)
-          git log ${LAST_TAG}..HEAD --pretty=format:"%h %B" --no-merges > CHANGELOG.txt
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found, including all commits..."
+            git log --pretty=format:"%h %B" --no-merges > CHANGELOG.txt
+          else
+            echo "Using last tag: $LAST_TAG"
+            git log ${LAST_TAG}..HEAD --pretty=format:"%h %B" --no-merges > CHANGELOG.txt
+          fi
+          CHANGELOG_CONTENT=$(cat CHANGELOG.txt)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
+        if: ${{ inputs.release == 'true' }}
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ env.VERSION }}
           name: "Version ${{ env.VERSION }}"
-          body: ${{ env.CHANGELOG }}
+          body: ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: false
           artifacts: "myanimelist_${{ env.VERSION }}.zip"
