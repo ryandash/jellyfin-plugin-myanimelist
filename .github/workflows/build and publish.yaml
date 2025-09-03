@@ -14,8 +14,11 @@ on:
       release:
         required: false
         default: "false"
-        description: "Create GitHub release (true/false)"
-        type: string
+        description: "Create GitHub release"
+        type: choice
+        options:
+          - "true"
+          - "false"
 permissions:
   contents: write
 jobs:
