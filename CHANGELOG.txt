@@ -1,25 +1,9 @@
-354b447 Update manifest
+3a85c0b Handle Episode 0 for a season
 
-0c5b544 Update build and publish.yaml
+- Handle episode 0 for a season by using prequel as episode 0 (From what I can tell this is how MAL does it)
 
-26f1e1f Update manifest
+- minor refactor and cleanup to remove unused variables
 
-cb0c716 Update build and publish.yaml
+- add log for when there is no episode data (might remove later if there is too much log spam)
 
-4535b41 Handle single episode between seasons
-
-- handle the situation where the sequel to a season could be just 1 episode causing the loop to end at the wrong season
-
-1fa39d4 Handle Incorrect Season from JikanAPI API
-
-- Handle the situations where searching an anime name using JikanAPI returns season 2 or episode 0 for an anime instead of season 1
-
-- Add a basic temp cache using dictionaries to avoid some unnecessary API calls due to going from prequel to sequel searching
-
-- Minor refactor to reduce API calls and improve performance and readability slightly
-
-2469cb7 Force comparisons in lowercase
-
-- Use lowercase string comparisons
-
-0248765 Update manifest
+a78acaa Update manifest
