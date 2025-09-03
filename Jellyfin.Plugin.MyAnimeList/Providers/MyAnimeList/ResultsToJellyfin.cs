@@ -99,6 +99,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     {
         public ICollection<AnimeCharacter> characters { get; set; }
 
+        public AnimeEpisode toEpisodeData()
+        {
+            var config = Plugin.Instance.Configuration;
+            return new AnimeEpisode
+            {
+                MalId = anime.MalId ?? 0,
+                Url = anime.Url,
+                Title = GetPreferredTitle(config.TitlePreference, "en"),
+                Duration = GetDuration(anime.Duration),
+                Aired = anime.Aired?.From,
+                Synopsis = anime.Synopsis
+            };
+        }
+
         private int GetDuration(string duration)
         {
             var parts = duration.Split(' ', StringSplitOptions.RemoveEmptyEntries);
