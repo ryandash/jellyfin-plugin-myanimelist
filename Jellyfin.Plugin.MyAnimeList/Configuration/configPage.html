@@ -54,6 +54,10 @@
                             <span>Ignore best attempt search result.</span>
                         </label>
                         <label class="emby-checkbox-label">
+                            <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
+                            <span>Exclude Special Episodes from EpisodeProvider</span>
+                        </label>
+                        <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
                             <span>Enable more debug information.</span>
                         </label>
@@ -81,6 +85,7 @@
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
                             document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
                             document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
+                            document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
                             document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
                             Dashboard.hideLoadingMsg();
@@ -98,6 +103,7 @@
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
                             config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
                             config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;
+                            config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
                             config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {

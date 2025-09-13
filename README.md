@@ -27,9 +27,9 @@ Anime
     ├── Season 01
     |   ├── Anime Name B S01E01.mkv
     |   └── Anime Name B S01E02.mkv
-    └── Season 02
-        ├── Anime Name B S02E01-E02.mkv
-        └── Anime Name B S02E03.mkv
+    └── Specials
+        ├── Anime Name B S00E01.mkv
+        └── Anime Name B S00E02.mkv
 ```
 e.g. of folders with file
 ```

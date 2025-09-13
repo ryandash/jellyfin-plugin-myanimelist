@@ -14,13 +14,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class MyAnimeListSearchHelper
     {
-        private readonly Jikan _jikan;
-
-        public MyAnimeListSearchHelper(Jikan _jikan)
-        {
-            this._jikan = _jikan;
-        }
-
         public async Task<JikanDotNet.Anime> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
         {
             string malId = info switch
@@ -36,7 +29,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 if (!config.IgnoreMetadata || info is EpisodeInfo)
                 {
-                    return (await _jikan.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false)).Data;
+                    return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false)).Data;
                 }
                 else
                 {
@@ -45,9 +38,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
 
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
-            string searchName = GetSearchName(info);
+            string searchName = FilterName(GetSearchName(info));
             if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
-            long? malIdFromName = await GetBestAnimeID(_log, FilterName(searchName), info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
+            long? malIdFromName = await GetBestAnimeID(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
             if (!malIdFromName.HasValue)
             {
                 if (enableDebug) _log.LogError("Could not find MalID for: {searchName}", searchName);
@@ -57,7 +50,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
             return info switch
             {
-                MovieInfo => (await _jikan.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)).Data,
+                MovieInfo => (await JikanSingleton.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)).Data,
                 _ => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
@@ -65,18 +58,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private string GetSearchName(ItemLookupInfo info)
         {
             string[] splitPath = info.Path.Split(Path.DirectorySeparatorChar);
-            return info switch
+            int index = splitPath.Length - 1;
+
+            switch (info)
             {
-                SeasonInfo => splitPath[^1].Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? splitPath[^2]
-                    : splitPath[^1],
-                EpisodeInfo => splitPath[^2].Contains("season", StringComparison.OrdinalIgnoreCase)
-                    ? splitPath[^3]
-                    : splitPath[^2],
-                SeriesInfo => splitPath[^1],
-                MovieInfo => splitPath.Length > 2 ? splitPath[^2] : splitPath[^1],
-                _ => info.Name
-            };
+                case EpisodeInfo or MovieInfo:
+                    while (index > 0)
+                    {
+                        string folder = splitPath[index - 1];
+                        if (!folder.Contains("season", StringComparison.OrdinalIgnoreCase) &&
+                            !folder.Contains("special", StringComparison.OrdinalIgnoreCase))
+                        {
+                            break;
+                        }
+                        index--;
+                    }
+                    return splitPath[Math.Max(0, index - 1)];
+
+                case SeasonInfo:
+                    return splitPath[index].Contains("season", StringComparison.OrdinalIgnoreCase) ||
+                           splitPath[index].Contains("special", StringComparison.OrdinalIgnoreCase)
+                        ? splitPath[Math.Max(0, index - 1)]
+                        : splitPath[index];
+
+                case SeriesInfo:
+                    return splitPath[index];
+
+                default:
+                    return info.Name;
+            }
         }
 
         private static readonly Regex SeasonRegex = new Regex(@"(\s|\.)S[0-9]{1,2}", RegexOptions.Compiled);
@@ -103,7 +113,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private async Task<long?> GetBestAnimeID(
     ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
-            var searchResults = await _jikan.SearchAnimeAsync(searchTerm, cancellationToken);
+            var searchResults = await JikanSingleton.SearchAnimeAsync(searchTerm, cancellationToken);
             string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();
 
             long? bestBackupMalId = null;
@@ -169,33 +179,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     ILogger _log, bool enableDebug,
     long malId, int seasonNumber, CancellationToken cancellationToken)
         {
-            var animeCache = new Dictionary<long, JikanDotNet.Anime>();
-            var relationCache = new Dictionary<long, ICollection<RelatedEntry>>();
-
-            async Task<JikanDotNet.Anime> GetAnimeAsync(long id)
-            {
-                if (!animeCache.TryGetValue(id, out var anime))
-                {
-                    anime = (await _jikan.GetAnimeAsync(id, cancellationToken).ConfigureAwait(false)).Data;
-                    animeCache[id] = anime;
-                }
-                return anime;
-            }
-
             async Task<long?> GetRelatedAnimeIdAsync(long id, string relationType)
             {
-                if (!relationCache.TryGetValue(id, out var relations))
-                {
-                    relations = (await _jikan.GetAnimeRelationsAsync(id, cancellationToken).ConfigureAwait(false)).Data;
-                    relationCache[id] = relations;
-                }
+                var relations = (await JikanSingleton.GetAnimeRelationsAsync(id, cancellationToken).ConfigureAwait(false))
+                                ?.Data ?? new List<RelatedEntry>();
 
                 return relations
                     .FirstOrDefault(r => string.Equals(r.Relation, relationType, StringComparison.OrdinalIgnoreCase))
                     ?.Entry?.FirstOrDefault()?.MalId;
             }
 
-            var anime = await GetAnimeAsync(malId);
+            var anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+
+            if (anime == null)
+                return null;
 
             if (anime.Titles.Any(t =>
                     t.Title.Contains("2nd", StringComparison.OrdinalIgnoreCase) ||
@@ -205,7 +202,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (prequelId != null)
                 {
                     malId = prequelId.Value;
-                    anime = await GetAnimeAsync(malId);
+                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
                 }
             }
 
@@ -215,7 +212,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (sequelId != null)
                 {
                     malId = sequelId.Value;
-                    anime = await GetAnimeAsync(malId);
+                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
                 }
             }
 
@@ -225,14 +222,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (sequelId == null) break;
 
                 malId = sequelId.Value;
-                anime = await GetAnimeAsync(malId);
+                anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+
+                if (anime == null) break;
 
                 if (anime.Titles.Any(t => t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) ||
                     anime.Episodes == 1 ||
                     !(string.Equals(anime.Type, "TV", StringComparison.OrdinalIgnoreCase) ||
                       string.Equals(anime.Type, "ONA", StringComparison.OrdinalIgnoreCase)))
                 {
-                    seasonNumber++;
+                    currentSeason--; // skip this entry
                 }
             }
 

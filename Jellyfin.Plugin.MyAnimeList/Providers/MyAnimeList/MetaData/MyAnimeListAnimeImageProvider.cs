@@ -17,12 +17,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
     {
-        private readonly Jikan _jikan;
         private readonly ILogger _log;
         public MyAnimeListAnimeImageProvider(ILogger<MyAnimeListAnimeImageProvider> logger)
         {
             _log = logger;
-            _jikan = JikanSingleton.Instance;
         }
 
         public string Name => "MyAnimeList";
@@ -45,10 +43,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             long aid = long.Parse(malId);
             var media = new Anime();
-            media.anime = (await _jikan.GetAnimeAsync(aid, cancellationToken))?.Data;
+            media.anime = (await JikanSingleton.GetAnimeAsync(aid, cancellationToken))?.Data;
             if (media.anime != null)
             {
-                var images = await _jikan.GetAnimePicturesAsync(aid, cancellationToken);
+                var images = await JikanSingleton.GetAnimePicturesAsync(aid, cancellationToken);
                 if (images?.Data != null && media.GetImageUrl() != null)
                 {
                     list.Add(new RemoteImageInfo

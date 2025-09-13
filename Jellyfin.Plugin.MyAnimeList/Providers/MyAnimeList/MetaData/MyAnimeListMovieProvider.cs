@@ -1,5 +1,4 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
-using JikanDotNet;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
@@ -14,7 +13,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     public class MyAnimeListMovieProvider : IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
     {
         private readonly ILogger _log;
-        private readonly Jikan _jikan;
         private readonly MyAnimeListSearchHelper _searchHelper;
         public int Order => -2;
         public string Name => "MyAnimeList";
@@ -22,8 +20,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public MyAnimeListMovieProvider(ILogger<MyAnimeListMovieProvider> logger)
         {
             _log = logger;
-            _jikan = JikanSingleton.Instance;
-            _searchHelper = new MyAnimeListSearchHelper(_jikan);
+            _searchHelper = new MyAnimeListSearchHelper();
         }
 
         public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
@@ -35,7 +32,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             Anime media = new Anime
             {
                 anime = anime,
-                characters = (await _jikan.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data
+                characters = (await JikanSingleton.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data
             };
 
             result.HasMetadata = true;
