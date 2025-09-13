@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
@@ -26,13 +27,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
         {
             MetadataResult<Movie> result = new MetadataResult<Movie>();
-            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
             if (anime == null) return result;
 
             Anime media = new Anime
             {
                 anime = anime,
-                characters = (await JikanSingleton.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))?.Data
+                characters = (await JikanSingleton.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))
             };
 
             result.HasMetadata = true;
@@ -45,7 +46,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo info, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-            JikanDotNet.Anime anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
             if (anime == null) return results;
 
             AnimeSearchResult aid_result = new AnimeSearchResult();

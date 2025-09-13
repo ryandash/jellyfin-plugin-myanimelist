@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class MyAnimeListSearchHelper
     {
-        public async Task<JikanDotNet.Anime> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
+        public async Task<AnimeCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
         {
             string malId = info switch
             {
@@ -29,7 +30,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 if (!config.IgnoreMetadata || info is EpisodeInfo)
                 {
-                    return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false)).Data;
+                    return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
                 }
                 else
                 {
@@ -50,7 +51,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
             return info switch
             {
-                MovieInfo => (await JikanSingleton.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)).Data,
+                MovieInfo => (await JikanSingleton.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
                 _ => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
@@ -119,7 +120,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             long? bestBackupMalId = null;
             int bestBackupSimilarity = -1;
 
-            foreach (var anime in searchResults.Data)
+            foreach (var anime in searchResults)
             {
                 bool isCorrectType = isMovie
                     ? string.Equals(anime.Type, "Movie", StringComparison.OrdinalIgnoreCase)
@@ -175,7 +176,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken);
         }
 
-        private async Task<JikanDotNet.Anime> GetCurrentAnimeSeasonAsync(
+        private async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(
     ILogger _log, bool enableDebug,
     long malId, int seasonNumber, CancellationToken cancellationToken)
         {
@@ -189,7 +190,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     ?.Entry?.FirstOrDefault()?.MalId;
             }
 
-            var anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+            var anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false));
 
             if (anime == null)
                 return null;
@@ -202,7 +203,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (prequelId != null)
                 {
                     malId = prequelId.Value;
-                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false));
                 }
             }
 
@@ -212,7 +213,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (sequelId != null)
                 {
                     malId = sequelId.Value;
-                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+                    anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false));
                 }
             }
 
@@ -222,7 +223,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (sequelId == null) break;
 
                 malId = sequelId.Value;
-                anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false))?.Data;
+                anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false));
 
                 if (anime == null) break;
 

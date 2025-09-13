@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
 using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Providers;
@@ -49,12 +50,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (anime.anime == null) return result;
             long malID = anime.anime.MalId.GetValueOrDefault();
 
-            AnimeEpisode episodeData = null;
+            EpisodeCacheDto episodeData = null;
             try
             {
                 if (anime.anime.Episodes != 1)
                 {
-                    episodeData = (await JikanSingleton.GetAnimeEpisodeAsync(malID, episodeNumber, cancellationToken).ConfigureAwait(false))?.Data;
+                    episodeData = (await JikanSingleton.GetAnimeEpisodeAsync(malID, episodeNumber, cancellationToken).ConfigureAwait(false));
                 }
                 else
                 {
@@ -77,15 +78,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<(int episodeNumber, JikanDotNet.Anime anime)> GetSeasonEpisodeNumberAsync(
+        private async Task<(int episodeNumber, AnimeCacheDto anime)> GetSeasonEpisodeNumberAsync(
     int episodeNumber,
     int seasonNumber,
-    JikanDotNet.Anime anime,
+    AnimeCacheDto anime,
     CancellationToken cancellationToken)
         {
             List<RelatedEntry> relations = null;
 
-            async Task<JikanDotNet.Anime> GetRelatedAnimeAsync(string relationType)
+            async Task<AnimeCacheDto> GetRelatedAnimeAsync(string relationType)
             {
                 relations ??= (await JikanSingleton.GetAnimeRelationsAsync(anime.MalId!.Value, cancellationToken)
                     .ConfigureAwait(false))?.Data?.ToList() ?? new List<RelatedEntry>();
@@ -96,7 +97,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                 return relation == null
                     ? null
-                    : (await JikanSingleton.GetAnimeAsync(relation.MalId, cancellationToken).ConfigureAwait(false))?.Data;
+                    : (await JikanSingleton.GetAnimeAsync(relation.MalId, cancellationToken).ConfigureAwait(false));
             }
 
             while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
@@ -135,10 +136,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 {
                     var tasks = sideStories.Select(s => JikanSingleton.GetAnimeAsync(s.MalId, cancellationToken));
                     var allResults = await Task.WhenAll(tasks);
-                    var allAnimes = allResults.Select(r => r?.Data).OfType<JikanDotNet.Anime>();
+                    var allAnimes = allResults.Select(r => r).OfType<AnimeCacheDto>();
 
-                    var movies = new List<JikanDotNet.Anime>();
-                    var others = new List<JikanDotNet.Anime>();
+                    var movies = new List<AnimeCacheDto>();
+                    var others = new List<AnimeCacheDto>();
 
                     foreach (var a in allAnimes)
                     {

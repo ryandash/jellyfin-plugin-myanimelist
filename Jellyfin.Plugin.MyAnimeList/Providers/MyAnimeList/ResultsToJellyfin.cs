@@ -1,5 +1,6 @@
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -8,25 +9,40 @@ using MediaBrowser.Model.Providers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AnimeCharacter = JikanDotNet.AnimeCharacter;
-using AnimeEpisode = JikanDotNet.AnimeEpisode;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class EpisodeSearchResult
     {
-        public AnimeEpisode episode { get; set; }
+        public EpisodeCacheDto episode { get; set; }
 
         public DateTime? GetDate() => episode.Aired;
 
+        public string GetPreferredTitle(TitlePreferenceType preference, string language)
+        {
+            return preference switch
+            {
+                TitlePreferenceType.Localized => language switch
+                {
+                    "en" => episode.Title,
+                    "jap" => episode.TitleJapanese,
+                    "romaji" => episode.TitleRomanji,
+                    _ => episode.Title
+                },
+                TitlePreferenceType.Japanese => episode.TitleJapanese ?? episode.Title,
+                TitlePreferenceType.JapaneseRomaji => episode.TitleRomanji ?? episode.Title,
+                _ => episode.Title
+            };
+        }
+
         internal Episode ToEpisode(int totalDigits)
         {
-            _ = Plugin.Instance.Configuration;
+            var config = Plugin.Instance.Configuration;
 
             return new Episode
             {
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
-                Name = episode.Title,
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
                 ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
@@ -36,7 +52,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public RemoteSearchResult ToSearchResult()
         {
-            _ = Plugin.Instance.Configuration;
             return new RemoteSearchResult
             {
                 Name = episode.Title,
@@ -50,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
     public class AnimeSearchResult
     {
-        public JikanDotNet.Anime anime;
+        public AnimeCacheDto anime;
 
         public string GetPreferredTitle(TitlePreferenceType preference, string language)
         {
@@ -97,14 +112,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
     public class Anime : AnimeSearchResult
     {
-        public ICollection<AnimeCharacter> characters { get; set; }
+        public List<CharacterCacheDto> characters { get; set; }
 
-        public AnimeEpisode toEpisodeData()
+        public EpisodeCacheDto toEpisodeData()
         {
             var config = Plugin.Instance.Configuration;
-            return new AnimeEpisode
+            return new EpisodeCacheDto
             {
-                MalId = anime.MalId ?? 0,
+                MalId = anime.MalId,
                 Url = anime.Url,
                 Title = GetPreferredTitle(config.TitlePreference, "en"),
                 Duration = GetDuration(anime.Duration),
