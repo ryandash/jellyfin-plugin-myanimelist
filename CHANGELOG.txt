@@ -1,9 +1,23 @@
-3a85c0b Handle Episode 0 for a season
+afd212c Implement local caching and DTO mapping for Jikan API
 
-- Handle episode 0 for a season by using prequel as episode 0 (From what I can tell this is how MAL does it)
+- Added a local cache for all Jikan API calls reducing network request and improving performance
+- Refactor cache reducing memory usage and filesize
+- Created DTO classes for Jikan API objects
+- Added methods in DTOs to convert Jikan objects to DTOs
+- Fixed an episode title bug to correctly include English, Japanese, or Romanji titles based on availability.
+- Implemented cache preloading: local cache file is read into memory on first use
+- Local cache current kept for 1 day (stored at "C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList\JikanCache.json")
+- Minor code cleanup
 
-- minor refactor and cleanup to remove unused variables
+55c9c95 Implement Basic Specials metadata + In memory cache
 
-- add log for when there is no episode data (might remove later if there is too much log spam)
+- Add proper metadata for "Side Story" Specials, OVAs and Movies from MyAnimeList
+- Add proper anime name filtering when folder "specials" or "special" is used
+- Add checkbox to allow excluding specials from EpisodeProvider
+- README update to include example for "specials" folder
+- Version bump
+- Cleanup Jikan instances
+- Add central in memory cache for API calls with 1 day expiration
 
-a78acaa Update manifest
+1bb61cd Update build and publish.yaml
+1fa6a6e Update manifest
