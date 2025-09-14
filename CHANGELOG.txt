@@ -1,23 +1,6 @@
-afd212c Implement local caching and DTO mapping for Jikan API
+ab1bdeb Add checkboxes for more user control
 
-- Added a local cache for all Jikan API calls reducing network request and improving performance
-- Refactor cache reducing memory usage and filesize
-- Created DTO classes for Jikan API objects
-- Added methods in DTOs to convert Jikan objects to DTOs
-- Fixed an episode title bug to correctly include English, Japanese, or Romanji titles based on availability.
-- Implemented cache preloading: local cache file is read into memory on first use
-- Local cache current kept for 1 day (stored at "C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList\JikanCache.json")
-- Minor code cleanup
+- Add checkbox to Ignore Episode Metadata
+- Add checkbox to Disable Local Cache
 
-55c9c95 Implement Basic Specials metadata + In memory cache
-
-- Add proper metadata for "Side Story" Specials, OVAs and Movies from MyAnimeList
-- Add proper anime name filtering when folder "specials" or "special" is used
-- Add checkbox to allow excluding specials from EpisodeProvider
-- README update to include example for "specials" folder
-- Version bump
-- Cleanup Jikan instances
-- Add central in memory cache for API calls with 1 day expiration
-
-1bb61cd Update build and publish.yaml
-1fa6a6e Update manifest
+352352e Update manifest
