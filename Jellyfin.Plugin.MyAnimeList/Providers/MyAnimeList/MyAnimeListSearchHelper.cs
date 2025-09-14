@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Original malID: {malID}", malId);
             if (!string.IsNullOrEmpty(malId))
             {
-                if (!config.IgnoreMetadata || info is EpisodeInfo)
+                if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata))
                 {
                     return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
                 }

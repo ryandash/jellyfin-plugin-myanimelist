@@ -55,9 +55,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         public bool IgnoreMetadata { get; set; }
 
+        public bool IgnoreEpisodeMetadata { get; set; }
+
         public bool IgnoreBestAttempt { get; set; }
 
         public bool ExcludeSpecials { get; set; }
+
+        public bool DisableLocalCache { get; set; }
 
         public bool EnableDebug { get; set; }
     }

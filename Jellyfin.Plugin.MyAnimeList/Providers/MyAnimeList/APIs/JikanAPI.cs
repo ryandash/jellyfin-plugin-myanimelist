@@ -45,6 +45,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         private static async Task SaveCacheToFileAsync()
         {
+            if (Plugin.Instance.Configuration.DisableLocalCache)
+                return;
             try
             {
                 var json = JsonSerializer.Serialize(_cache, JsonOptions);
@@ -64,6 +66,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         private static void LoadCacheFromFile()
         {
+            if (Plugin.Instance.Configuration.DisableLocalCache)
+                return;
+
             try
             {
                 if (!File.Exists(CacheFilePath))
