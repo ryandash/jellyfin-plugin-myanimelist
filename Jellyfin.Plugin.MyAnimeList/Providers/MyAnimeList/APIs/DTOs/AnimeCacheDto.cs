@@ -15,29 +15,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public int? Episodes { get; set; }
         public string Type { get; set; }
         public string Status { get; set; }
-        public List<MalUrlDto> Studios { get; set; }
-        public List<MalUrlDto> Genres { get; set; }
+        public string[] Studios { get; set; }
+        public string[] Genres { get; set; }
         public string Synopsis { get; set; }
 
         public static AnimeCacheDto From(JikanDotNet.Anime source)
         {
-            if (source == null) return null;
+            if (source == null || !source.MalId.HasValue) return null;
+
+            string Normalize(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
             return new AnimeCacheDto
             {
-                MalId = source.MalId ?? 0,
-                Url = source.Url,
+                MalId = source.MalId,
+                Url = Normalize(source.Url),
                 Titles = source.Titles?.Select(TitleEntryDto.From).ToList(),
                 Images = ImagesSetDto.From(source.Images),
                 Aired = TimePeriodDto.Convert(source.Aired),
-                Duration = source.Duration,
+                Duration = Normalize(source.Duration),
                 Score = source.Score,
                 Episodes = source.Episodes,
-                Type = source.Type,
-                Status = source.Status,
-                Studios = source.Studios?.Select(MalUrlDto.From).ToList(),
-                Genres = source.Genres?.Select(MalUrlDto.From).ToList(),
-                Synopsis = string.IsNullOrWhiteSpace(source.Synopsis) ? null : source.Synopsis
+                Type = Normalize(source.Type),
+                Status = Normalize(source.Status),
+                Studios = source.Studios != null && source.Studios.Any()
+            ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n != null).ToArray()
+            : null,
+                Genres = source.Genres != null && source.Genres.Any()
+            ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n != null).ToArray()
+            : null,
+                Synopsis = Normalize(source.Synopsis)
             };
         }
     }

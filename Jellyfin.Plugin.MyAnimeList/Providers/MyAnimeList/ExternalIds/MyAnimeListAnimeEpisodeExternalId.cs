@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public string ProviderName => ProviderNames.MyAnimeList;
 
-        public string Key => ProviderNames.MyAnimeListEP;
+        public string Key => ProviderNames.MyAnimeList;
 
         public ExternalIdMediaType? Type => null;
 

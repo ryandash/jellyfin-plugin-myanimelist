@@ -5,7 +5,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {
     public class EpisodeCacheDto
     {
-        public long? MalId { get; set; }
         public string Url { get; set; }
         public string Title { get; set; }
         public string TitleJapanese { get; set; }
@@ -20,7 +19,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
             return new EpisodeCacheDto
             {
-                MalId = source.MalId,
                 Url = source.Url,
                 Title = source.Title,
                 TitleJapanese = source.TitleJapanese,

@@ -1,6 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
-using JikanDotNet;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
 using System;
@@ -25,11 +24,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             var config = Plugin.Instance.Configuration;
             bool enableDebug = config.EnableDebug;
-            if (enableDebug) _log.LogInformation("Original malID: {malID}", malId);
             if (!string.IsNullOrEmpty(malId))
             {
                 if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata))
                 {
+                    if (enableDebug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
                     return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
                 }
                 else
@@ -183,11 +182,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             async Task<long?> GetRelatedAnimeIdAsync(long id, string relationType)
             {
                 var relations = (await JikanSingleton.GetAnimeRelationsAsync(id, cancellationToken).ConfigureAwait(false))
-                                ?.Data ?? new List<RelatedEntry>();
+                    ?? new List<RelatedEntryDto>();
 
                 return relations
                     .FirstOrDefault(r => string.Equals(r.Relation, relationType, StringComparison.OrdinalIgnoreCase))
-                    ?.Entry?.FirstOrDefault()?.MalId;
+                    ?.Entry?.FirstOrDefault();
             }
 
             var anime = (await JikanSingleton.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false));

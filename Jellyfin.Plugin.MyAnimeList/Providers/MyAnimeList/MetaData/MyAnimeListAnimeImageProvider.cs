@@ -46,7 +46,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (media.anime != null)
             {
                 var images = await JikanSingleton.GetAnimePicturesAsync(aid, cancellationToken);
-                if (images?.Data != null && media.GetImageUrl() != null)
+                if (images != null && media.GetImageUrl() != null)
                 {
                     list.Add(new RemoteImageInfo
                     {

@@ -41,24 +41,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return new Episode
             {
-                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } },
+                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, episode.Url } },
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
                 Overview = episode.Synopsis
-            };
-        }
-
-        public RemoteSearchResult ToSearchResult()
-        {
-            return new RemoteSearchResult
-            {
-                Name = episode.Title,
-                ProductionYear = GetDate().HasValue ? GetDate().Value.Year : null,
-                PremiereDate = GetDate(),
-                SearchProviderName = ProviderNames.MyAnimeList,
-                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeListEP, episode.Url } }
             };
         }
     }
@@ -107,7 +95,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
         }
-        public List<string> GetStudioNames() => anime.Studios.Select(node => node.Name).ToList();
+        public string[] GetStudioNames() => anime.Studios.ToArray();
     }
 
     public class Anime : AnimeSearchResult
@@ -119,7 +107,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             var config = Plugin.Instance.Configuration;
             return new EpisodeCacheDto
             {
-                MalId = anime.MalId,
                 Url = anime.Url,
                 Title = GetPreferredTitle(config.TitlePreference, "en"),
                 Duration = GetDuration(anime.Duration),
@@ -190,11 +177,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToList(); ;
         }
 
-        public List<string> GetGenres()
+        public string[] GetGenres()
         {
-            var genres = anime.Genres.Select(g => g.Name);
+            var genres = anime.Genres;
             var config = Plugin.Instance.Configuration;
-            return config.MaxGenres > 0 ? genres.Take(config.MaxGenres).ToList() : genres.ToList();
+            return (config.MaxGenres > 0 ? genres.Take(config.MaxGenres) : genres).ToArray();
         }
 
         public Series ToSeries()
@@ -211,8 +198,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
                 RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
-                Genres = GetGenres().ToArray(),
-                Studios = GetStudioNames().ToArray(),
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
                 Status = anime.Status switch
                 {
@@ -236,8 +223,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 PremiereDate = GetAiredDate(),
                 EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
-                Genres = GetGenres().ToArray(),
-                Studios = GetStudioNames().ToArray(),
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
         }
@@ -255,8 +242,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 EndDate = GetAiredDate(),
                 CommunityRating = GetRating(),
                 RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
-                Genres = GetGenres().ToArray(),
-                Studios = GetStudioNames().ToArray(),
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } },
             };
         }

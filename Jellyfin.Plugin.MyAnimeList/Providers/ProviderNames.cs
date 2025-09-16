@@ -3,7 +3,5 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers
     public class ProviderNames
     {
         public const string MyAnimeList = "MyAnimeList";
-        public const string MyAnimeListEP = "MyAnimeListEP";
-        public const string MyAnimeListSeason = "MyAnimeListSeason";
     }
 }

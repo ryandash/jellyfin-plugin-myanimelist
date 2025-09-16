@@ -16,191 +16,225 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
     {
         static JikanSingleton()
         {
-            LoadCacheFromFile();
+            var oldCache = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.json");
+            if (File.Exists(oldCache)) TryDelete(oldCache);
+
+            var debugLogPath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.debug.log");
+            if (File.Exists(debugLogPath)) TryDelete(debugLogPath);
+
+            LoadCache(AnimeCacheFile, _animeCache);
+            LoadCache(SearchCacheFile, _searchCache);
+            LoadCache(EpisodesCacheFile, _episodesCache);
+            LoadCache(CharactersCacheFile, _charactersCache);
+            LoadCache(RelationsCacheFile, _relationsCache);
+            LoadCache(PicturesCacheFile, _picturesCache);
         }
 
-        private static readonly Lazy<Jikan> _jikanInstance = new Lazy<Jikan>(() => new Jikan());
-        private static Jikan Instance => _jikanInstance.Value;
-
-        private static readonly string CacheFilePath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.json");
-
-        // Store cache as serialized JSON strings
-        private static readonly ConcurrentDictionary<string, CacheEntry> _cache
-            = new ConcurrentDictionary<string, CacheEntry>();
-
-        private class CacheEntry
+        private static void TryDelete(string path)
         {
-            public DateTime Expiry { get; set; }
-            public JsonElement JsonValue { get; set; }
-            public string Type { get; set; }
+            try { File.Delete(path); } catch { }
         }
+
+        private static readonly Lazy<Jikan> _jikanInstance = new(() => new Jikan());
+        private static Jikan Instance => _jikanInstance.Value;
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = true
         };
 
-        private static string GetKey(string method, object param) => $"{method}:{param}";
+        private static readonly TimeSpan DefaultExpiry = TimeSpan.FromDays(1);
+        private static readonly TimeSpan SearchExpiry = TimeSpan.FromMinutes(10);
 
-        private static async Task SaveCacheToFileAsync()
+        private class CacheEntry
         {
-            if (Plugin.Instance.Configuration.DisableLocalCache)
-                return;
-            try
-            {
-                var json = JsonSerializer.Serialize(_cache, JsonOptions);
+            public DateTime Expiry { get; set; } = DateTime.UtcNow.Add(DefaultExpiry);
 
-                var tempFilePath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.tmp");
-                await File.WriteAllTextAsync(tempFilePath, json).ConfigureAwait(false);
-
-                File.Replace(tempFilePath, CacheFilePath, null);
-            }
-            catch (Exception ex)
-            {
-                var debugPath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.debug.log");
-                File.AppendAllText(debugPath,
-                    $"[{DateTime.UtcNow}] ERROR saving cache: {ex}{Environment.NewLine}");
-            }
+            public AnimeCacheDto Anime { get; set; }
+            public List<long> Ids { get; set; }
+            public List<CharacterCacheDto> Characters { get; set; }
+            public Dictionary<int, EpisodeCacheDto> Episodes { get; set; }
+            public List<RelatedEntryDto> Relations { get; set; }
+            public List<ImagesSetDto> Pictures { get; set; }
         }
 
-        private static void LoadCacheFromFile()
-        {
-            if (Plugin.Instance.Configuration.DisableLocalCache)
-                return;
+        private static readonly ConcurrentDictionary<string, CacheEntry> _animeCache = new();
+        private static readonly ConcurrentDictionary<string, CacheEntry> _searchCache = new();
+        private static readonly ConcurrentDictionary<string, CacheEntry> _episodesCache = new();
+        private static readonly ConcurrentDictionary<string, CacheEntry> _charactersCache = new();
+        private static readonly ConcurrentDictionary<string, CacheEntry> _relationsCache = new();
+        private static readonly ConcurrentDictionary<string, CacheEntry> _picturesCache = new();
 
+        private static readonly string AnimeCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanAnimeCache.json");
+        private static readonly string SearchCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanSearchCache.json");
+        private static readonly string EpisodesCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanEpisodesCache.json");
+        private static readonly string CharactersCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCharactersCache.json");
+        private static readonly string RelationsCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanRelationsCache.json");
+        private static readonly string PicturesCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanPicturesCache.json");
+
+        private static void LoadCache(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
+        {
+            if (Plugin.Instance.Configuration.DisableLocalCache) return;
             try
             {
-                if (!File.Exists(CacheFilePath))
-                {
-                    File.WriteAllText(CacheFilePath, "{}");
-                    return;
-                }
-
-                var json = File.ReadAllText(CacheFilePath);
-
-                var debugPath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.debug.log");
-                File.AppendAllText(debugPath,
-                    $"[{DateTime.UtcNow}] Starting load. JSON length: {json.Length}{Environment.NewLine}");
-
+                if (!File.Exists(filePath)) { File.WriteAllText(filePath, "{}"); return; }
+                var json = File.ReadAllText(filePath);
                 var loaded = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(json, JsonOptions);
-
-                if (loaded == null)
-                {
-                    File.AppendAllText(debugPath,
-                        $"[{DateTime.UtcNow}] Deserialization returned null.{Environment.NewLine}");
-                    return;
-                }
-
-                int kept = 0;
-                foreach (var kvp in loaded)
-                {
-                    if (kvp.Value.Expiry > DateTime.UtcNow)
-                    {
-                        _cache[kvp.Key] = kvp.Value;
-                        kept++;
-                    }
-                    else
-                    {
-                        File.AppendAllText(debugPath,
-                            $"[{DateTime.UtcNow}] Dropped expired entry {kvp.Key}, Expiry={kvp.Value.Expiry}{Environment.NewLine}");
-                    }
-                }
-
-                File.AppendAllText(debugPath,
-                    $"[{DateTime.UtcNow}] Loaded {kept}/{loaded.Count} entries into cache.{Environment.NewLine}");
+                if (loaded == null) return;
+                foreach (var kvp in loaded) cache[kvp.Key] = kvp.Value;
             }
-            catch (Exception ex)
+            catch
             {
-                File.AppendAllText(
-                    Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.debug.log"),
-                    $"[{DateTime.UtcNow}] ERROR loading cache: {ex}{Environment.NewLine}"
-                );
+                File.WriteAllText(filePath, "{}");
+                cache.Clear();
             }
         }
 
-        private static async Task<T> GetOrAddAsync<T>(string key, Func<Task<T>> factory)
+        private static async Task SaveCacheAsync(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
         {
-            if (_cache.TryGetValue(key, out var entry))
+            if (Plugin.Instance.Configuration.DisableLocalCache) return;
+
+            foreach (var kvp in cache.Where(kvp => kvp.Value.Expiry <= DateTime.UtcNow).ToList())
             {
-                if (entry.Expiry > DateTime.UtcNow)
-                {
-                    try
-                    {
-                        return JsonSerializer.Deserialize<T>(entry.JsonValue, JsonOptions);
-                    }
-                    catch
-                    {
-                        // fall through and refresh
-                    }
-                }
-                _cache.TryRemove(key, out _);
+                cache.TryRemove(kvp.Key, out _);
             }
 
-            var result = await factory().ConfigureAwait(false);
+            var json = JsonSerializer.Serialize(cache, JsonOptions);
+            var tempFile = filePath + ".tmp";
+            await File.WriteAllTextAsync(tempFile, json).ConfigureAwait(false);
+            File.Replace(tempFile, filePath, null);
+        }
 
-            _cache[key] = new CacheEntry
+        private static async Task<T> GetOrFetchAsync<T>(
+            string key,
+            ConcurrentDictionary<string, CacheEntry> cache,
+            string cacheFile,
+            Func<Task<T>> fetchFunc,
+            Func<CacheEntry, T> getter,
+            Action<CacheEntry, T> setter)
+            where T : class
+        {
+            if (cache.TryGetValue(key, out var entry) && entry.Expiry > DateTime.UtcNow)
             {
-                Expiry = DateTime.UtcNow.AddDays(1),
-                JsonValue = JsonSerializer.SerializeToElement(result, JsonOptions),
-                Type = typeof(T).FullName
-            };
+                var value = getter(entry);
+                if (value != null)
+                    return value;
+            }
 
-            await SaveCacheToFileAsync();
+            var result = await fetchFunc();
+
+            var newEntry = entry ?? new CacheEntry();
+            newEntry.Expiry = DateTime.UtcNow.Add(DefaultExpiry);
+
+            setter(newEntry, result);
+
+            cache[key] = newEntry;
+
+            await SaveCacheAsync(cacheFile, cache);
 
             return result;
         }
 
-        // Cached wrappers
-        public static Task<AnimeCacheDto> GetAnimeAsync(long malId, CancellationToken token)
-        {
-            return GetOrAddAsync(
-                GetKey("GetAnime", malId),
-                async () =>
-                {
-                    var result = await Instance.GetAnimeAsync(malId, token).ConfigureAwait(false);
-                    return AnimeCacheDto.From(result.Data);
-                });
-        }
 
-        public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
-        {
-            return GetOrAddAsync(
-                GetKey("GetAnimeEpisode", $"{malId}:{episodeNumber}"),
+        public static Task<AnimeCacheDto> GetAnimeAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _animeCache,
+                AnimeCacheFile,
+                async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token)).Data),
+                entry => entry.Anime,
+                (entry, value) => entry.Anime = value);
+
+        public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _episodesCache,
+                EpisodesCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimeEpisodeAsync(malId, episodeNumber, token).ConfigureAwait(false);
+                    var result = await Instance.GetAnimeEpisodeAsync(malId, episodeNumber, token);
                     return EpisodeCacheDto.From(result.Data);
+                },
+                entry =>
+                {
+                    if (entry.Episodes != null && entry.Episodes.TryGetValue(episodeNumber, out var existing))
+                        return existing;
+                    return null;
+                },
+                (entry, value) =>
+                {
+                    if (entry.Episodes == null) entry.Episodes = new Dictionary<int, EpisodeCacheDto>();
+                    entry.Episodes[episodeNumber] = value;
                 });
-        }
 
-        public static Task<List<CharacterCacheDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
-        {
-            return GetOrAddAsync(
-                GetKey("GetAnimeCharacters", malId),
+        public static Task<List<CharacterCacheDto>> GetAnimeCharactersAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _charactersCache,
+                CharactersCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimeCharactersAsync(malId, token).ConfigureAwait(false);
+                    var result = await Instance.GetAnimeCharactersAsync(malId, token);
                     return result.Data.Select(CharacterCacheDto.From).ToList();
-                });
-        }
+                },
+                entry => entry.Characters,
+                (entry, value) => entry.Characters = value);
 
-        // Keep full API responses for relations, pictures, and search if you still need them
-        public static Task<PaginatedJikanResponse<ICollection<RelatedEntry>>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
-            GetOrAddAsync(GetKey("GetAnimeRelations", malId), () => Instance.GetAnimeRelationsAsync(malId, token));
-
-        public static Task<BaseJikanResponse<ICollection<ImagesSet>>> GetAnimePicturesAsync(long malId, CancellationToken token) =>
-            GetOrAddAsync(GetKey("GetAnimePictures", malId), () => Instance.GetAnimePicturesAsync(malId, token));
-
-        public static Task<List<AnimeCacheDto>> SearchAnimeAsync(string searchTerm, CancellationToken token)
-        {
-            return GetOrAddAsync(
-                GetKey("SearchAnime", searchTerm),
+        public static Task<List<RelatedEntryDto>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _relationsCache,
+                RelationsCacheFile,
                 async () =>
                 {
-                    var result = await Instance.SearchAnimeAsync(searchTerm, token).ConfigureAwait(false);
-                    return result.Data.Select(anime => AnimeCacheDto.From(anime)).ToList();
-                });
+                    var result = await Instance.GetAnimeRelationsAsync(malId, token);
+                    return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
+                },
+                entry => entry.Relations,
+                (entry, value) => entry.Relations = value);
+
+        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _picturesCache,
+                PicturesCacheFile,
+                async () =>
+                {
+                    var result = await Instance.GetAnimePicturesAsync(malId, token);
+                    return result.Data.Select(ImagesSetDto.From).Where(r => r != null).ToList();
+                },
+                entry => entry.Pictures,
+                (entry, value) => entry.Pictures = value);
+
+        public static async Task<List<AnimeCacheDto>> SearchAnimeAsync(string searchTerm, CancellationToken token)
+        {
+            if (_searchCache.TryGetValue(searchTerm, out var cached) &&
+                cached.Expiry > DateTime.UtcNow &&
+                cached.Ids != null)
+            {
+                var list = new List<AnimeCacheDto>();
+                foreach (var id in cached.Ids)
+                    list.Add(await GetAnimeAsync(id, token));
+                return list;
+            }
+
+            var result = await Instance.SearchAnimeAsync(searchTerm, token);
+            var malIds = result.Data.Select(a => a.MalId ?? 0).ToList();
+
+            var animeList = new List<AnimeCacheDto>();
+            foreach (var id in malIds)
+                animeList.Add(await GetAnimeAsync(id, token));
+
+            _searchCache[searchTerm] = new CacheEntry
+            {
+                Ids = malIds,
+                Expiry = DateTime.UtcNow.Add(SearchExpiry)
+            };
+            await SaveCacheAsync(SearchCacheFile, _searchCache);
+
+            return animeList;
         }
     }
 }
