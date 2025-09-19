@@ -6,6 +6,7 @@ using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
@@ -35,6 +36,20 @@ namespace Jellyfin.Plugin.MyAnimeList
 
         /// <inheritdoc />
         public override string Name => Constants.PluginName;
+
+        public new string DataFolderPath
+        {
+            get
+            {
+                var path = Path.Combine(
+                    ApplicationPaths.PluginsPath,
+                    $"myanimelist_{Version.ToString()}"
+                );
+
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
 
         /// <inheritdoc />
         public override Guid Id => Guid.Parse(Constants.PluginGuid);

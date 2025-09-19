@@ -179,7 +179,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public string[] GetGenres()
         {
-            var genres = anime.Genres;
+            var genres = anime.Genres ?? Enumerable.Empty<string>();
             var config = Plugin.Instance.Configuration;
             return (config.MaxGenres > 0 ? genres.Take(config.MaxGenres) : genres).ToArray();
         }

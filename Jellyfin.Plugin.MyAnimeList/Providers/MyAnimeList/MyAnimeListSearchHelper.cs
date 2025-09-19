@@ -51,6 +51,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return info switch
             {
                 MovieInfo => (await JikanSingleton.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
+                EpisodeInfo => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken),
                 _ => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
