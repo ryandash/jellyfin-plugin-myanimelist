@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList
             {
                 var path = Path.Combine(
                     ApplicationPaths.PluginsPath,
-                    $"myanimelist_{Version.ToString()}"
+                    $"myanimelist_{Version.ToString(3)}"
                 );
 
                 Directory.CreateDirectory(path);
