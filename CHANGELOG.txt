@@ -1,16 +1,5 @@
-637297c Bug fixes
+abccf47 Bugfix for bugfix... oops
 
-- Fix used season 1 info instead of season 2 info ;/
-- Fix possible empty genre array
-- Fix wrong plugin folder name for cache
+- Forgot to limit the version to 3 numbers...
 
-4259305 Improve Cache
-
-- Clean up DTOs and Caching methods to significantly reducing memory and file size of cache
-- Minor cleanup of unused variables
-- Add cleanup of expired cache entries before saving
-- Split up different caches into separate files
-- Add temporary code to delete old JikanCache.json and JikanCache.debug.log files that are no longer used
-- Minor version bump
-
-b211f69 Update manifest
+91c1f67 Update manifest
