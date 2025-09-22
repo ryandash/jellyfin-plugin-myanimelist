@@ -16,23 +16,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
     {
         static JikanSingleton()
         {
-            var oldCache = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.json");
-            if (File.Exists(oldCache)) TryDelete(oldCache);
-
-            var debugLogPath = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCache.debug.log");
-            if (File.Exists(debugLogPath)) TryDelete(debugLogPath);
-
             LoadCache(AnimeCacheFile, _animeCache);
             LoadCache(SearchCacheFile, _searchCache);
             LoadCache(EpisodesCacheFile, _episodesCache);
             LoadCache(CharactersCacheFile, _charactersCache);
             LoadCache(RelationsCacheFile, _relationsCache);
             LoadCache(PicturesCacheFile, _picturesCache);
-        }
-
-        private static void TryDelete(string path)
-        {
-            try { File.Delete(path); } catch { }
         }
 
         private static readonly Lazy<Jikan> _jikanInstance = new(() => new Jikan());
