@@ -63,6 +63,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         public bool DisableLocalCache { get; set; }
 
+        public bool UseExternalIDs { get; set; }
+
         public bool EnableDebug { get; set; }
     }
 }

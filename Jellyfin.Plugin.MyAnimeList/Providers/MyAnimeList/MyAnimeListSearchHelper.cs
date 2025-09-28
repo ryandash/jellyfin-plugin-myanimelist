@@ -176,7 +176,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken);
         }
 
-        private async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(
+        public async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(
     ILogger _log, bool enableDebug,
     long malId, int seasonNumber, CancellationToken cancellationToken)
         {

@@ -66,6 +66,10 @@
                             <span>Disable local cache (do not store cache to a file)</span>
                         </label>
                         <label class="emby-checkbox-label">
+                            <input id="chkUseExternalIDs" name="chkUseExternalIDs" type="checkbox" is="emby-checkbox" />
+                            <span>Use external IDs in BETA (TVDB → MAL mapping currently)</span>
+                        </label>
+                        <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
                             <span>Enable more debug information.</span>
                         </label>
@@ -96,6 +100,7 @@
                             document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
                             document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
                             document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
+                            document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
                             document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
                             Dashboard.hideLoadingMsg();
@@ -116,6 +121,7 @@
                             config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;
                             config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
                             config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
+                            config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
                             config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
                             ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {

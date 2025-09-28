@@ -31,49 +31,88 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            MetadataResult<Episode> result = new MetadataResult<Episode>();
-            if (info.Path == null || !info.IndexNumber.HasValue) return result;
-            var anime = new Anime
-            {
-                anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken)
-            };
-            if (anime == null) return result;
+            var result = new MetadataResult<Episode>();
 
-            (var episodeNumber, anime.anime) = await GetSeasonEpisodeNumberAsync(
-                info.IndexNumber.Value,
-                info.ParentIndexNumber.Value,
-                anime.anime,
-                cancellationToken
-            ).ConfigureAwait(false);
+            if (info.Path == null || !info.IndexNumber.HasValue)
+                return result;
 
-            if (anime.anime == null) return result;
-            long malID = anime.anime.MalId.GetValueOrDefault();
+            var config = Plugin.Instance.Configuration;
+            var enableDebug = config.EnableDebug;
 
             EpisodeCacheDto episodeData = null;
-            try
-            {
-                if (anime.anime.Episodes != 1)
-                {
-                    episodeData = (await JikanSingleton.GetAnimeEpisodeAsync(malID, episodeNumber, cancellationToken).ConfigureAwait(false));
-                }
-                else
-                {
-                    episodeData = anime.toEpisodeData();
-                }
-            }
-            catch (JikanRequestException)
-            {
-                _log.LogInformation($"No episode data for {malID} {episodeNumber}");
-                // Expected for missing episode info
-            }
-            if (episodeData == null) return result;
+            Anime anime = null;
 
-            EpisodeSearchResult episodeResult = new EpisodeSearchResult();
-            episodeResult.episode = episodeData;
+            if (config.UseExternalIDs && info is EpisodeInfo episodeInfo && episodeInfo.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
+            {
+                _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
+
+                var idMapping = new IdMappings();
+                var epResult = await idMapping.GetAnimeEpisodeMappingAsync(tvdbid).ConfigureAwait(false);
+
+                if (epResult?.MalId is long malId)
+                {
+                    _log.LogInformation("MalID: {MalId} Season: {Season} Episode: {Episode}",
+                        malId, epResult.Season, epResult.Episode);
+
+                    anime = new Anime
+                    {
+                        anime = await _searchHelper
+                            .GetCurrentAnimeSeasonAsync(_log, enableDebug, malId, info.ParentIndexNumber ?? 1, cancellationToken)
+                            .ConfigureAwait(false)
+                    };
+
+                    episodeData = await JikanSingleton
+                        .GetAnimeEpisodeAsync(malId, epResult.Episode!.Value, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            if (episodeData == null)
+            {
+                anime = new Anime
+                {
+                    anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken).ConfigureAwait(false)
+                };
+
+                if (anime?.anime == null)
+                    return result;
+
+                var (episodeNumber, updatedAnime) = await GetSeasonEpisodeNumberAsync(
+                    info.IndexNumber.Value,
+                    info.ParentIndexNumber!.Value,
+                    anime.anime,
+                    cancellationToken
+                ).ConfigureAwait(false);
+
+                anime.anime = updatedAnime;
+
+                if (anime.anime == null)
+                    return result;
+
+                var malId = anime.anime.MalId.GetValueOrDefault();
+
+                try
+                {
+                    episodeData = anime.anime.Episodes != 1
+                        ? await JikanSingleton.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false)
+                        : anime.toEpisodeData();
+                }
+                catch (JikanRequestException)
+                {
+                    _log.LogInformation("No episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                }
+            }
+
+            if (episodeData == null)
+                return result;
+
+            var episodeResult = new EpisodeSearchResult { episode = episodeData };
+
             result.HasMetadata = true;
-            result.Item = episodeResult.ToEpisode(anime.anime.Episodes?.ToString().Length ?? 4);
+            result.Item = episodeResult.ToEpisode(anime!.anime?.Episodes?.ToString().Length ?? 4);
             result.Item.IndexNumber = info.IndexNumber;
             result.Provider = ProviderNames.MyAnimeList;
+
             return result;
         }
 
