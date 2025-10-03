@@ -110,6 +110,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         }
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
+        private static readonly Regex QuoteMatches = new Regex("\"([^\"]+)\"", RegexOptions.Compiled);
 
         private async Task<long?> GetBestAnimeID(
     ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
@@ -159,11 +160,33 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     }
 
                     // Case 3: if title contains the searchTerm as substring
-                    if (title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) &&
+                    if (title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) &&
                         similarity > bestBackupSimilarity)
                     {
                         bestBackupMalId = anime.MalId;
                         bestBackupSimilarity = similarity;
+                    }
+
+                    // Case 4: if the title contains quoted words (Typically long titles)
+                    var quoteMatches = QuoteMatches.Matches(title);
+                    foreach (Match match in quoteMatches)
+                    {
+                        string quotedWord = match.Groups[1].Value.ToLowerInvariant();
+                        if (!string.IsNullOrEmpty(quotedWord))
+                        {
+                            int quotedSimilarity = FuzzierSharp.Fuzz.Ratio(
+                                NormalizeRegex.Replace(quotedWord, string.Empty),
+                                normalizedSearch);
+
+                            if (quotedSimilarity >= 95)
+                                return anime.MalId;
+
+                            if (quotedSimilarity > bestBackupSimilarity)
+                            {
+                                bestBackupMalId = anime.MalId;
+                                bestBackupSimilarity = quotedSimilarity;
+                            }
+                        }
                     }
                 }
             }
