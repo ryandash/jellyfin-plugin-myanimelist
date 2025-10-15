@@ -44,20 +44,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (config.UseExternalIDs && info is EpisodeInfo episodeInfo && episodeInfo.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
             {
-                _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
+                if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
                 var idMapping = new IdMappings();
                 var epResult = await idMapping.GetAnimeEpisodeMappingAsync(tvdbid).ConfigureAwait(false);
 
                 if (epResult?.MalId is long malId)
                 {
-                    _log.LogInformation("MalID: {MalId} Season: {Season} Episode: {Episode}",
+                    if (enableDebug) _log.LogInformation("MalID: {MalId} Season: {Season} Episode: {Episode}",
                         malId, epResult.Season, epResult.Episode);
 
                     anime = new Anime
                     {
                         anime = await _searchHelper
-                            .GetCurrentAnimeSeasonAsync(_log, enableDebug, malId, info.ParentIndexNumber ?? 1, cancellationToken)
+                            .GetCurrentAnimeSeasonAsync(malId, info.ParentIndexNumber ?? 1, cancellationToken)
                             .ConfigureAwait(false)
                     };
 

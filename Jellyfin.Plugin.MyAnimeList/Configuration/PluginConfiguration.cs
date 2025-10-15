@@ -2,34 +2,20 @@ using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.MyAnimeList.Configuration
 {
+    /// <summary>
+    /// Determines which title version should be preferred when displaying anime.
+    /// </summary>
     public enum TitlePreferenceType
     {
-        /// <summary>
-        /// Use titles in the local metadata language.
-        /// </summary>
-        Localized,
-
-        /// <summary>
-        /// Use titles in Japanese.
-        /// </summary>
-        Japanese,
-
-        /// <summary>
-        /// Use titles in Japanese romaji.
-        /// </summary>
-        JapaneseRomaji
+        Localized, Japanese, JapaneseRomaji
     }
 
-    public enum AnimeDefaultGenreType
-    {
-        None, Anime, Animation
-    }
-
+    /// <summary>
+    /// Determines which language(s) to include when filtering people (voice actors, staff, etc.).
+    /// </summary>
     public enum LanguageFilterType
     {
-        Localized,
-        Japanese,
-        All
+        Localized, Japanese, All
     }
 
     public class PluginConfiguration : BasePluginConfiguration
@@ -43,28 +29,24 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             MaxGenres = 5;
         }
 
+        // === Title Settings ===
         public TitlePreferenceType TitlePreference { get; set; }
-
         public TitlePreferenceType OriginalTitlePreference { get; set; }
 
+        // === People & Language Filters ===
         public LanguageFilterType PersonLanguageFilterPreference { get; set; }
-
         public int MaxPeople { get; set; }
 
+        // === Metadata Options ===
         public int MaxGenres { get; set; }
-
         public bool IgnoreMetadata { get; set; }
-
         public bool IgnoreEpisodeMetadata { get; set; }
-
         public bool IgnoreBestAttempt { get; set; }
-
         public bool ExcludeSpecials { get; set; }
-
         public bool DisableLocalCache { get; set; }
-
         public bool UseExternalIDs { get; set; }
 
+        // === Debugging ===
         public bool EnableDebug { get; set; }
     }
 }

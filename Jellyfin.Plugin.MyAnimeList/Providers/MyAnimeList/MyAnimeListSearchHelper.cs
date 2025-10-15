@@ -51,8 +51,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return info switch
             {
                 MovieInfo => (await JikanSingleton.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
-                EpisodeInfo => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken),
-                _ => await GetCurrentAnimeSeasonAsync(_log, enableDebug, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
+                EpisodeInfo => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken),
+                _ => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
 
@@ -199,9 +199,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken);
         }
 
-        public async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(
-    ILogger _log, bool enableDebug,
-    long malId, int seasonNumber, CancellationToken cancellationToken)
+        public async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
         {
             async Task<long?> GetRelatedAnimeIdAsync(long id, string relationType)
             {

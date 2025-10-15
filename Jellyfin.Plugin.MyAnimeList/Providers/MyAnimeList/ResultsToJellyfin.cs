@@ -43,6 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, episode.Url } },
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
@@ -95,7 +96,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
         }
-        public string[] GetStudioNames() => anime.Studios.ToArray();
     }
 
     public class Anime : AnimeSearchResult
@@ -179,10 +179,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public string[] GetGenres()
         {
-            var genres = anime.Genres ?? Enumerable.Empty<string>();
-            var config = Plugin.Instance.Configuration;
-            return (config.MaxGenres > 0 ? genres.Take(config.MaxGenres) : genres).ToArray();
+            var genres = anime?.Genres?
+                .Where(g => !string.IsNullOrWhiteSpace(g))
+                .ToArray() ?? Array.Empty<string>();
+
+            var max = Plugin.Instance.Configuration.MaxGenres;
+            return max > 0 ? genres.Take(max).ToArray() : genres;
         }
+
+        public string[] GetStudioNames() =>
+            anime?.Studios?
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToArray()
+            ?? Array.Empty<string>();
 
         public Series ToSeries()
         {
@@ -191,7 +200,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return new Series
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
                 PremiereDate = GetAiredDate(),
@@ -217,7 +226,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return new Movie
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
                 PremiereDate = GetAiredDate(),
@@ -235,7 +244,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             var duration = GetDuration(anime.Duration);
             return new Season
             {
-                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "en"),
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
                 PremiereDate = GetAiredDate(),

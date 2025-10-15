@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
