@@ -1,16 +1,12 @@
-c85b738 Add external ID mapping for episodes using TVDB → MAL (BETA)
+f791b8e Cleanup + bugfix + version bump
 
-- Added support for mapping episodes via external IDs (TVDB → MAL) when
-  "Use external IDs" is enabled in plugin settings.
-- Mapping source: https://github.com/ryandash/MyAnimeList-IDs-To-TVDB-IDs
-- Currently implemented only for episodes. Could be extended to series
-  and season data in the future.
-- Mapping is not perfect — contributions, fixes, suggestions, and bad mapping are
-  welcome and appreciated to improve the mapping. Please post them in https://github.com/ryandash/MyAnimeList-IDs-To-TVDB-IDs
+- Fix a bug where genres or studio names could be null
+- Cleanup
+- Version bump to 6.3.5
+- Fix some titles not using the correct language
 
-ba1b046 Remove File Deletion
+19323d2 Update MyAnimeListSearchHelper.cs
 
-- Remove the file deletion because it should no longer be needed
-- Version bump
+- Fix for some anime abbreviations that are simply a portion of long anime titles found between quotes
 
-90c189c Update manifest
+70c1f51 Update manifest
