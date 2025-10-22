@@ -3,22 +3,15 @@ on:
     inputs:
       dotnet-version:
         required: false
-        default: "8.0.x"
+        default: "9.0.x"
         description: "The .NET version to setup for the build"
         type: string
       dotnet-target:
         required: false
-        default: "net8.0"
+        default: "net9.0"
         description: "The .NET target framework to build the projects with"
         type: string
-      release:
-        required: false
-        default: "false"
-        description: "Create GitHub release"
-        type: choice
-        options:
-          - "true"
-          - "false"
+
 permissions:
   contents: write
 jobs:
@@ -122,7 +115,6 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: ${{ inputs.release == 'true' }}
         uses: ncipollo/release-action@v1
         with:
           tag: v${{ env.VERSION }}
