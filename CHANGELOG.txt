@@ -1,12 +1,6 @@
-f791b8e Cleanup + bugfix + version bump
+df3c725 Jellyfin 10.11 Update
 
-- Fix a bug where genres or studio names could be null
-- Cleanup
-- Version bump to 6.3.5
-- Fix some titles not using the correct language
+- Version bump
+- Adjust .Net and package versions
 
-19323d2 Update MyAnimeListSearchHelper.cs
-
-- Fix for some anime abbreviations that are simply a portion of long anime titles found between quotes
-
-70c1f51 Update manifest
+ca5cd58 Update manifest
