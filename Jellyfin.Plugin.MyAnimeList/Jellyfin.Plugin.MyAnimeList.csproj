@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
-    <Version>6.3.6</Version>
-    <AssemblyVersion>6.3.6</AssemblyVersion>
-    <FileVersion>6.3.6</FileVersion>
+    <Version>6.3.7</Version>
+    <AssemblyVersion>6.3.7</AssemblyVersion>
+    <FileVersion>6.3.7</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

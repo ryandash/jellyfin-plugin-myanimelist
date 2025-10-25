@@ -14,8 +14,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public string Key => ProviderNames.MyAnimeList;
 
-        public ExternalIdMediaType? Type => null;
-
-        public string UrlFormatString => "{0}";
+        public ExternalIdMediaType? Type => ExternalIdMediaType.Episode;
     }
 }

@@ -68,7 +68,7 @@ jobs:
 
       - name: Generate ZIP for DLLs
         run: |
-          find main_repo -path '*/bin/Release/*.dll' -exec zip -j myanimelist_${{ env.VERSION }}.zip {} +
+          find main_repo -path '*/bin/Release/*.dll' -print0 | xargs -0 zip -j myanimelist_${VERSION}.zip
 
       - name: Generate MD5 Checksum for ZIP
         id: checksum
@@ -86,12 +86,12 @@ jobs:
              --arg targetAbi "${{ env.TARGET_ABI }}" \
              --arg timestamp "$TIMESTAMP" \
              '.[0].versions = [{
+                version: $version,
                 changelog: $changelog,
-                checksum: $checksum,
-                sourceUrl: $sourceUrl,
                 targetAbi: $targetAbi,
-                timestamp: $timestamp,
-                version: $version
+                sourceUrl: $sourceUrl,
+                checksum: $checksum,
+                timestamp: $timestamp     
               }] + .[0].versions' main_repo/manifest.json > main_repo/manifest-updated.json
 
           mv main_repo/manifest-updated.json main_repo/manifest.json

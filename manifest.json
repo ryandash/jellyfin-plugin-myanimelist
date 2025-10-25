@@ -1,11 +1,12 @@
 [
   {
-    "category": "Metadata",
     "guid": "ed04e975-f906-4b58-a250-705550810623",
-    "name": "myanimelist",
-    "description": "myanimelist metadata provider",
+    "name": "MyAnimeList",
+    "description": "MyAnimeList metadata provider",
+    "overview": "MyAnimeList metadata provider",
     "owner": "Ryan Dash",
-    "overview": "myanimelist metadata provider",
+    "category": "Anime",
+    "imageUrl": "",
     "versions": [
       {
         "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v6.3.6",
