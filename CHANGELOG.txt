@@ -1,6 +1,8 @@
-df3c725 Jellyfin 10.11 Update
+852806c Bug Fixes
 
-- Version bump
-- Adjust .Net and package versions
+- Fix for External ids change in Jellyfin 10.11
+- Version bump to 6.3.7
+- Manifest reordered to a more standard order
+- Fix potential zip issues in workflow
 
-ca5cd58 Update manifest
+17b821b Update manifest
