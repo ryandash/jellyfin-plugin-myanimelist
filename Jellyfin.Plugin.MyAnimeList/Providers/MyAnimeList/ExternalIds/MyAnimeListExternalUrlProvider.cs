@@ -20,15 +20,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                     case Series:
                     case Movie:
                     case Season:
-                    case Person:
                         yield return $"https://myanimelist.net/anime/{externalId}/";
                         break;
+                    case Person:
                     case Episode:
-                        yield return $"{externalId}/";
+                        yield return externalId;
                         break;
                 }
             }
         }
     }
 }
-

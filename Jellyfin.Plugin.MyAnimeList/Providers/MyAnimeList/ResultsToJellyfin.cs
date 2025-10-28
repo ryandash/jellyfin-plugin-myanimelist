@@ -144,6 +144,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return totalMinutes;
         }
+        private static string SwapName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            var parts = input.Split(',');
+            return parts.Length == 2
+                ? $"{parts[1].Trim()} {parts[0].Trim()}"
+                : input.Trim();
+        }
 
         public List<PersonInfo> GetPeopleInfo()
         {
@@ -164,14 +172,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 })
                 .Select(x => new PersonInfo
                 {
-                    Name = x.va.Person.Name,
+                    Name = SwapName(x.va.Person.Name),
+                    Role = SwapName(x.edge.Character.Name),
+                    Type = PersonKind.Actor,
                     ImageUrl = x.va.Person.Images.JPG.MaximumImageUrl
                               ?? x.va.Person.Images.JPG.LargeImageUrl
+                              ?? x.va.Person.Images.JPG.ImageUrl
                               ?? x.va.Person.Images.JPG.MediumImageUrl
                               ?? x.va.Person.Images.JPG.SmallImageUrl,
-                    Role = x.edge.Role,
-                    Type = PersonKind.Actor,
-                    ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.MalId.ToString() } }
+                    ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.Url } }
                 })
                 .Take(config.MaxPeople > 0 ? config.MaxPeople : int.MaxValue)
                 .ToList(); ;

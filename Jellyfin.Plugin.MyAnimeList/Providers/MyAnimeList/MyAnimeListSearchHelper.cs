@@ -218,7 +218,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (anime.Titles.Any(t =>
                     t.Title.Contains("2nd", StringComparison.OrdinalIgnoreCase) ||
-                    t.Title.Contains("Season 2", StringComparison.OrdinalIgnoreCase)))
+                    t.Title.Contains("Season 2", StringComparison.OrdinalIgnoreCase) ||
+                    t.Title.Contains("sequel", StringComparison.OrdinalIgnoreCase) ||
+                    t.Title.Contains("Part 2", StringComparison.OrdinalIgnoreCase)))
             {
                 var prequelId = await GetRelatedAnimeIdAsync(malId, "Prequel");
                 if (prequelId != null)

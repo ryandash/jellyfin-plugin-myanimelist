@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public TitlePreferenceType OriginalTitlePreference { get; set; }
 
         // === People & Language Filters ===
-        public LanguageFilterType PersonLanguageFilterPreference { get; set; }
+        public LanguageFilterType PersonLanguageFilterPreference { get; set; } = LanguageFilterType.Japanese;
         public int MaxPeople { get; set; }
 
         // === Metadata Options ===
