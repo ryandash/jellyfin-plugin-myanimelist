@@ -1,8 +1,9 @@
-852806c Bug Fixes
+f89cece Bug fixes
 
-- Fix for External ids change in Jellyfin 10.11
-- Version bump to 6.3.7
-- Manifest reordered to a more standard order
-- Fix potential zip issues in workflow
+- Address bad person information format and information
+- Fix external id for person urls
+- Fix not getting all person images
+- Fix second season anime being used as first season (thanks Jikan ;/)
+- Use Japanese as default filter for people information
 
-17b821b Update manifest
+9a99db2 Update manifest
