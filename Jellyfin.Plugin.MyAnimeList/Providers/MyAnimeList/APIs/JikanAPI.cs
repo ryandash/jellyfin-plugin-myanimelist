@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
+using MediaBrowser.Common.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,14 +15,33 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
     public static class JikanSingleton
     {
-        static JikanSingleton()
+        private static bool _initialized;
+        private static readonly object _initLock = new();
+        public static void Initialize(IApplicationPaths paths)
         {
-            LoadCache(AnimeCacheFile, _animeCache);
-            LoadCache(SearchCacheFile, _searchCache);
-            LoadCache(EpisodesCacheFile, _episodesCache);
-            LoadCache(CharactersCacheFile, _charactersCache);
-            LoadCache(RelationsCacheFile, _relationsCache);
-            LoadCache(PicturesCacheFile, _picturesCache);
+            if (_initialized) return;
+            lock (_initLock)
+            {
+                _initialized = true;
+
+                var baseDir = Path.Combine(paths.CachePath, "myanimelist");
+
+                Directory.CreateDirectory(baseDir);
+
+                AnimeCacheFile = Path.Combine(baseDir, "JikanAnimeCache.json");
+                SearchCacheFile = Path.Combine(baseDir, "JikanSearchCache.json");
+                EpisodesCacheFile = Path.Combine(baseDir, "JikanEpisodesCache.json");
+                CharactersCacheFile = Path.Combine(baseDir, "JikanCharactersCache.json");
+                RelationsCacheFile = Path.Combine(baseDir, "JikanRelationsCache.json");
+                PicturesCacheFile = Path.Combine(baseDir, "JikanPicturesCache.json");
+
+                LoadCache(AnimeCacheFile, _animeCache);
+                LoadCache(SearchCacheFile, _searchCache);
+                LoadCache(EpisodesCacheFile, _episodesCache);
+                LoadCache(CharactersCacheFile, _charactersCache);
+                LoadCache(RelationsCacheFile, _relationsCache);
+                LoadCache(PicturesCacheFile, _picturesCache);
+            }
         }
 
         private static readonly Lazy<Jikan> _jikanInstance = new(() => new Jikan());
@@ -55,20 +75,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         private static readonly ConcurrentDictionary<string, CacheEntry> _charactersCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _relationsCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _picturesCache = new();
-
-        private static readonly string AnimeCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanAnimeCache.json");
-        private static readonly string SearchCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanSearchCache.json");
-        private static readonly string EpisodesCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanEpisodesCache.json");
-        private static readonly string CharactersCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanCharactersCache.json");
-        private static readonly string RelationsCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanRelationsCache.json");
-        private static readonly string PicturesCacheFile = Path.Combine(Plugin.Instance.DataFolderPath, "JikanPicturesCache.json");
+        private static string AnimeCacheFile;
+        private static string SearchCacheFile;
+        private static string EpisodesCacheFile;
+        private static string CharactersCacheFile;
+        private static string RelationsCacheFile;
+        private static string PicturesCacheFile;
 
         private static void LoadCache(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
         {
             if (Plugin.Instance.Configuration.DisableLocalCache) return;
             try
             {
-                if (!File.Exists(filePath)) { File.WriteAllText(filePath, "{}"); return; }
+                var dir = Path.GetDirectoryName(filePath)!;
+                Directory.CreateDirectory(dir);
+
+                if (!File.Exists(filePath))
+                {
+                    File.WriteAllText(filePath, "{}");
+                    return;
+                }
+
                 var json = File.ReadAllText(filePath);
                 var loaded = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(json, JsonOptions);
                 if (loaded == null) return;
@@ -102,7 +129,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             string cacheFile,
             Func<Task<T>> fetchFunc,
             Func<CacheEntry, T> getter,
-            Action<CacheEntry, T> setter)
+            Action<CacheEntry, T> setter,
+            bool persist)
             where T : class
         {
             if (cache.TryGetValue(key, out var entry) && entry.Expiry > DateTime.UtcNow)
@@ -121,7 +149,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
             cache[key] = newEntry;
 
-            await SaveCacheAsync(cacheFile, cache);
+            if (persist)
+                await SaveCacheAsync(cacheFile, cache);
 
             return result;
         }
@@ -134,7 +163,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 AnimeCacheFile,
                 async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token)).Data),
                 entry => entry.Anime,
-                (entry, value) => entry.Anime = value);
+                (entry, value) => entry.Anime = value,
+                true
+            );
 
         public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token) =>
             GetOrFetchAsync(
@@ -154,9 +185,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 },
                 (entry, value) =>
                 {
-                    if (entry.Episodes == null) entry.Episodes = new Dictionary<int, EpisodeCacheDto>();
+                    entry.Episodes ??= new Dictionary<int, EpisodeCacheDto>();
                     entry.Episodes[episodeNumber] = value;
-                });
+                },
+                true
+            );
 
         public static Task<List<CharacterCacheDto>> GetAnimeCharactersAsync(long malId, CancellationToken token) =>
             GetOrFetchAsync(
@@ -169,7 +202,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                     return result.Data.Select(CharacterCacheDto.From).ToList();
                 },
                 entry => entry.Characters,
-                (entry, value) => entry.Characters = value);
+                (entry, value) => entry.Characters = value,
+                true
+            );
 
         public static Task<List<RelatedEntryDto>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
             GetOrFetchAsync(
@@ -182,7 +217,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                     return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
                 },
                 entry => entry.Relations,
-                (entry, value) => entry.Relations = value);
+                (entry, value) => entry.Relations = value,
+                true
+            );
 
         public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token) =>
             GetOrFetchAsync(
@@ -195,35 +232,45 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                     return result.Data.Select(ImagesSetDto.From).Where(r => r != null).ToList();
                 },
                 entry => entry.Pictures,
-                (entry, value) => entry.Pictures = value);
+                (entry, value) => entry.Pictures = value,
+                true
+            );
 
-        public static async Task<List<AnimeCacheDto>> SearchAnimeAsync(string searchTerm, CancellationToken token)
+        public static async Task<List<AnimeCacheDto>> SearchAnimeAsync(string term, CancellationToken token)
         {
-            if (_searchCache.TryGetValue(searchTerm, out var cached) &&
+            if (_searchCache.TryGetValue(term, out var cached) &&
                 cached.Expiry > DateTime.UtcNow &&
                 cached.Ids != null)
             {
-                var list = new List<AnimeCacheDto>();
-                foreach (var id in cached.Ids)
-                    list.Add(await GetAnimeAsync(id, token));
-                return list;
+                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token)))).ToList();
             }
 
-            var result = await Instance.SearchAnimeAsync(searchTerm, token);
-            var malIds = result.Data.Select(a => a.MalId ?? 0).ToList();
+            var result = await Instance.SearchAnimeAsync(term, token);
+            var ids = result.Data.Select(a => a.MalId ?? 0).ToList();
 
-            var animeList = new List<AnimeCacheDto>();
-            foreach (var id in malIds)
-                animeList.Add(await GetAnimeAsync(id, token));
+            var anime = await Task.WhenAll(
+                result.Data.Select(a =>
+                    GetOrFetchAsync(
+                        a.MalId.ToString(),
+                        _animeCache,
+                        AnimeCacheFile,
+                        () => Task.FromResult(AnimeCacheDto.From(a)),
+                        entry => entry.Anime,
+                        (entry, value) => entry.Anime = value,
+                        false
+                    )
+                )
+            );
+            await SaveCacheAsync(AnimeCacheFile, _animeCache);
 
-            _searchCache[searchTerm] = new CacheEntry
+            _searchCache[term] = new CacheEntry
             {
-                Ids = malIds,
+                Ids = ids,
                 Expiry = DateTime.UtcNow.Add(SearchExpiry)
             };
-            await SaveCacheAsync(SearchCacheFile, _searchCache);
 
-            return animeList;
+            await SaveCacheAsync(SearchCacheFile, _searchCache);
+            return anime.ToList();
         }
     }
 }

@@ -1,4 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Configuration;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;
@@ -23,6 +24,7 @@ namespace Jellyfin.Plugin.MyAnimeList
         {
             Instance = this;
             _httpClientFactory = httpClientFactory;
+            JikanSingleton.Initialize(ApplicationPaths);
         }
 
         public HttpClient GetHttpClient()
