@@ -49,7 +49,7 @@ Anime
 
 ### Automatic (recommended)
 1. Navigate to Settings > Admin Dashboard > Plugins > Repositories
-2. Add a new repository with a `Repository URL` of `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/main/manifest.json`. The name can be anything you like.
+2. Add a new repository with a `Repository URL` of `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json`. The name can be anything you like.
 3. Save, and navigate to Catalogue.
 4. Myanimelist should be present. Click on it and install the latest version.
 5. Navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
