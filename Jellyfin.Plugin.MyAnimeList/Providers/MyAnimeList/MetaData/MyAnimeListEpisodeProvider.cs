@@ -138,12 +138,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     : null;
             }
 
-
             while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
             {
                 var sequelAnime = await GetRelatedAnimeAsync("Sequel");
-                if (sequelAnime == null || !sequelAnime.Episodes.HasValue || sequelAnime.Episodes.Value == 0)
+                if (sequelAnime == null || sequelAnime.Episodes == 0)
+                {
                     break;
+                }
 
                 episodeNumber -= anime.Episodes.Value;
                 anime = sequelAnime;
@@ -152,7 +153,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (episodeNumber == 0)
             {
                 var prequelAnime = await GetRelatedAnimeAsync("Prequel");
-                if (prequelAnime != null && prequelAnime.Episodes.HasValue && prequelAnime.Episodes.Value != 0)
+                if (prequelAnime?.Episodes.GetValueOrDefault() > 0)
                 {
                     anime = prequelAnime;
                     episodeNumber += anime.Episodes.Value;
