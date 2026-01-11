@@ -1,29 +1,6 @@
-de7c9ca Cache and API call improvement
+4f0c583 Update Jellyfin.Plugin.MyAnimeList.csproj
 
-- Reduce API calls
-- Save data faster and less often
-- Move cache directory to Jellyfin's cache directory (Now Jellyfin\Server\cache\myanimelist)
-- Fix loading cache deleting all cache due to directory missing error
+- Change versioning to standard version format
 
-d2149c8 Bug fix for ONA sequels
-
-- Another Sequel bug fix this time for ONAs where an anime have multiple sequels because some are OVAs and Specials mislabeled by MAL.
-
-01fd3a3 Sequel Bug Fix
-
-- Fix for when a sequel anime that has an unknown total number of episodes causing the season to be skipped even though it does have episodes
-- Version Bump
-- Update packages
-
-553c137 Bump Jellyfin.Controller from 10.11.0 to 10.11.2
-
----
-updated-dependencies:
-- dependency-name: Jellyfin.Controller
-  dependency-version: 10.11.2
-  dependency-type: direct:production
-  update-type: version-update:semver-patch
-...
-
-Signed-off-by: dependabot[bot] <support@github.com>
-2cf8aac Update manifest
+80b4c4b Update README.md
+dd45cb0 Update manifest
