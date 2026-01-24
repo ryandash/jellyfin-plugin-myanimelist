@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
@@ -19,10 +20,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public int Order => -2;
         public string Name => "MyAnimeList";
 
-        public MyAnimeListSeriesProvider(ILogger<MyAnimeListSeriesProvider> logger)
+        public MyAnimeListSeriesProvider(ILogger<MyAnimeListSeriesProvider> logger, ILibraryManager libraryManager)
         {
             _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper();
+            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
         }
 
         public async Task<MetadataResult<Series>> GetMetadata(SeriesInfo info, CancellationToken cancellationToken)

@@ -1,5 +1,6 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,6 +15,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class MyAnimeListSearchHelper
     {
+        private readonly string[] _libraryRoots;
+
+        public MyAnimeListSearchHelper(ILibraryManager libraryManager)
+        {
+            _libraryRoots = libraryManager
+                .GetVirtualFolders()
+                .SelectMany(v => v.Locations)
+                .Where(l => !string.IsNullOrEmpty(l))
+                .Select(l => l.TrimEnd(Path.DirectorySeparatorChar))
+                .OrderByDescending(l => l.Length)
+                .ToArray();
+        }
+
         public async Task<AnimeCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
         {
             string malId = info switch
@@ -38,8 +52,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
 
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
-            string searchName = FilterName(GetSearchName(info));
-            if (enableDebug) _log.LogInformation("Original name: {name}", searchName);
+            if (enableDebug) _log.LogInformation("Original name: {name}", info.Name);
+            string searchName = FilterName(GetSearchName(info, _log));
+            if (enableDebug) _log.LogInformation("Filtered name: {name}", searchName);
             long? malIdFromName = await GetBestAnimeID(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
             if (!malIdFromName.HasValue)
             {
@@ -55,10 +70,37 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 _ => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
-
-        private string GetSearchName(ItemLookupInfo info)
+        private string StripLibraryPath(string itemPath, ILogger log)
         {
-            string[] splitPath = info.Path.Split(Path.DirectorySeparatorChar);
+            if (string.IsNullOrEmpty(itemPath))
+                return itemPath;
+
+            foreach (var root in _libraryRoots)
+            {
+                if (itemPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (Plugin.Instance.Configuration.EnableDebug)
+                        log.LogInformation("Removed library root '{Root}' from '{Path}'", root, itemPath);
+
+                    int start = root.Length;
+                    if (start < itemPath.Length && itemPath[start] == Path.DirectorySeparatorChar)
+                        start++;
+
+                    return itemPath[start..];
+                }
+            }
+
+            return itemPath;
+        }
+
+        private string GetSearchName(ItemLookupInfo info, ILogger _log)
+        {
+            if (string.IsNullOrEmpty(info.Path))
+                return info.Name;
+            string relativePath = StripLibraryPath(info.Path, _log);
+            var splitPath = relativePath.Split(Path.DirectorySeparatorChar);
+            if (splitPath.Length < 2)
+                return info.Name;
             int index = splitPath.Length - 1;
 
             switch (info)

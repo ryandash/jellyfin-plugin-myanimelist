@@ -4,7 +4,7 @@
 
 This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/) and MyAnimeList.
 
-Folders must be formatted as shown below to get valid season information.\
+Folders must be formatted as shown below to get the best results.\
 For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.\
 Please report any issues you find.
 ```
