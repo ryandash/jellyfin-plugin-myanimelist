@@ -103,20 +103,32 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 return info.Name;
             int index = splitPath.Length - 1;
 
+            string GetFolderForEpisodeOrMovie(string[] path, int idx)
+            {
+                while (idx > 0)
+                {
+                    string folder = path[idx - 1];
+                    if (!folder.Contains("season", StringComparison.OrdinalIgnoreCase) &&
+                        !folder.Contains("special", StringComparison.OrdinalIgnoreCase))
+                    {
+                        break;
+                    }
+                    idx--;
+                }
+                return path[Math.Max(0, idx - 1)];
+            }
+
             switch (info)
             {
-                case EpisodeInfo or MovieInfo:
-                    while (index > 0)
+                case EpisodeInfo episode:
+                    if (episode.ParentIndexNumber == 0)
                     {
-                        string folder = splitPath[index - 1];
-                        if (!folder.Contains("season", StringComparison.OrdinalIgnoreCase) &&
-                            !folder.Contains("special", StringComparison.OrdinalIgnoreCase))
-                        {
-                            break;
-                        }
-                        index--;
+                        return episode.Name.Split('-')[0].Trim();
                     }
-                    return splitPath[Math.Max(0, index - 1)];
+                    return GetFolderForEpisodeOrMovie(splitPath, index);
+
+                case MovieInfo:
+                    return GetFolderForEpisodeOrMovie(splitPath, index);
 
                 case SeasonInfo:
                     return splitPath[index].Contains("season", StringComparison.OrdinalIgnoreCase) ||

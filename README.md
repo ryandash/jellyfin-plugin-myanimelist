@@ -10,10 +10,8 @@ Please report any issues you find.
 ```
 Anime
 ├── Anime Name A
-│   ├── Season 00
-│   │   ├── Some Special.mkv
-│   │   ├── Anime Name A S00E01.mkv
-│   │   └── Anime Name A S00E02.mkv
+│   ├── Season 00 or Specials
+│   │   ├── Anime special name - S00E0#.mkv
 │   ├── Season 01
 │   │   ├── Anime Name A S01E01-E02.mkv
 │   │   ├── Anime Name A S01E03.mkv
@@ -24,27 +22,34 @@ Anime
 │       ├── Anime Name A S02E03 Part 1.mkv
 │       └── Anime Name A S02E03 Part 2.mkv
 └── Anime Name B
-    ├── Season 01
-    |   ├── Anime Name B S01E01.mkv
-    |   └── Anime Name B S01E02.mkv
-    └── Specials
-        ├── Anime Name B S00E01.mkv
-        └── Anime Name B S00E02.mkv
+    └── Season 01
+        ├── Anime Name B S01E01.mkv
+        └── Anime Name B S01E02.mkv
 ```
-e.g. of folders with file
+
+Example of folders with file:
 ```
 Anime
-├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen
-│   ├── Season 01
-│   │   ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen S01E01.mkv
+└── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen
+    └── Season 01
+        └── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen S01E01.mkv
 ```
 or 
 ```
 Anime
-├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka
-│   ├── Season 05
-│   │   ├── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
+└── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka
+    └── Season 05
+        └── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
 ```
+
+Example Special:
+```
+Anime
+└── Violet Evergarden
+    └── Season 00 or Specials
+        └── Violet Evergarden Recollections - S00E04.mkv
+```
+
 ## Installation
 
 ### Automatic (recommended)
