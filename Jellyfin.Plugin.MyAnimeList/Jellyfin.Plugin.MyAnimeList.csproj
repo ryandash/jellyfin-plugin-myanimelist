@@ -30,10 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\jikan.net\JikanDotNet\JikanDotNet.csproj" />
     <Reference Include="JikanDotNet">
       <HintPath>..\..\jikan.net\JikanDotNet\bin\Debug\net8.0\JikanDotNet.dll</HintPath>
     </Reference>
-    <Reference Include="JikanDotNet">
+    <ProjectReference Include="..\..\FuzzierSharp\FuzzierSharp\FuzzierSharp.csproj" />
+    <Reference Include="FuzzierSharp">
       <HintPath>..\..\FuzzierSharp\FuzzierSharp\bin\Debug\netstandard2.0\FuzzierSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
