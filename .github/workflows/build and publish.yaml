@@ -1,16 +1,5 @@
 on:
   workflow_dispatch:
-    inputs:
-      dotnet-version:
-        required: false
-        default: "9.0.x"
-        description: "The .NET version to setup for the build"
-        type: string
-      dotnet-target:
-        required: false
-        default: "net9.0"
-        description: "The .NET target framework to build the projects with"
-        type: string
 
 permissions:
   contents: write
@@ -39,15 +28,15 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "${{ inputs.dotnet-version }}"
+          dotnet-version: "9.0.x"
 
       - name: Cache NuGet packages
         uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ inputs.dotnet-version }}-${{ hashFiles('**/*.csproj') }}
+          key: ${{ runner.os }}-nuget-9.0.x-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-${{ inputs.dotnet-version }}-
+            ${{ runner.os }}-nuget-9.0.x-
 
       - name: Build JikanDotNet
         run: dotnet build jikan.net/JikanDotNet --configuration Debug
@@ -56,7 +45,7 @@ jobs:
         run: dotnet build FuzzierSharp/FuzzierSharp --configuration Debug
 
       - name: Restore Dependencies and Build Main Repo
-        run: dotnet build main_repo --configuration Release --framework ${{ inputs.dotnet-target }}
+        run: dotnet build main_repo --configuration Release
 
       - name: Extract Version and ABI from csproj
         id: extract_version_abi
