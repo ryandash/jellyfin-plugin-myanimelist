@@ -1,6 +1,27 @@
-4f0c583 Update Jellyfin.Plugin.MyAnimeList.csproj
+8829b11 Update build and publish.yaml
 
-- Change versioning to standard version format
+0f192e1 Local Dev Build Improvement
 
-80b4c4b Update README.md
-dd45cb0 Update manifest
+- Update to Visual Studio Version 18
+- Build both dependencies with main project
+
+8835e6b Basic native Special Support (Not requiring external sources)
+
+- Better native support anime Specials in the format "Special name - S00E0#". This requires the Special's name and episode number. Some MyAnimeList Specials have multiple episodes which can currently cause problems.
+
+5b571bc Filter file paths better
+
+- Remove library root from file path to extract anime name correctly and avoid including the library folder name in searches
+
+44e0d38 Bump Jellyfin.Controller from 10.11.5 to 10.11.6
+
+---
+updated-dependencies:
+- dependency-name: Jellyfin.Controller
+  dependency-version: 10.11.6
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+f421c87 Update manifest
