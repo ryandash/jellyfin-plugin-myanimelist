@@ -11,7 +11,7 @@ Please report any issues you find.
 Anime
 ├── Anime Name A
 │   ├── Season 00 or Specials
-│   │   ├── Anime special name - S00E0#.mkv
+│   │   └── Anime special name - S00E0#.mkv
 │   ├── Season 01
 │   │   ├── Anime Name A S01E01-E02.mkv
 │   │   ├── Anime Name A S01E03.mkv
