@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
         {
             MetadataResult<Movie> result = new MetadataResult<Movie>();
-            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false);
             if (anime == null) return result;
 
             Anime media = new Anime
@@ -47,7 +47,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo info, CancellationToken cancellationToken)
         {
             var results = new List<RemoteSearchResult>();
-            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true);
             if (anime == null) return results;
 
             AnimeSearchResult aid_result = new AnimeSearchResult();

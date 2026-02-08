@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToArray();
         }
 
-        public async Task<AnimeCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken)
+        public async Task<AnimeCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
         {
             string malId = info switch
             {
@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             bool enableDebug = config.EnableDebug;
             if (!string.IsNullOrEmpty(malId))
             {
-                if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata))
+                if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata) || SearchResult)
                 {
                     if (enableDebug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
                     return (await JikanSingleton.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));

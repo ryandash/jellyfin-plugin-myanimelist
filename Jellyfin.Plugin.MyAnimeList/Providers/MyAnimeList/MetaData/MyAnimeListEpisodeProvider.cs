@@ -72,7 +72,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             {
                 anime = new Anime
                 {
-                    anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken).ConfigureAwait(false)
+                    anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false)
                 };
 
                 if (anime?.anime == null)
@@ -213,9 +213,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new List<RemoteSearchResult>();
-            if (info.Path == null || !info.IndexNumber.HasValue) return result;
-
-            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken);
+            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true);
             if (anime == null) return result;
 
             var searchResult = new AnimeSearchResult();
