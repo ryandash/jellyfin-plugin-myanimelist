@@ -1,7 +1,5 @@
-86fba4d Fix Identify not fetching results
+96ea934 Fix missing title when preferred language is unavailable
 
-- Fix identify by removing impossible checks
-- Version bump
+-  Fallback to Default title if the title cannot be found in the matching language e.g. "English" title is null
 
-6fbd3b3 Update README.md
-762e39a Update manifest
+b3fc6d6 Update manifest
