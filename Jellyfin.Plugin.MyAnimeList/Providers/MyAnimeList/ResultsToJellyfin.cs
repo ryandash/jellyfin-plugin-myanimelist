@@ -70,7 +70,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 _ => "Default"
             };
 
-            return anime.Titles.FirstOrDefault(t => t.Type.Equals(titleType, StringComparison.OrdinalIgnoreCase))?.Title;
+            return anime.Titles
+                .FirstOrDefault(t => t.Type.Equals(titleType, StringComparison.OrdinalIgnoreCase))?.Title
+                ?? anime.Titles.FirstOrDefault(t => t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))?.Title;
         }
 
         public string GetImageUrl()
