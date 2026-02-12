@@ -53,7 +53,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             if (enableDebug) _log.LogInformation("Original name: {name}", info.Name);
-            string searchName = FilterName(GetSearchName(info, _log));
+            string searchName = FilterName(GetSearchName(info, _log, enableDebug));
             if (enableDebug) _log.LogInformation("Filtered name: {name}", searchName);
             long? malIdFromName = await GetBestAnimeID(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt, cancellationToken);
             if (!malIdFromName.HasValue)
@@ -70,7 +70,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 _ => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken)
             };
         }
-        private string StripLibraryPath(string itemPath, ILogger log)
+        private string StripLibraryPath(string itemPath, ILogger log, bool enableDebug)
         {
             if (string.IsNullOrEmpty(itemPath))
                 return itemPath;
@@ -79,8 +79,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 if (itemPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Plugin.Instance.Configuration.EnableDebug)
-                        log.LogInformation("Removed library root '{Root}' from '{Path}'", root, itemPath);
+                    if (enableDebug) log.LogInformation("Removed library root '{Root}' from '{Path}'", root, itemPath);
 
                     int start = root.Length;
                     if (start < itemPath.Length && itemPath[start] == Path.DirectorySeparatorChar)
@@ -93,14 +92,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return itemPath;
         }
 
-        private string GetSearchName(ItemLookupInfo info, ILogger _log)
+        private string GetSearchName(ItemLookupInfo info, ILogger _log, bool enableDebug)
         {
             if (string.IsNullOrEmpty(info.Path))
                 return info.Name;
-            string relativePath = StripLibraryPath(info.Path, _log);
+            string relativePath = StripLibraryPath(info.Path, _log, enableDebug);
             var splitPath = relativePath.Split(Path.DirectorySeparatorChar);
-            if (splitPath.Length < 2)
-                return info.Name;
+            if (enableDebug) _log.LogInformation($"{splitPath.Length} \"{string.Join("\", \"", splitPath)}\"");
+            if (splitPath.Length < 1) return info.Name;
             int index = splitPath.Length - 1;
 
             string GetFolderForEpisodeOrMovie(string[] path, int idx)
