@@ -1,5 +1,7 @@
-96ea934 Fix missing title when preferred language is unavailable
+b5ddded Bug fix for season name source
 
--  Fallback to Default title if the title cannot be found in the matching language e.g. "English" title is null
+- Use folder anime name instead of Jellyfin's metadata when resolving series names when possible, fixes a bug where refreshing metadata with Ignore existing Metadata could cause a bad search result
 
-b3fc6d6 Update manifest
+- Add more debug info
+
+8cbea8b Update manifest
