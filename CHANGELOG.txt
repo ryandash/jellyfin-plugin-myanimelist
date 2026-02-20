@@ -1,7 +1,15 @@
-b5ddded Bug fix for season name source
+c5eda8b Improve search results + Specials
 
-- Use folder anime name instead of Jellyfin's metadata when resolving series names when possible, fixes a bug where refreshing metadata with Ignore existing Metadata could cause a bad search result
+- Version Bump
 
-- Add more debug info
+- Improve search result accuracy by filtering in order of Mal ID and performing more comparison checks on titles before making a decision
 
-8cbea8b Update manifest
+- Change Special detection to more standard format "anime name - S##E## - episode title". This does require an episode title to work properly.
+
+- Enable images for single episode or movie Specials
+
+- Fix to allow TV Special's to be sequels
+
+- Update Readme
+
+81cc582 Update manifest
