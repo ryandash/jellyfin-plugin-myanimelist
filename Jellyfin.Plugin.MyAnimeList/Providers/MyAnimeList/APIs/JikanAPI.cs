@@ -242,14 +242,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 cached.Expiry > DateTime.UtcNow &&
                 cached.Ids != null)
             {
-                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token)))).ToList();
+                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token))))
+                .OrderBy(a => a.MalId)
+                .ToList();
             }
-
             var result = await Instance.SearchAnimeAsync(term, token);
-            var ids = result.Data.Select(a => a.MalId ?? 0).ToList();
+            var sortedData = result.Data
+                .Where(a => a.MalId.HasValue)
+                .OrderBy(a => a.MalId.Value)
+                .ToList();
 
             var anime = await Task.WhenAll(
-                result.Data.Select(a =>
+                sortedData.Select(a =>
                     GetOrFetchAsync(
                         a.MalId.ToString(),
                         _animeCache,
@@ -265,7 +269,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
             _searchCache[term] = new CacheEntry
             {
-                Ids = ids,
+                Ids = sortedData.Select(a => a.MalId ?? 0).ToList(),
                 Expiry = DateTime.UtcNow.Add(SearchExpiry)
             };
 

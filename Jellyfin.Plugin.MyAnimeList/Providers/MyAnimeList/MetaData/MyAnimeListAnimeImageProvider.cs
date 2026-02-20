@@ -6,6 +6,7 @@ using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -24,7 +25,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public string Name => "MyAnimeList";
 
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie;
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode;
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
@@ -33,31 +34,55 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
         {
-            var list = new List<RemoteImageInfo>();
             var malId = item.GetProviderId(ProviderNames.MyAnimeList);
+
             if (string.IsNullOrEmpty(malId))
+                return Array.Empty<RemoteImageInfo>();
+
+            long aid;
+
+            if (item is Episode episode)
             {
-                return list;
+                // MAL has not support regular episode images
+                if (episode.ParentIndexNumber != 0)
+                {
+                    return Array.Empty<RemoteImageInfo>();
+                }
+
+                int start = malId.IndexOf("/anime/", StringComparison.Ordinal);
+                if (start < 0)
+                    return Array.Empty<RemoteImageInfo>();
+
+                start += 7;
+                int end = malId.IndexOf('/', start);
+                if (end < 0)
+                    return Array.Empty<RemoteImageInfo>();
+
+                if (!long.TryParse(malId.AsSpan(start, end - start), out aid))
+                    return Array.Empty<RemoteImageInfo>();
+            }
+            else
+            {
+                if (!long.TryParse(malId, out aid))
+                    return Array.Empty<RemoteImageInfo>();
             }
 
-            long aid = long.Parse(malId);
-            var media = new Anime();
-            media.anime = (await JikanSingleton.GetAnimeAsync(aid, cancellationToken));
-            if (media.anime != null)
-            {
-                var images = await JikanSingleton.GetAnimePicturesAsync(aid, cancellationToken);
-                if (images != null && media.GetImageUrl() != null)
-                {
-                    list.Add(new RemoteImageInfo
+            var anime = await JikanSingleton.GetAnimeAsync(aid, cancellationToken);
+            var images = await JikanSingleton.GetAnimePicturesAsync(aid, cancellationToken);
+            var media = new Anime { anime = anime };
+            var imageUrl = media.GetImageUrl();
+            if (images != null && imageUrl != null)
+                return
+                [
+                    new RemoteImageInfo
                     {
                         ProviderName = Name,
                         Type = ImageType.Primary,
-                        Url = media.GetImageUrl()
-                    });
-                }
-            }
+                        Url = imageUrl
+                    }
+                ];
 
-            return list;
+            return Array.Empty<RemoteImageInfo>();
         }
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)

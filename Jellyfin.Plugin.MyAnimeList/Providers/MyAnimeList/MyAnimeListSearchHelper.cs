@@ -120,11 +120,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             switch (info)
             {
                 case EpisodeInfo episode:
-                    if (episode.ParentIndexNumber == 0)
-                    {
-                        return episode.Name.Split('-')[0].Trim();
-                    }
-                    return GetFolderForEpisodeOrMovie(splitPath, index);
+                    string title = episode.Name.Split(['-', '_']).Last().Trim();
+
+                    return (episode.ParentIndexNumber == 0
+                        && !title.Any(char.IsDigit))
+                       ? title
+                       : GetFolderForEpisodeOrMovie(splitPath, index);
 
                 case MovieInfo:
                     return GetFolderForEpisodeOrMovie(splitPath, index);
@@ -174,6 +175,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             long? bestBackupMalId = null;
             int bestBackupSimilarity = -1;
 
+            long? bestMalId = null;
+            int bestSimilarity = -1;
+
             foreach (var anime in searchResults)
             {
                 bool isCorrectType = isMovie
@@ -189,8 +193,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                     // Case 1: direct similarity check
                     int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(title, string.Empty), normalizedSearch);
-                    if (similarity >= 95)
+                    if (similarity == 100)
                         return anime.MalId;
+
+                    if (similarity >= 95 && similarity > bestSimilarity)
+                    {
+                        bestSimilarity = similarity;
+                        bestMalId = anime.MalId;
+                    }
 
                     // Case 2: if title contains ':', compare first part only
                     if (title.Contains(':'))
@@ -200,10 +210,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         {
                             string normalizedFirstPart = NormalizeRegex.Replace(firstPart, string.Empty);
                             int partSimilarity = FuzzierSharp.Fuzz.Ratio(normalizedFirstPart, normalizedSearch);
-                            if (partSimilarity >= 95)
-                                return anime.MalId;
 
-                            if (partSimilarity > bestBackupSimilarity)
+                            if (partSimilarity >= 95 && partSimilarity > bestBackupSimilarity)
                             {
                                 bestBackupMalId = anime.MalId;
                                 bestBackupSimilarity = partSimilarity;
@@ -218,31 +226,36 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     {
                         bestBackupMalId = anime.MalId;
                         bestBackupSimilarity = similarity;
+                        continue;
                     }
 
                     // Case 4: if the title contains quoted words (Typically long titles)
-                    var quoteMatches = QuoteMatches.Matches(title);
-                    foreach (Match match in quoteMatches)
+                    if (title.Contains('"'))
                     {
-                        string quotedWord = match.Groups[1].Value.ToLowerInvariant();
-                        if (!string.IsNullOrEmpty(quotedWord))
+                        var quoteMatches = QuoteMatches.Matches(title);
+                        foreach (Match match in quoteMatches)
                         {
-                            int quotedSimilarity = FuzzierSharp.Fuzz.Ratio(
-                                NormalizeRegex.Replace(quotedWord, string.Empty),
-                                normalizedSearch);
-
-                            if (quotedSimilarity >= 95)
-                                return anime.MalId;
-
-                            if (quotedSimilarity > bestBackupSimilarity)
+                            string quotedWord = match.Groups[1].Value.ToLowerInvariant();
+                            if (!string.IsNullOrEmpty(quotedWord))
                             {
-                                bestBackupMalId = anime.MalId;
-                                bestBackupSimilarity = quotedSimilarity;
+                                int quotedSimilarity = FuzzierSharp.Fuzz.Ratio(
+                                    NormalizeRegex.Replace(quotedWord, string.Empty),
+                                    normalizedSearch);
+
+                                if (quotedSimilarity >= 95 && quotedSimilarity > bestBackupSimilarity)
+                                {
+                                    bestBackupMalId = anime.MalId;
+                                    bestBackupSimilarity = quotedSimilarity;
+                                    continue;
+                                }
                             }
                         }
                     }
                 }
             }
+
+            if (bestMalId.HasValue)
+                return bestMalId;
 
             if (bestBackupMalId.HasValue && !ignoreBestAttempt)
                 return bestBackupMalId;
@@ -273,28 +286,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (anime == null)
                 return null;
 
-            if (anime.Titles?.Any(t =>
-                    t.Title.Contains("2nd", StringComparison.OrdinalIgnoreCase) ||
-                    t.Title.Contains("Season 2", StringComparison.OrdinalIgnoreCase) ||
-                    t.Title.Contains("sequel", StringComparison.OrdinalIgnoreCase) ||
-                    t.Title.Contains("Part 2", StringComparison.OrdinalIgnoreCase)) == true)
-            {
-                var prequelId = (await GetRelatedAnimeIdsAsync(anime.MalId!.Value, "Prequel")).FirstOrDefault();
-                if (prequelId > 0)
-                {
-                    var prequel = await JikanSingleton.GetAnimeAsync(prequelId, cancellationToken);
-                    if (prequel != null)
-                        anime = prequel;
-                }
-            }
-
             static bool IsSkippable(AnimeCacheDto anime) =>
                 anime.Episodes == 1 ||
                 anime.Titles?.Any(t => t.Title.Contains("OVA", StringComparison.OrdinalIgnoreCase) ||
-                                       t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) ||
+                                       t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) &&
+                                       !t.Title.Contains("TV Special", StringComparison.OrdinalIgnoreCase) ||
                                        t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true ||
                 !(anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase) ||
-                  anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase));
+                  anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase) ||
+                  anime.Type.Equals("TV Special", StringComparison.OrdinalIgnoreCase));
 
             async Task<AnimeCacheDto> GetNextValidSequelAsync(long currentMalId)
             {

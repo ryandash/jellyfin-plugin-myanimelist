@@ -2,7 +2,9 @@
 
 ## About
 
-This plugin adds the metadata provider for [MyAnimeList using Jikan](https://jikan.moe/) and MyAnimeList.
+This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe/) and MyAnimeList's public API.
+
+To automate syncing with MyAnimeList using this metadata you can try using [MyAnimeList Sync](https://github.com/ryandash/jellyfin-myanimelist-sync) which is a fork of [vosmiic/jellyfin-ani-sync](https://github.com/vosmiic/jellyfin-ani-sync) customized to use the MyAnimeList metadata.
 
 Folders must be formatted as shown below to get the best results.\
 For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.\
@@ -10,8 +12,8 @@ Please report any issues you find.
 ```
 Anime
 ├── Anime Name A
-│   ├── Season 00 or Specials
-│   │   └── Anime special name - S00E0#.mkv
+│   ├── Specials
+│   │   └── Anime Name - S00E0# - Special Title.mkv
 │   ├── Season 01
 │   │   ├── Anime Name A S01E01-E02.mkv
 │   │   ├── Anime Name A S01E03.mkv
@@ -42,12 +44,14 @@ Anime
         └── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
 ```
 
-Example Special:
+Example Special episode + special movie:
+Note: If a special have multiple episodes the episode number needs to be incremented to select the correct special.
 ```
 Anime
 └── Violet Evergarden
-    └── Season 00 or Specials
-        └── Violet Evergarden Recollections - S00E04.mkv
+    └── Specials
+        ├── Violet Evergarden - S00E01 - The Day You Understand I Love You Will Surely Come.mkv
+        └── Violet Evergarden - S00E01 - Recollections.mkv
 ```
 
 ## Installation
