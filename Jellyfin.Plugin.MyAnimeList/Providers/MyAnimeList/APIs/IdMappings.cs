@@ -4,14 +4,15 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
     public class IdMappings
     {
-        private readonly string baseUrl = "https://ryandash.github.io/MyAnimeList-IDs-To-TVDB-IDs/api/thetvdb/{0}.json";
+        private readonly string baseUrl = "https://ryandash.github.io/TVDB-IDs-To-MyAnimeList-IDs/api/thetvdb-series/{0}.json";
+        //private readonly string movieUrl = "https://ryandash.github.io/TVDB-IDs-To-MyAnimeList-IDs/api/thetvdb-movie/{0}.json";
         private readonly HttpClient httpClient;
 
         public IdMappings(HttpClient? client = null)
@@ -19,72 +20,66 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             httpClient = client ?? new HttpClient();
         }
 
-        // Model for JSON mapping (matches API JSON)
         private class MappingEntry
         {
-            public string? season { get; set; }
-            public string? episode { get; set; }
-            public string? tvdb { get; set; }
+            [JsonPropertyName("season")]
+            public int? Season { get; set; }
 
-            [JsonPropertyName("tvdb url")]
+            [JsonPropertyName("episode")]
+            public int? Episode { get; set; }
+
+            [JsonPropertyName("thetvdb url")]
             public string? TvdbUrl { get; set; }
 
             [JsonPropertyName("myanimelist url")]
-            public string? MyAnimeListUrl { get; set; }
+            public string? MalUrl { get; set; }
+
+            [JsonPropertyName("myanimelist")]
+            public long? MalId { get; set; }
+
+            [JsonPropertyName("thetvdb")]
+            public string? Tvdb { get; set; }
         }
 
-        private async Task<List<MappingEntry>> GetMappingsAsync(string tvdbId)
+        private async Task<List<MappingEntry>> GetMappingsAsync(ILogger _log, string tvdbId)
         {
             string url = string.Format(baseUrl, tvdbId);
 
             try
             {
-                var response = await httpClient.GetStringAsync(url);
+                var stream = await httpClient.GetStreamAsync(url);
 
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 };
 
-                var result = JsonSerializer.Deserialize<List<MappingEntry>>(response, options);
+                var result = await JsonSerializer.DeserializeAsync<List<MappingEntry>>(stream, options);
 
                 return result ?? new List<MappingEntry>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching mappings: {ex.Message}");
+                _log.LogInformation($"Error fetching mappings: {ex.Message}");
                 return new List<MappingEntry>();
             }
         }
 
-        private static long? ExtractMalIdFromUrl(string? url)
+        public async Task<AnimeEpisodeMapping?> GetAnimeEpisodeMappingAsync(ILogger _log, string tvdbId)
         {
-            if (string.IsNullOrEmpty(url)) return null;
-
-            // MyAnimeList URLs are like: https://myanimelist.net/anime/59130/...
-            var match = Regex.Match(url, @"myanimelist\.net/anime/(\d+)");
-            if (match.Success && long.TryParse(match.Groups[1].Value, out long malId))
+            var mappings = await GetMappingsAsync(_log, tvdbId);
+            var entry = mappings.FirstOrDefault();
+            if (entry == null)
             {
-                return malId;
+                _log.LogInformation($"No mapping found for TVDB ID: {tvdbId}");
+                return null;
             }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Returns a mapping that contains MAL ID, MAL URL, Season, and Episode for the given TVDB ID.
-        /// </summary>
-        public async Task<AnimeEpisodeMapping?> GetAnimeEpisodeMappingAsync(string tvdbId)
-        {
-            var entry = (await GetMappingsAsync(tvdbId)).FirstOrDefault();
-            if (entry == null) return null;
-
             return new AnimeEpisodeMapping
             {
-                MalUrl = entry.MyAnimeListUrl,
-                MalId = ExtractMalIdFromUrl(entry.MyAnimeListUrl),
-                Episode = int.TryParse(entry.episode, out int ep) ? ep : null,
-                Season = int.TryParse(entry.season, out int s) ? s : null
+                MalId = entry.MalId,
+                MalUrl = entry.MalUrl,
+                Episode = entry.Episode,
+                Season = entry.Season
             };
         }
     }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +35,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, CancellationToken cancellationToken)
         {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var client = Plugin.Instance.GetHttpClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
 
             var response = await client.GetAsync(url, cancellationToken);

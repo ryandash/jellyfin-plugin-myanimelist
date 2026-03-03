@@ -1,6 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
-using JikanDotNet;
-using MediaBrowser.Common.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,6 +7,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using JikanDotNet;
+using MediaBrowser.Common.Configuration;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {

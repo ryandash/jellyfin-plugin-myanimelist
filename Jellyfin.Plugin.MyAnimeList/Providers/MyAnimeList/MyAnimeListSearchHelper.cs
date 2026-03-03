@@ -1,8 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Providers;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +5,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Providers;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
@@ -98,7 +98,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 return info.Name;
             string relativePath = StripLibraryPath(info.Path, _log, enableDebug);
             var splitPath = relativePath.Split(Path.DirectorySeparatorChar);
-            if (enableDebug) _log.LogInformation($"{splitPath.Length} \"{string.Join("\", \"", splitPath)}\"");
+            if (enableDebug) _log.LogInformation($"Split location: {splitPath.Length} \"{string.Join("\", \"", splitPath)}\"");
             if (splitPath.Length < 1) return info.Name;
             int index = splitPath.Length - 1;
 
@@ -328,6 +328,5 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return anime;
         }
-
     }
 }

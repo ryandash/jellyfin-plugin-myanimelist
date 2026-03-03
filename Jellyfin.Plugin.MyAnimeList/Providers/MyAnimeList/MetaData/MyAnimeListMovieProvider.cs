@@ -1,66 +1,17 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
-using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class MyAnimeListMovieProvider : IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrder
+    public class MyAnimeListMovieProvider : MyAnimeListBaseProvider<Movie, MovieInfo>
     {
-        private readonly ILogger _log;
-        private readonly MyAnimeListSearchHelper _searchHelper;
-        public int Order => -2;
-        public string Name => "MyAnimeList";
-
-        public MyAnimeListMovieProvider(ILogger<MyAnimeListMovieProvider> logger, ILibraryManager libraryManager)
+        public MyAnimeListMovieProvider(ILogger<MyAnimeListMovieProvider> logger, ILibraryManager libraryManager) : base(logger, libraryManager)
         {
-            _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
         }
 
-        public async Task<MetadataResult<Movie>> GetMetadata(MovieInfo info, CancellationToken cancellationToken)
-        {
-            MetadataResult<Movie> result = new MetadataResult<Movie>();
-            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false);
-            if (anime == null) return result;
-
-            Anime media = new Anime
-            {
-                anime = anime,
-                characters = (await JikanSingleton.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false))
-            };
-
-            result.HasMetadata = true;
-            result.Item = media.ToMovie();
-            result.People = media.GetPeopleInfo();
-            result.Provider = ProviderNames.MyAnimeList;
-            return result;
-        }
-
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(MovieInfo info, CancellationToken cancellationToken)
-        {
-            var results = new List<RemoteSearchResult>();
-            AnimeCacheDto anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true);
-            if (anime == null) return results;
-
-            AnimeSearchResult aid_result = new AnimeSearchResult();
-            aid_result.anime = anime;
-            results.Add(aid_result.ToSearchResult());
-
-            return results;
-        }
-
-        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
-        {
-            var httpClient = Plugin.Instance.GetHttpClient();
-            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
-        }
+        protected override Movie ConvertToItem(Anime media)
+            => media.ToMovie();
     }
 }

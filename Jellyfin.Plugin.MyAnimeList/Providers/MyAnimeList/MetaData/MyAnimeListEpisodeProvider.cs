@@ -1,36 +1,26 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
-using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using EpisodeInfo = MediaBrowser.Controller.Providers.EpisodeInfo;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class MyAnimeListEpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>, IHasOrder
+    public class MyAnimeListEpisodeProvider : MyAnimeListBaseProvider<Episode, EpisodeInfo>
     {
-        private readonly ILogger<MyAnimeListEpisodeProvider> _log;
-        private readonly MyAnimeListSearchHelper _searchHelper;
 
-        public int Order => -2;
-        public string Name => "MyAnimeList";
-
-        public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager)
+        public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager) : base(logger, libraryManager)
         {
-            _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
         }
-
-        public async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
+        public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
 
@@ -48,23 +38,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
                 var idMapping = new IdMappings();
-                var epResult = await idMapping.GetAnimeEpisodeMappingAsync(tvdbid).ConfigureAwait(false);
+                var epResult = await idMapping.GetAnimeEpisodeMappingAsync(_log, tvdbid).ConfigureAwait(false);
 
                 if (epResult?.MalId is long malId)
                 {
                     if (enableDebug) _log.LogInformation("MalID: {MalId} Season: {Season} Episode: {Episode}",
                         malId, epResult.Season, epResult.Episode);
 
-                    anime = new Anime
+                    if (epResult.Episode.HasValue)
                     {
-                        anime = await _searchHelper
-                            .GetCurrentAnimeSeasonAsync(malId, info.ParentIndexNumber ?? 1, cancellationToken)
-                            .ConfigureAwait(false)
-                    };
+                        episodeData = await JikanSingleton.GetAnimeEpisodeAsync(malId, epResult.Episode!.Value, cancellationToken).ConfigureAwait(false);
 
-                    episodeData = await JikanSingleton
-                        .GetAnimeEpisodeAsync(malId, epResult.Episode!.Value, cancellationToken)
-                        .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        anime = new Anime
+                        {
+                            anime = await _searchHelper
+                            .GetCurrentAnimeSeasonAsync(malId, info.ParentIndexNumber ?? epResult.Season.GetValueOrDefault(1), cancellationToken)
+                            .ConfigureAwait(false)
+                        };
+                        episodeData = anime.toEpisodeData();
+                    }
                 }
             }
 
@@ -117,11 +112,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        private async Task<(int episodeNumber, AnimeCacheDto anime)> GetSeasonEpisodeNumberAsync(
-    int episodeNumber,
-    int seasonNumber,
-    AnimeCacheDto anime,
-    CancellationToken cancellationToken)
+        protected override Episode ConvertToItem(Anime media)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task<(int episodeNumber, AnimeCacheDto anime)> GetSeasonEpisodeNumberAsync(int episodeNumber, int seasonNumber,
+            AnimeCacheDto anime, CancellationToken cancellationToken)
         {
             List<RelatedEntryDto> relations = null;
 
@@ -173,60 +170,38 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 var sideStories = relations.FirstOrDefault(r =>
                     r.Relation.Equals("Side Story", StringComparison.OrdinalIgnoreCase))?.Entry;
 
-                if (sideStories != null)
+                if (sideStories != null && episodeNumber > 0)
                 {
-                    var tasks = sideStories.Select(s => JikanSingleton.GetAnimeAsync(s, cancellationToken));
-                    var allResults = await Task.WhenAll(tasks);
-                    var allAnimes = allResults.Select(r => r).OfType<AnimeCacheDto>();
-
-                    var movies = new List<AnimeCacheDto>();
-                    var others = new List<AnimeCacheDto>();
-
-                    foreach (var a in allAnimes)
+                    var tempEpisodeNumber = episodeNumber;
+                    foreach (var sideStory in sideStories)
                     {
-                        if (string.Equals(a.Type, "Movie", StringComparison.OrdinalIgnoreCase))
-                            movies.Add(a);
-                        else
-                            others.Add(a);
-                    }
+                        var sideStoryAnime = await JikanSingleton
+                            .GetAnimeAsync(sideStory, cancellationToken)
+                            .ConfigureAwait(false);
 
-                    if (episodeNumber > 0)
-                    {
-                        int targetIndex = episodeNumber - 1;
-                        var orderedCount = movies.Count + others.Count;
-                        if (targetIndex < orderedCount)
+                        var numEpisodes = sideStoryAnime?.Episodes.GetValueOrDefault();
+                        if (numEpisodes.HasValue)
                         {
-                            var targetAnime = targetIndex < movies.Count
-                                ? movies[targetIndex]
-                                : others[targetIndex - movies.Count];
-                            return (1, targetAnime);
+                            if (tempEpisodeNumber > numEpisodes)
+                            {
+                                tempEpisodeNumber -= numEpisodes.Value;
+                            }
+                            else
+                            {
+                                return (tempEpisodeNumber, sideStoryAnime);
+                            }
+                        }
+                        else
+                        {
+                            break;
                         }
                     }
-
-                    return (0, null);
                 }
+
+                return (0, null);
             }
 
             return (episodeNumber, anime);
-        }
-
-        public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(EpisodeInfo info, CancellationToken cancellationToken)
-        {
-            var result = new List<RemoteSearchResult>();
-            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true);
-            if (anime == null) return result;
-
-            var searchResult = new AnimeSearchResult();
-            searchResult.anime = anime;
-            result.Add(searchResult.ToSearchResult());
-
-            return result;
-        }
-
-        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
-        {
-            var httpClient = Plugin.Instance.GetHttpClient();
-            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         }
     }
 }
