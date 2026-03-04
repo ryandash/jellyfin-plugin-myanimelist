@@ -67,7 +67,7 @@ Anime
 
 [See the official Jellyfin documentation for install instructions](https://jellyfin.org/docs/general/server/plugins/index.html#installing).
 
-1. Download a version from the [releases tab](https://github.com/jellyfin/jellyfin-plugin-anilist/releases) that matches your Jellyfin version.
+1. Download the latest from the [releases tab](https://github.com/jellyfin/jellyfin-plugin-anilist/releases).
 2. Extract the zip file.
 3. Copy the dll files into `plugins/myanimelist` (see [official](https://jellyfin.org/docs/general/server/plugins/) documentation on where to find the plugins folder).
 4. Restart your Jellyfin instance.
