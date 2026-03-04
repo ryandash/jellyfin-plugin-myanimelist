@@ -1,15 +1,12 @@
-c5eda8b Improve search results + Specials
+7bc7ecd Update README.md
+cb67742 Create Base Class for duplicate provider
 
 - Version Bump
 
-- Improve search result accuracy by filtering in order of Mal ID and performing more comparison checks on titles before making a decision
+- Make base class for providers to reduce duplicate code
 
-- Change Special detection to more standard format "anime name - S##E## - episode title". This does require an episode title to work properly.
+- Handle specials with multiple episodes better (The order of specials is still a major issue)
 
-- Enable images for single episode or movie Specials
+- Fix external ID mapping for season 0 episodes, specials, and movies (TVDB ids to MAL ids)
 
-- Fix to allow TV Special's to be sequels
-
-- Update Readme
-
-81cc582 Update manifest
+3d720a5 Update manifest
