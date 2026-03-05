@@ -1,12 +1,7 @@
-7bc7ecd Update README.md
-cb67742 Create Base Class for duplicate provider
+6977b9a Cleaner build
 
-- Version Bump
+- Use nuget packages instead of building repos
 
-- Make base class for providers to reduce duplicate code
+- Make local building and cleaning better
 
-- Handle specials with multiple episodes better (The order of specials is still a major issue)
-
-- Fix external ID mapping for season 0 episodes, specials, and movies (TVDB ids to MAL ids)
-
-3d720a5 Update manifest
+135f0e9 Update manifest
