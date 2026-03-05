@@ -1,6 +1,10 @@
 on:
   workflow_dispatch:
 
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 permissions:
   contents: write
 jobs:
@@ -13,39 +17,18 @@ jobs:
           path: main_repo
           fetch-depth: 0
 
-      - name: Checkout JikanDotNet Repository
-        uses: actions/checkout@v4
-        with:
-          repository: Ervie/jikan.net
-          path: jikan.net
-
-      - name: Checkout FuzzierSharp Repository
-        uses: actions/checkout@v4
-        with:
-          repository: AtriaStar/FuzzierSharp
-          path: FuzzierSharp
-
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "9.0.x"
+          cache: true
+          cache-dependency-path: main_repo/Jellyfin.Plugin.MyAnimeList/packages.lock.json
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-9.0.x-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-9.0.x-
+      - name: Restore dependencies
+        run: dotnet restore main_repo
 
-      - name: Build JikanDotNet
-        run: dotnet build jikan.net/JikanDotNet --configuration Debug
-
-      - name: Build FuzzierSharp
-        run: dotnet build FuzzierSharp/FuzzierSharp --configuration Debug
-
-      - name: Restore Dependencies and Build Main Repo
-        run: dotnet build main_repo --configuration Release
+      - name: Build Plugin
+        run: dotnet build main_repo -c Release
 
       - name: Extract Version and ABI from csproj
         id: extract_version_abi
@@ -55,9 +38,9 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
 
-      - name: Generate ZIP for DLLs
+      - name: Create ZIP
         run: |
-          find main_repo -path '*/bin/Release/*.dll' -print0 | xargs -0 zip -j myanimelist_${VERSION}.zip
+          zip -j myanimelist_${VERSION}.zip main_repo/Jellyfin.Plugin.MyAnimeList/bin/Release/net9.0/*.dll
 
       - name: Generate MD5 Checksum for ZIP
         id: checksum

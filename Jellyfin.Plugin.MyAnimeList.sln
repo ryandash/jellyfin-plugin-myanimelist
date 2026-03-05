@@ -1,13 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11415.280 d18.0
+VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Jellyfin.Plugin.MyAnimeList", "Jellyfin.Plugin.MyAnimeList\Jellyfin.Plugin.MyAnimeList.csproj", "{D0C0C5C6-96A2-4027-B299-5D881568F908}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JikanDotNet", "..\jikan.net\JikanDotNet\JikanDotNet.csproj", "{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuzzierSharp", "..\FuzzierSharp\FuzzierSharp\FuzzierSharp.csproj", "{97166EAF-670D-2525-420A-B34A9BA3E233}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,22 +21,6 @@ Global
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|x64.ActiveCfg = Release|Any CPU
 		{D0C0C5C6-96A2-4027-B299-5D881568F908}.Release|x64.Build.0 = Release|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Debug|x64.Build.0 = Debug|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Release|x64.ActiveCfg = Release|Any CPU
-		{4BFA0CF4-2F36-C047-85BF-AEBDE664C081}.Release|x64.Build.0 = Release|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Debug|x64.Build.0 = Debug|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Release|Any CPU.Build.0 = Release|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Release|x64.ActiveCfg = Release|Any CPU
-		{97166EAF-670D-2525-420A-B34A9BA3E233}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
