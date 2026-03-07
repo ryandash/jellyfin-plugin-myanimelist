@@ -4,14 +4,12 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>6.5.0.1</Version>
-    <AssemblyVersion>6.5.0.1</AssemblyVersion>
-    <FileVersion>6.5.0.1</FileVersion>
+    <Version>6.5.0.2</Version>
+    <AssemblyVersion>6.5.0.2</AssemblyVersion>
+    <FileVersion>6.5.0.2</FileVersion>
 
-    <Optimize>true</Optimize>
     <DebugType>none</DebugType>
-    <IsPublishable>true</IsPublishable>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPublishable>false</IsPublishable>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
@@ -30,8 +28,8 @@
 
   <Target Name="CopyPluginDependencies" AfterTargets="Build">
     <ItemGroup>
-      <PluginDeps Include="$(NuGetPackageRoot)fuzziersharp\*\lib\netstandard2.0\FuzzierSharp.dll" />
-      <PluginDeps Include="$(NuGetPackageRoot)jikandotnet\*\lib\netstandard2.0\JikanDotNet.dll" />
+      <PluginDeps Include="$(NuGetPackageRoot)fuzziersharp\*\lib\netstandard2.1\FuzzierSharp.dll" />
+      <PluginDeps Include="$(NuGetPackageRoot)jikandotnet\*\lib\net8.0\JikanDotNet.dll" />
     </ItemGroup>
 
     <Copy
