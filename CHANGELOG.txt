@@ -1,7 +1,14 @@
-6977b9a Cleaner build
+0c5cd3f Update Jellyfin.Plugin.MyAnimeList.sln
 
-- Use nuget packages instead of building repos
+448a452 Fix building bug
 
-- Make local building and cleaning better
+- Remove optimize (removes some dependencies from dll do not use again)
+- Disable IsPublishable
 
-135f0e9 Update manifest
+7b43b2d Update README.md
+
+9772c6c Update IdMappings.cs
+
+- Remove nullables
+
+5be3274 Update manifest
