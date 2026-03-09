@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="FuzzierSharp" Version="3.0.1" />
     <PackageReference Include="Jellyfin.Controller" Version="10.11.6" />
-    <PackageReference Include="JikanDotNet" Version="2.10.1" />
+    <PackageReference Include="JikanDotNet" Version="2.10.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
   </ItemGroup>
