@@ -13,7 +13,7 @@ using MediaBrowser.Common.Configuration;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
-    public static class JikanSingleton
+    public static class JikanAPI
     {
         private static bool _initialized;
         private static readonly object _initLock = new();
@@ -140,7 +140,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                     return value;
             }
 
-            var result = await fetchFunc();
+            var result = await fetchFunc().ConfigureAwait(false);
 
             var newEntry = entry ?? new CacheEntry();
             newEntry.Expiry = DateTime.UtcNow.Add(DefaultExpiry);
@@ -150,7 +150,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             cache[key] = newEntry;
 
             if (persist)
-                await SaveCacheAsync(cacheFile, cache);
+                await SaveCacheAsync(cacheFile, cache).ConfigureAwait(false);
 
             return result;
         }
@@ -161,7 +161,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 malId.ToString(),
                 _animeCache,
                 AnimeCacheFile,
-                async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token)).Data),
+                async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token).ConfigureAwait(false)).Data),
                 entry => entry.Anime,
                 (entry, value) => entry.Anime = value,
                 true
@@ -174,7 +174,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 EpisodesCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimeEpisodeAsync(malId, episodeNumber, token);
+                    var result = await Instance.GetAnimeEpisodeAsync(malId, episodeNumber, token).ConfigureAwait(false);
                     return EpisodeCacheDto.From(result.Data);
                 },
                 entry =>
@@ -198,7 +198,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 CharactersCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimeCharactersAsync(malId, token);
+                    var result = await Instance.GetAnimeCharactersAsync(malId, token).ConfigureAwait(false);
                     return result.Data.Select(CharacterCacheDto.From).ToList();
                 },
                 entry => entry.Characters,
@@ -213,7 +213,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 RelationsCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimeRelationsAsync(malId, token);
+                    var result = await Instance.GetAnimeRelationsAsync(malId, token).ConfigureAwait(false);
                     return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
                 },
                 entry => entry.Relations,
@@ -228,7 +228,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 PicturesCacheFile,
                 async () =>
                 {
-                    var result = await Instance.GetAnimePicturesAsync(malId, token);
+                    var result = await Instance.GetAnimePicturesAsync(malId, token).ConfigureAwait(false);
                     return result.Data.Select(ImagesSetDto.From).Where(r => r != null).ToList();
                 },
                 entry => entry.Pictures,
@@ -242,11 +242,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 cached.Expiry > DateTime.UtcNow &&
                 cached.Ids != null)
             {
-                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token))))
+                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token))).ConfigureAwait(false))
                 .OrderBy(a => a.MalId)
                 .ToList();
             }
-            var result = await Instance.SearchAnimeAsync(term, token);
+            var result = await Instance.SearchAnimeAsync(term, token).ConfigureAwait(false);
             var sortedData = result.Data
                 .Where(a => a.MalId.HasValue)
                 .OrderBy(a => a.MalId.Value)
@@ -264,8 +264,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                         false
                     )
                 )
-            );
-            await SaveCacheAsync(AnimeCacheFile, _animeCache);
+            ).ConfigureAwait(false);
+            await SaveCacheAsync(AnimeCacheFile, _animeCache).ConfigureAwait(false);
 
             _searchCache[term] = new CacheEntry
             {
@@ -273,7 +273,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 Expiry = DateTime.UtcNow.Add(SearchExpiry)
             };
 
-            await SaveCacheAsync(SearchCacheFile, _searchCache);
+            await SaveCacheAsync(SearchCacheFile, _searchCache).ConfigureAwait(false);
             return anime.ToList();
         }
     }

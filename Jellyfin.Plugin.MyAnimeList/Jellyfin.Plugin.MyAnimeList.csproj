@@ -4,9 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>6.5.0.2</Version>
-    <AssemblyVersion>6.5.0.2</AssemblyVersion>
-    <FileVersion>6.5.0.2</FileVersion>
+    <Version>6.5.0.3</Version>
+    <AssemblyVersion>6.5.0.3</AssemblyVersion>
+    <FileVersion>6.5.0.3</FileVersion>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>
@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="FuzzierSharp" Version="3.0.1" />
     <PackageReference Include="Jellyfin.Controller" Version="10.11.6" />
-    <PackageReference Include="JikanDotNet" Version="2.10.1" />
+    <PackageReference Include="JikanDotNet" Version="2.10.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
   </ItemGroup>
@@ -32,9 +32,7 @@
       <PluginDeps Include="$(NuGetPackageRoot)jikandotnet\*\lib\net8.0\JikanDotNet.dll" />
     </ItemGroup>
 
-    <Copy
-      SourceFiles="@(PluginDeps)"
-      DestinationFolder="$(OutDir)" />
+    <Copy SourceFiles="@(PluginDeps)" DestinationFolder="$(OutDir)" />
   </Target>
 
   <Target Name="CleanPluginDependencies" BeforeTargets="Clean">

@@ -36,13 +36,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, CancellationToken cancellationToken)
         {
             var client = Plugin.Instance.GetHttpClient();
-            client.Timeout = TimeSpan.FromSeconds(5);
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
 
-            var response = await client.GetAsync(url, cancellationToken);
+            var response = await client.GetAsync(url, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return null;
 
-            string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+            string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse) ?? new Root();
 
             Func<string, bool> mediaTypeCondition = isMovie

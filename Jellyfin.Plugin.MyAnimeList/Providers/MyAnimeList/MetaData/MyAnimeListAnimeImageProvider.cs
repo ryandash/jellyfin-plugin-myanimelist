@@ -67,8 +67,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return Array.Empty<RemoteImageInfo>();
             }
 
-            var anime = await JikanSingleton.GetAnimeAsync(aid, cancellationToken);
-            var images = await JikanSingleton.GetAnimePicturesAsync(aid, cancellationToken);
+            var anime = await JikanAPI.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false);
+            var images = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
             var media = new Anime { anime = anime };
             var imageUrl = media.GetImageUrl();
             if (images != null && imageUrl != null)
@@ -89,7 +89,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             var httpClient = Plugin.Instance.GetHttpClient();
 
-            return await httpClient.GetAsync(url).ConfigureAwait(false);
+            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         }
     }
 }

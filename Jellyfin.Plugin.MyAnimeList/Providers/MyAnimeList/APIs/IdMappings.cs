@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -11,13 +12,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 {
     public class IdMappings
     {
-        private readonly string baseUrl = "https://ryandash.github.io/TVDB-IDs-To-MyAnimeList-IDs/api/thetvdb-series/{0}.json";
+        private readonly string _baseUrl = "https://ryandash.github.io/TVDB-IDs-To-MyAnimeList-IDs/api/thetvdb-series/{0}.json";
         //private readonly string movieUrl = "https://ryandash.github.io/TVDB-IDs-To-MyAnimeList-IDs/api/thetvdb-movie/{0}.json";
-        private readonly HttpClient httpClient;
+        private readonly HttpClient _httpClient;
+        private readonly JsonSerializerOptions _options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         public IdMappings(HttpClient client = null)
         {
-            httpClient = client ?? new HttpClient();
+            _httpClient = client ?? Plugin.Instance.GetHttpClient();
         }
 
         private class MappingEntry
@@ -41,20 +46,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             public string Tvdb { get; set; }
         }
 
-        private async Task<List<MappingEntry>> GetMappingsAsync(ILogger _log, string tvdbId)
+        private async Task<List<MappingEntry>> GetMappingsAsync(ILogger _log, string tvdbId, CancellationToken token)
         {
-            string url = string.Format(baseUrl, tvdbId);
+            string url = string.Format(_baseUrl, tvdbId);
 
             try
             {
-                var stream = await httpClient.GetStreamAsync(url);
+                var stream = await _httpClient.GetStreamAsync(url, token).ConfigureAwait(false);
 
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-                var result = await JsonSerializer.DeserializeAsync<List<MappingEntry>>(stream, options);
+                var result = await JsonSerializer.DeserializeAsync<List<MappingEntry>>(stream, _options, token).ConfigureAwait(false);
 
                 return result ?? new List<MappingEntry>();
             }
@@ -65,9 +65,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             }
         }
 
-        public async Task<AnimeEpisodeMapping> GetAnimeEpisodeMappingAsync(ILogger _log, string tvdbId)
+        public class AnimeEpisodeMapping
         {
-            var mappings = await GetMappingsAsync(_log, tvdbId);
+            public long? MalId { get; set; }
+            public string MalUrl { get; set; }
+            public int? Episode { get; set; }
+            public int? Season { get; set; }
+        }
+
+        public async Task<AnimeEpisodeMapping> GetAnimeEpisodeMappingAsync(ILogger _log, string tvdbId, CancellationToken token)
+        {
+            var mappings = await GetMappingsAsync(_log, tvdbId, token).ConfigureAwait(false);
             var entry = mappings.FirstOrDefault();
             if (entry == null)
             {
@@ -82,13 +90,5 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 Season = entry.Season
             };
         }
-    }
-
-    public class AnimeEpisodeMapping
-    {
-        public long? MalId { get; set; }
-        public string MalUrl { get; set; }
-        public int? Episode { get; set; }
-        public int? Season { get; set; }
     }
 }

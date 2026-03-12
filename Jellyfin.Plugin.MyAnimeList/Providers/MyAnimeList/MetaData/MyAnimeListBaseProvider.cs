@@ -33,14 +33,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             var result = new MetadataResult<TItem>();
 
-            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false);
+            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false);
             if (anime == null)
                 return result;
 
             var media = new Anime
             {
                 anime = anime,
-                characters = await JikanSingleton.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)
+                characters = await JikanAPI.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)
             };
 
             result.HasMetadata = true;
@@ -55,7 +55,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             var results = new List<RemoteSearchResult>();
 
-            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true);
+            var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true).ConfigureAwait(false);
             if (anime == null)
                 return results;
 

@@ -24,7 +24,7 @@ namespace Jellyfin.Plugin.MyAnimeList
         {
             Instance = this;
             _httpClientFactory = httpClientFactory;
-            JikanSingleton.Initialize(ApplicationPaths);
+            JikanAPI.Initialize(ApplicationPaths);
         }
 
         public HttpClient GetHttpClient()
