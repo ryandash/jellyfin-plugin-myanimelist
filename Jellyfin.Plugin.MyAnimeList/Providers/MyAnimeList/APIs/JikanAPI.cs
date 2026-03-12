@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
 using MediaBrowser.Common.Configuration;
@@ -17,6 +18,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
     {
         private static bool _initialized;
         private static readonly object _initLock = new();
+        private static readonly PluginConfiguration config = Plugin.Instance.Configuration;
         public static void Initialize(IApplicationPaths paths)
         {
             if (_initialized) return;
@@ -54,12 +56,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             WriteIndented = true
         };
 
-        private static readonly TimeSpan DefaultExpiry = TimeSpan.FromDays(1);
-        private static readonly TimeSpan SearchExpiry = TimeSpan.FromMinutes(10);
+        private static TimeSpan OtherExpiry =>
+            TimeSpan.FromDays(Plugin.Instance.Configuration.cacheOtherTime);
 
+        private static TimeSpan SearchExpiry =>
+            TimeSpan.FromMinutes(Plugin.Instance.Configuration.cacheSearchTime);
         private class CacheEntry
         {
-            public DateTime Expiry { get; set; } = DateTime.UtcNow.Add(DefaultExpiry);
+            public DateTime Expiry { get; set; } = DateTime.UtcNow.Add(OtherExpiry);
 
             public AnimeCacheDto Anime { get; set; }
             public List<long> Ids { get; set; }
@@ -84,7 +88,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         private static void LoadCache(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
         {
-            if (Plugin.Instance.Configuration.DisableLocalCache) return;
+            if (config.DisableLocalCache) return;
             try
             {
                 var dir = Path.GetDirectoryName(filePath)!;
@@ -110,7 +114,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         private static async Task SaveCacheAsync(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
         {
-            if (Plugin.Instance.Configuration.DisableLocalCache) return;
+            if (config.DisableLocalCache) return;
 
             foreach (var kvp in cache.Where(kvp => kvp.Value.Expiry <= DateTime.UtcNow).ToList())
             {
@@ -130,6 +134,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             Func<Task<T>> fetchFunc,
             Func<CacheEntry, T> getter,
             Action<CacheEntry, T> setter,
+            TimeSpan expiry,
             bool persist)
             where T : class
         {
@@ -143,7 +148,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             var result = await fetchFunc().ConfigureAwait(false);
 
             var newEntry = entry ?? new CacheEntry();
-            newEntry.Expiry = DateTime.UtcNow.Add(DefaultExpiry);
+            newEntry.Expiry = DateTime.UtcNow.Add(expiry);
 
             setter(newEntry, result);
 
@@ -155,7 +160,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             return result;
         }
 
-
         public static Task<AnimeCacheDto> GetAnimeAsync(long malId, CancellationToken token) =>
             GetOrFetchAsync(
                 malId.ToString(),
@@ -164,6 +168,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token).ConfigureAwait(false)).Data),
                 entry => entry.Anime,
                 (entry, value) => entry.Anime = value,
+                SearchExpiry,
                 true
             );
 
@@ -188,51 +193,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                     entry.Episodes ??= new Dictionary<int, EpisodeCacheDto>();
                     entry.Episodes[episodeNumber] = value;
                 },
-                true
-            );
-
-        public static Task<List<CharacterCacheDto>> GetAnimeCharactersAsync(long malId, CancellationToken token) =>
-            GetOrFetchAsync(
-                malId.ToString(),
-                _charactersCache,
-                CharactersCacheFile,
-                async () =>
-                {
-                    var result = await Instance.GetAnimeCharactersAsync(malId, token).ConfigureAwait(false);
-                    return result.Data.Select(CharacterCacheDto.From).ToList();
-                },
-                entry => entry.Characters,
-                (entry, value) => entry.Characters = value,
-                true
-            );
-
-        public static Task<List<RelatedEntryDto>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
-            GetOrFetchAsync(
-                malId.ToString(),
-                _relationsCache,
-                RelationsCacheFile,
-                async () =>
-                {
-                    var result = await Instance.GetAnimeRelationsAsync(malId, token).ConfigureAwait(false);
-                    return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
-                },
-                entry => entry.Relations,
-                (entry, value) => entry.Relations = value,
-                true
-            );
-
-        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token) =>
-            GetOrFetchAsync(
-                malId.ToString(),
-                _picturesCache,
-                PicturesCacheFile,
-                async () =>
-                {
-                    var result = await Instance.GetAnimePicturesAsync(malId, token).ConfigureAwait(false);
-                    return result.Data.Select(ImagesSetDto.From).Where(r => r != null).ToList();
-                },
-                entry => entry.Pictures,
-                (entry, value) => entry.Pictures = value,
+                SearchExpiry,
                 true
             );
 
@@ -261,6 +222,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                         () => Task.FromResult(AnimeCacheDto.From(a)),
                         entry => entry.Anime,
                         (entry, value) => entry.Anime = value,
+                        SearchExpiry,
                         false
                     )
                 )
@@ -276,5 +238,53 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             await SaveCacheAsync(SearchCacheFile, _searchCache).ConfigureAwait(false);
             return anime.ToList();
         }
+
+        public static Task<List<CharacterCacheDto>> GetAnimeCharactersAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _charactersCache,
+                CharactersCacheFile,
+                async () =>
+                {
+                    var result = await Instance.GetAnimeCharactersAsync(malId, token).ConfigureAwait(false);
+                    return result.Data.Select(CharacterCacheDto.From).ToList();
+                },
+                entry => entry.Characters,
+                (entry, value) => entry.Characters = value,
+                OtherExpiry,
+                true
+            );
+
+        public static Task<List<RelatedEntryDto>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _relationsCache,
+                RelationsCacheFile,
+                async () =>
+                {
+                    var result = await Instance.GetAnimeRelationsAsync(malId, token).ConfigureAwait(false);
+                    return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
+                },
+                entry => entry.Relations,
+                (entry, value) => entry.Relations = value,
+                OtherExpiry,
+                true
+            );
+
+        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token) =>
+            GetOrFetchAsync(
+                malId.ToString(),
+                _picturesCache,
+                PicturesCacheFile,
+                async () =>
+                {
+                    var result = await Instance.GetAnimePicturesAsync(malId, token).ConfigureAwait(false);
+                    return result.Data.Select(ImagesSetDto.From).Where(r => r != null).ToList();
+                },
+                entry => entry.Pictures,
+                (entry, value) => entry.Pictures = value,
+                OtherExpiry,
+                true
+            );
     }
 }

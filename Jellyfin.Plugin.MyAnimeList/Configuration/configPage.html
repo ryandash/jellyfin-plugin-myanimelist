@@ -45,6 +45,16 @@
                             <input id="chkMaxGenres" name="chkMaxGenres" type="number" is="emby-input" min="0" />
                             <div class="fieldDescription">Set this to zero to remove any limit.</div>
                         </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="chkCacheSearchTime">Search Cache Duration (Minutes)</label>
+                            <input id="chkCacheSearchTime" name="chkCacheSearchTime" type="number" is="emby-input" min="10" />
+                            <div class="fieldDescription">The cache time for main search results (anime and episode data)</div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="chkCacheOtherTime">Other Cache Duration (Days)</label>
+                            <input id="chkCacheOtherTime" name="chkCacheOtherTime" type="number" is="emby-input" min="1" />
+                            <div class="fieldDescription">The cache time for Other results (character data, anime relations, and images)</div>
+                        </div>
                         <label class="emby-checkbox-label">
                             <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
                             <span>Ignore existing metadata when fetching new data. (still uses existing metadata for episodes)</span>
@@ -63,7 +73,7 @@
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkDisableLocalCache" name="chkDisableLocalCache" type="checkbox" is="emby-checkbox" />
-                            <span>Disable local cache (do not store cache to a file)</span>
+                            <span>Disable storing cache in Files (still stores in memory)</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkUseExternalIDs" name="chkUseExternalIDs" type="checkbox" is="emby-checkbox" />
@@ -95,6 +105,9 @@
                             document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
                             document.getElementById('chkMaxPeople').value = config.MaxPeople;
                             document.getElementById('chkMaxGenres').value = config.MaxGenres;
+                            document.getElementById('chkCacheOtherTime').value = config.cacheOtherTime;
+                            document.getElementById('chkCacheSearchTime').value = config.cacheSearchTime;
+
                             document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
                             document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
                             document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
@@ -116,6 +129,9 @@
                             config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
                             config.MaxPeople = document.getElementById('chkMaxPeople').value;
                             config.MaxGenres = document.getElementById('chkMaxGenres').value;
+                            config.cacheOtherTime = document.getElementById('chkCacheOtherTime').value;
+                            config.cacheSearchTime = document.getElementById('chkCacheSearchTime').value;
+
                             config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
                             config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
                             config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;

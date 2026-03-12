@@ -1,3 +1,4 @@
+using System;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.MyAnimeList.Configuration
@@ -27,6 +28,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonLanguageFilterPreference = LanguageFilterType.All;
             MaxPeople = 0;
             MaxGenres = 5;
+            cacheOtherTime = 1;
+            cacheSearchTime = 10;
         }
 
         // === Title Settings ===
@@ -45,6 +48,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool ExcludeSpecials { get; set; }
         public bool DisableLocalCache { get; set; }
         public bool UseExternalIDs { get; set; }
+
+        // === Cache time ===
+        public int cacheOtherTime { get; set; }
+        public int cacheSearchTime { get; set; }
 
         // === Debugging ===
         public bool EnableDebug { get; set; }
