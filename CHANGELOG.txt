@@ -1,14 +1,19 @@
-0c5cd3f Update Jellyfin.Plugin.MyAnimeList.sln
+66e8855 User adjustable cache duration
 
-448a452 Fix building bug
+- Add user adjustable cache duration
 
-- Remove optimize (removes some dependencies from dll do not use again)
-- Disable IsPublishable
+246ef3a Cleanup and small optimizations
 
-7b43b2d Update README.md
+- Reuse HttpClient instead of making new ones
 
-9772c6c Update IdMappings.cs
+- Pass CancellationToken around
 
-- Remove nullables
+- ConfigureAwait(false) to await calls
 
-5be3274 Update manifest
+- Cleanup
+
+- Version bump
+
+- Update JikanDotNet to 2.10.2
+
+eed7183 Update manifest
