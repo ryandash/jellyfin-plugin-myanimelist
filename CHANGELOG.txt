@@ -1,19 +1,19 @@
-66e8855 User adjustable cache duration
+7fcdfd8 Reduce API calls + improve caching control and efficiency
 
-- Add user adjustable cache duration
+- Change from Jikan's GetAnimeAsync to GetAnimeFullAsync which includes relation data with the goal to reduce unnecessary api calls
 
-246ef3a Cleanup and small optimizations
+- Refactor code that uses anime relations
 
-- Reuse HttpClient instead of making new ones
+- Fix minor cache writing bug
 
-- Pass CancellationToken around
+- Optimize some DTOs
 
-- ConfigureAwait(false) to await calls
+- Bump search/recent cache to 60 minute default
 
-- Cleanup
+- Change cache minimum to 0 (allows always getting fresh data)
 
-- Version bump
+fc187a3 Update build and publish.yaml
 
-- Update JikanDotNet to 2.10.2
+- Update building actions
 
-eed7183 Update manifest
+f5b3d51 Update manifest
