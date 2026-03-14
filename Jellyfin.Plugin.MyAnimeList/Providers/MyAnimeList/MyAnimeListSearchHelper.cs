@@ -28,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToArray();
         }
 
-        public async Task<AnimeCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
+        public async Task<AnimeFullCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
         {
             string malId = info switch
             {
@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata) || SearchResult)
                 {
                     if (enableDebug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
-                    return (await JikanAPI.GetAnimeAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
+                    return (await JikanAPI.GetAnimeFullAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
                 }
                 else
                 {
@@ -65,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation("Found MalID: {malIdFromName}", malIdFromName.Value);
             return info switch
             {
-                MovieInfo => (await JikanAPI.GetAnimeAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
+                MovieInfo => (await JikanAPI.GetAnimeFullAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
                 EpisodeInfo => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken).ConfigureAwait(false),
                 _ => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken).ConfigureAwait(false)
             };
@@ -265,11 +265,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<AnimeCacheDto> GetCurrentAnimeSeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
+        public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
         {
             async Task<List<long>> GetRelatedAnimeIdsAsync(long id, string relationType)
             {
-                var relations = await JikanAPI.GetAnimeRelationsAsync(id, cancellationToken).ConfigureAwait(false);
+                var animeWithRelations = await JikanAPI.GetAnimeFullAsync(id, cancellationToken, true).ConfigureAwait(false);
+                var relations = animeWithRelations?.Relations;
 
                 if (relations == null)
                     return new List<long>();
@@ -281,11 +282,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     .ToList();
             }
 
-            var anime = await JikanAPI.GetAnimeAsync(malId, cancellationToken).ConfigureAwait(false);
+            var anime = await JikanAPI.GetAnimeFullAsync(malId, cancellationToken).ConfigureAwait(false);
             if (anime == null)
                 return null;
 
-            static bool IsSkippable(AnimeCacheDto anime) =>
+            static bool IsSkippable(AnimeFullCacheDto anime) =>
                 anime.Episodes == 1 ||
                 anime.Titles?.Any(t => t.Title.Contains("OVA", StringComparison.OrdinalIgnoreCase) ||
                                        t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) &&
@@ -295,12 +296,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                   anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase) ||
                   anime.Type.Equals("TV Special", StringComparison.OrdinalIgnoreCase));
 
-            async Task<AnimeCacheDto> GetNextValidSequelAsync(long currentMalId)
+            async Task<AnimeFullCacheDto> GetNextValidSequelAsync(long currentMalId)
             {
                 var sequelIds = await GetRelatedAnimeIdsAsync(currentMalId, "Sequel").ConfigureAwait(false);
                 foreach (var id in sequelIds)
                 {
-                    var candidate = await JikanAPI.GetAnimeAsync(id, cancellationToken).ConfigureAwait(false);
+                    var candidate = await JikanAPI.GetAnimeFullAsync(id, cancellationToken).ConfigureAwait(false);
                     if (candidate != null && !IsSkippable(candidate))
                         return candidate;
                 }

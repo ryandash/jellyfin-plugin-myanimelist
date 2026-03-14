@@ -46,14 +46,14 @@
                             <div class="fieldDescription">Set this to zero to remove any limit.</div>
                         </div>
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="chkCacheSearchTime">Search Cache Duration (Minutes)</label>
-                            <input id="chkCacheSearchTime" name="chkCacheSearchTime" type="number" is="emby-input" min="10" />
-                            <div class="fieldDescription">The cache time for main search results (anime and episode data)</div>
+                            <label class="inputLabel inputLabelUnfocused" for="chkCacheSearchTime">Search/Recent Cache Duration (Minutes)</label>
+                            <input id="chkCacheSearchTime" name="chkCacheSearchTime" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">Cache for ongoing or recently finished (≤1 month) search, anime and episode data</div>
                         </div>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="chkCacheOtherTime">Other Cache Duration (Days)</label>
-                            <input id="chkCacheOtherTime" name="chkCacheOtherTime" type="number" is="emby-input" min="1" />
-                            <div class="fieldDescription">The cache time for Other results (character data, anime relations, and images)</div>
+                            <input id="chkCacheOtherTime" name="chkCacheOtherTime" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">Cache for older anime, character data, and images</div>
                         </div>
                         <label class="emby-checkbox-label">
                             <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />

@@ -9,25 +9,26 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
     {
         public string Relation { get; set; }
         public List<long> Entry { get; set; }
-
-        internal static RelatedEntryDto From(RelatedEntry entry, int unused = 0)
+        public static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
         {
-            if (entry == null) return null;
+            "Prequel",
+            "Sequel",
+            "Side Story"
+        };
+        private static readonly List<RelatedEntryDto> Empty = new();
 
-            var allowedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "Prequel",
-                "Sequel",
-                "Side Story"
-            };
+        public static List<RelatedEntryDto> FilterRelations(ICollection<RelatedEntry> relations)
+        {
+            return relations.Where(r => r != null && AllowedTypes.Contains(r.Relation))
+                    .Select(From).ToList() ?? Empty;
+        }
 
-            if (!allowedTypes.Contains(entry.Relation))
-                return null;
-
+        internal static RelatedEntryDto From(RelatedEntry entry)
+        {
             return new RelatedEntryDto
             {
                 Relation = entry.Relation,
-                Entry = entry.Entry?.Select(e => e.MalId).ToList()
+                Entry = entry.Entry.Select(e => e.MalId).Where(id => id > 0).ToList()
             };
         }
     }

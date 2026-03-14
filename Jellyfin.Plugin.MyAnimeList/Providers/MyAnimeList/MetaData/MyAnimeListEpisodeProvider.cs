@@ -32,7 +32,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var enableDebug = config.EnableDebug;
 
             EpisodeCacheDto episodeData = null;
-            Anime anime = null;
+            AnimeObject anime = null;
 
             if (config.UseExternalIDs && info is EpisodeInfo episodeInfo && episodeInfo.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
             {
@@ -52,7 +52,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     }
                     else
                     {
-                        anime = new Anime
+                        anime = new AnimeObject
                         {
                             anime = await _searchHelper
                             .GetCurrentAnimeSeasonAsync(malId, info.ParentIndexNumber ?? epResult.Season.GetValueOrDefault(1), cancellationToken)
@@ -65,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (episodeData == null)
             {
-                anime = new Anime
+                anime = new AnimeObject
                 {
                     anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false)
                 };
@@ -112,40 +112,38 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return result;
         }
 
-        protected override Episode ConvertToItem(Anime media)
+        protected override Episode ConvertToItem(AnimeObject media)
         {
             throw new NotImplementedException();
         }
 
-        private async Task<(int episodeNumber, AnimeCacheDto anime)> GetSeasonEpisodeNumberAsync(int episodeNumber, int seasonNumber,
-            AnimeCacheDto anime, CancellationToken cancellationToken)
+        private async Task<(int episodeNumber, AnimeFullCacheDto anime)> GetSeasonEpisodeNumberAsync(
+    int episodeNumber, int seasonNumber,
+    AnimeFullCacheDto anime, CancellationToken cancellationToken)
         {
-            List<RelatedEntryDto> relations = null;
+            var relations = anime.Relations ?? (await JikanAPI.GetAnimeFullAsync(anime.MalId.Value, cancellationToken, true).ConfigureAwait(false))
+                                                 ?.Relations ?? new List<RelatedEntryDto>();
 
-            async Task<AnimeCacheDto> GetRelatedAnimeAsync(string relationType)
+            async Task<AnimeFullCacheDto> GetRelatedAnimeAsync(string relationType)
             {
-                relations = (await JikanAPI.GetAnimeRelationsAsync(anime.MalId.Value, cancellationToken)
-                    .ConfigureAwait(false));
-
                 var relation = relations.FirstOrDefault(r =>
                     r.Relation.Equals(relationType, StringComparison.OrdinalIgnoreCase))
                     ?.Entry.FirstOrDefault();
 
                 return relation.HasValue
-                    ? await JikanAPI.GetAnimeAsync(relation.Value, cancellationToken).ConfigureAwait(false)
+                    ? await JikanAPI.GetAnimeFullAsync(relation.Value, cancellationToken, true).ConfigureAwait(false)
                     : null;
             }
 
-            while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
+            while (anime.Episodes.GetValueOrDefault() > 0 && episodeNumber > anime.Episodes.Value)
             {
                 var sequelAnime = await GetRelatedAnimeAsync("Sequel").ConfigureAwait(false);
-                if (sequelAnime == null || sequelAnime.Episodes == 0)
-                {
+                if (sequelAnime == null || sequelAnime.Episodes.GetValueOrDefault() == 0)
                     break;
-                }
 
                 episodeNumber -= anime.Episodes.Value;
                 anime = sequelAnime;
+                relations = anime.Relations ?? new List<RelatedEntryDto>();
             }
 
             if (episodeNumber == 0)
@@ -159,14 +157,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 return (episodeNumber, anime);
             }
 
-            if (seasonNumber == 0)
+            if (seasonNumber == 0 && !Plugin.Instance.Configuration.ExcludeSpecials)
             {
-                var config = Plugin.Instance.Configuration;
-                if (config.ExcludeSpecials) return (0, null);
-
-                relations ??= (await JikanAPI.GetAnimeRelationsAsync(anime.MalId!.Value, cancellationToken)
-                    .ConfigureAwait(false)).ToList() ?? new List<RelatedEntryDto>();
-
                 var sideStories = relations.FirstOrDefault(r =>
                     r.Relation.Equals("Side Story", StringComparison.OrdinalIgnoreCase))?.Entry;
 
@@ -175,29 +167,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     var tempEpisodeNumber = episodeNumber;
                     foreach (var sideStory in sideStories)
                     {
-                        if (tempEpisodeNumber <=0)
-                        {
-                            break;
-                        }
-
-                        var sideStoryAnime = await JikanAPI.GetAnimeAsync(sideStory, cancellationToken)
+                        var sideStoryAnime = await JikanAPI.GetAnimeFullAsync(sideStory, cancellationToken)
                             .ConfigureAwait(false);
 
                         var numEpisodes = sideStoryAnime?.Episodes.GetValueOrDefault();
-                        if (numEpisodes.HasValue)
+                        if (!numEpisodes.HasValue) break;
+
+                        if (tempEpisodeNumber > numEpisodes.Value)
                         {
-                            if (tempEpisodeNumber > numEpisodes)
-                            {
-                                tempEpisodeNumber -= numEpisodes.Value;
-                            }
-                            else
-                            {
-                                return (tempEpisodeNumber, sideStoryAnime);
-                            }
+                            tempEpisodeNumber -= numEpisodes.Value;
                         }
                         else
                         {
-                            break;
+                            return (tempEpisodeNumber, sideStoryAnime);
                         }
                     }
                 }

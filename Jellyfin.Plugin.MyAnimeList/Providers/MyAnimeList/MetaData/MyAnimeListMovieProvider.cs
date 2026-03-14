@@ -11,7 +11,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
         }
 
-        protected override Movie ConvertToItem(Anime media)
+        protected override Movie ConvertToItem(AnimeObject media)
             => media.ToMovie();
     }
 }

@@ -54,7 +54,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
     public class AnimeSearchResult
     {
-        public AnimeCacheDto anime;
+        public AnimeFullCacheDto anime;
 
         public string GetPreferredTitle(TitlePreferenceType preference, string language)
         {
@@ -100,7 +100,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         }
     }
 
-    public class Anime : AnimeSearchResult
+    public class AnimeObject : AnimeSearchResult
     {
         public List<CharacterCacheDto> characters { get; set; }
 

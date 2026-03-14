@@ -1,4 +1,3 @@
-using System;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.MyAnimeList.Configuration
@@ -29,7 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             MaxPeople = 0;
             MaxGenres = 5;
             cacheOtherTime = 1;
-            cacheSearchTime = 10;
+            cacheSearchTime = 60;
         }
 
         // === Title Settings ===

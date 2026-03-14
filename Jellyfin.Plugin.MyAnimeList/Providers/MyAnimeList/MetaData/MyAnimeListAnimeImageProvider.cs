@@ -67,9 +67,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return Array.Empty<RemoteImageInfo>();
             }
 
-            var anime = await JikanAPI.GetAnimeAsync(aid, cancellationToken).ConfigureAwait(false);
+            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
             var images = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
-            var media = new Anime { anime = anime };
+            var media = new AnimeObject { anime = anime };
             var imageUrl = media.GetImageUrl();
             if (images != null && imageUrl != null)
                 return

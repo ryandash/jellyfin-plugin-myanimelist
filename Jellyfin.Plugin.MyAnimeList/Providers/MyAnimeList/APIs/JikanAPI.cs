@@ -34,14 +34,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 SearchCacheFile = Path.Combine(baseDir, "JikanSearchCache.json");
                 EpisodesCacheFile = Path.Combine(baseDir, "JikanEpisodesCache.json");
                 CharactersCacheFile = Path.Combine(baseDir, "JikanCharactersCache.json");
-                RelationsCacheFile = Path.Combine(baseDir, "JikanRelationsCache.json");
                 PicturesCacheFile = Path.Combine(baseDir, "JikanPicturesCache.json");
 
                 LoadCache(AnimeCacheFile, _animeCache);
                 LoadCache(SearchCacheFile, _searchCache);
                 LoadCache(EpisodesCacheFile, _episodesCache);
                 LoadCache(CharactersCacheFile, _charactersCache);
-                LoadCache(RelationsCacheFile, _relationsCache);
                 LoadCache(PicturesCacheFile, _picturesCache);
             }
         }
@@ -63,13 +61,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             TimeSpan.FromMinutes(Plugin.Instance.Configuration.cacheSearchTime);
         private class CacheEntry
         {
-            public DateTime Expiry { get; set; } = DateTime.UtcNow.Add(OtherExpiry);
+            public DateTime Expiry { get; set; }
 
-            public AnimeCacheDto Anime { get; set; }
+            public AnimeFullCacheDto Anime { get; set; }
             public List<long> Ids { get; set; }
             public List<CharacterCacheDto> Characters { get; set; }
             public Dictionary<int, EpisodeCacheDto> Episodes { get; set; }
-            public List<RelatedEntryDto> Relations { get; set; }
             public List<ImagesSetDto> Pictures { get; set; }
         }
 
@@ -77,13 +74,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         private static readonly ConcurrentDictionary<string, CacheEntry> _searchCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _episodesCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _charactersCache = new();
-        private static readonly ConcurrentDictionary<string, CacheEntry> _relationsCache = new();
         private static readonly ConcurrentDictionary<string, CacheEntry> _picturesCache = new();
         private static string AnimeCacheFile;
         private static string SearchCacheFile;
         private static string EpisodesCacheFile;
         private static string CharactersCacheFile;
-        private static string RelationsCacheFile;
         private static string PicturesCacheFile;
 
         private static void LoadCache(string filePath, ConcurrentDictionary<string, CacheEntry> cache)
@@ -123,7 +118,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
             var json = JsonSerializer.Serialize(cache, JsonOptions);
             var tempFile = filePath + ".tmp";
-            await File.WriteAllTextAsync(tempFile, json).ConfigureAwait(false);
+            await File.WriteAllTextAsync(tempFile, json);
             File.Replace(tempFile, filePath, null);
         }
 
@@ -160,17 +155,42 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             return result;
         }
 
-        public static Task<AnimeCacheDto> GetAnimeAsync(long malId, CancellationToken token) =>
-            GetOrFetchAsync(
-                malId.ToString(),
-                _animeCache,
-                AnimeCacheFile,
-                async () => AnimeCacheDto.From((await Instance.GetAnimeAsync(malId, token).ConfigureAwait(false)).Data),
-                entry => entry.Anime,
-                (entry, value) => entry.Anime = value,
-                SearchExpiry,
-                true
-            );
+        public static async Task<AnimeFullCacheDto> GetAnimeFullAsync(long malId, CancellationToken token, bool needRelations = false)
+        {
+            var cacheKey = malId.ToString();
+            AnimeFullCacheDto animeCacheDto = null;
+
+            if (_animeCache.TryGetValue(cacheKey, out var cachedEntry) && cachedEntry.Expiry > DateTime.UtcNow)
+            {
+                if (cachedEntry.Anime?.Relations != null || !needRelations)
+                {
+                    return cachedEntry.Anime;
+                }
+
+                var relationsData = await Instance.GetAnimeRelationsAsync(malId, token).ConfigureAwait(false);
+                cachedEntry.Anime.Relations = RelatedEntryDto.FilterRelations(relationsData.Data);
+                animeCacheDto = cachedEntry.Anime;
+            }
+            else
+            {
+                var fullAnimeData = await Instance.GetAnimeFullDataAsync(malId, token).ConfigureAwait(false);
+                animeCacheDto = AnimeFullCacheDto.From(fullAnimeData.Data);
+            }
+
+            var finishedDate = animeCacheDto?.Aired?.To;
+            var expiry = (finishedDate.HasValue && finishedDate.Value < DateTime.UtcNow.AddMonths(-1))
+                ? OtherExpiry
+                : SearchExpiry;
+
+            _animeCache[cacheKey] = new CacheEntry
+            {
+                Anime = animeCacheDto,
+                Expiry = DateTime.UtcNow.Add(expiry)
+            };
+
+            await SaveCacheAsync(AnimeCacheFile, _animeCache).ConfigureAwait(false);
+            return animeCacheDto;
+        }
 
         public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token) =>
             GetOrFetchAsync(
@@ -192,18 +212,25 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 {
                     entry.Episodes ??= new Dictionary<int, EpisodeCacheDto>();
                     entry.Episodes[episodeNumber] = value;
+
+                    var airedDate = value?.Aired;
+                    var expiry = (airedDate.HasValue && airedDate.Value < DateTime.UtcNow.AddMonths(-1))
+                        ? OtherExpiry
+                        : SearchExpiry;
+
+                    entry.Expiry = DateTime.UtcNow.Add(expiry);
                 },
                 SearchExpiry,
                 true
             );
 
-        public static async Task<List<AnimeCacheDto>> SearchAnimeAsync(string term, CancellationToken token)
+        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, CancellationToken token)
         {
             if (_searchCache.TryGetValue(term, out var cached) &&
                 cached.Expiry > DateTime.UtcNow &&
                 cached.Ids != null)
             {
-                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeAsync(id, token))).ConfigureAwait(false))
+                return (await Task.WhenAll(cached.Ids.Select(id => GetAnimeFullAsync(id, token))).ConfigureAwait(false))
                 .OrderBy(a => a.MalId)
                 .ToList();
             }
@@ -219,7 +246,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                         a.MalId.ToString(),
                         _animeCache,
                         AnimeCacheFile,
-                        () => Task.FromResult(AnimeCacheDto.From(a)),
+                        () => Task.FromResult(AnimeFullCacheDto.From(a)),
                         entry => entry.Anime,
                         (entry, value) => entry.Anime = value,
                         SearchExpiry,
@@ -251,22 +278,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 },
                 entry => entry.Characters,
                 (entry, value) => entry.Characters = value,
-                OtherExpiry,
-                true
-            );
-
-        public static Task<List<RelatedEntryDto>> GetAnimeRelationsAsync(long malId, CancellationToken token) =>
-            GetOrFetchAsync(
-                malId.ToString(),
-                _relationsCache,
-                RelationsCacheFile,
-                async () =>
-                {
-                    var result = await Instance.GetAnimeRelationsAsync(malId, token).ConfigureAwait(false);
-                    return result.Data.Select(RelatedEntryDto.From).Where(r => r != null).ToList();
-                },
-                entry => entry.Relations,
-                (entry, value) => entry.Relations = value,
                 OtherExpiry,
                 true
             );

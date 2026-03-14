@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             _searchHelper = new MyAnimeListSearchHelper(libraryManager);
         }
 
-        protected abstract TItem ConvertToItem(Anime media);
+        protected abstract TItem ConvertToItem(AnimeObject media);
 
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
@@ -37,7 +37,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (anime == null)
                 return result;
 
-            var media = new Anime
+            var media = new AnimeObject
             {
                 anime = anime,
                 characters = await JikanAPI.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)
