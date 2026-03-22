@@ -66,7 +66,7 @@ Anime
 4. Restart **Jellyfin Server**
 5. Go to **Settings** → **Dashboard** → **Plugins** → **Available**
 6. Find **MyAnimeList**, select it, and click **Install** (latest version)
-7. Return to **Plugins** (**Settings** → **Admin Dashboard** → **Plugins**) to confirm it appears in your installed plugins list
+7. Return to **Plugins** (**Settings** → **Dashboard** → **Plugins**) to confirm it appears in your installed plugins list
 
 ---
 
@@ -79,7 +79,7 @@ Anime
 3. Copy all extracted `.dll` files into: `plugins/myanimelist`
     > Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
 4. Restart **Jellyfin Server**
-5. Navigate to **Settings** → **Admin Dashboard** → **Plugins** to verify the plugin is installed
+5. Navigate to **Settings** → **Dashboard** → **Plugins** to verify the plugin is installed
 
 ---
 
