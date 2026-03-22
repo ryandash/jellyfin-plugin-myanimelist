@@ -76,9 +76,8 @@ Anime
 
 1. Download the latest release from the [Releases page](https://github.com/ryandash/jellyfin-plugin-myanimelist/releases)
 2. Extract the downloaded `.zip` file
-3. Copy all extracted `.dll` files into:
-plugins/myanimelist
-- Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
+3. Copy all extracted `.dll` files into: `plugins/myanimelist`
+    > Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
 4. Restart **Jellyfin Server**
 5. Navigate to **Settings** → **Admin Dashboard** → **Plugins** to verify the plugin is installed
 
@@ -92,8 +91,8 @@ git clone https://github.com/ryandash/jellyfin-plugin-myanimelist.git
 ```
 2. Install Visual Studio with the .NET Desktop Development workload
 4. Open the solution file in Visual Studio
-5. Restore any missing dependencies and build the solution
-    > See the [plugin directory documentation](https://jellyfin.org/docs/general/server/plugins/) if needed
+5. Restore any missing dependencies, build the project, and check the Jellyfin plugin directory
+    > Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
     - Default output path for building was set in the project file as: `C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList`
     - If the plugin is not output to the correct plugin location check the log for the output directory or change the default debug build location
 7. Restart **Jellyfin Server**
