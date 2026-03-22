@@ -56,31 +56,46 @@ Anime
 
 ## Installation
 
-### Automatic (recommended)
-1. Navigate to Settings > Admin Dashboard > Plugins > Repositories
-2. Add a new repository with a `Repository URL` of `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json`. The name can be anything you like.
-3. Save, and navigate to Catalogue.
-4. Myanimelist should be present. Click on it and install the latest version.
-5. Navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
+### Automatic Installation (Recommended)
 
-### Manual
+1. Open **Settings** → **Dashboard** → **Plugins** → **Repositories**
+2. Click **Add Repository**, then enter:
+   - **Repository URL:** `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json`
+   - **Name:** Any name you prefer (e.g., *MyAnimeList Metadata Plugin*)
+3. Click **Save**
+4. Restart **Jellyfin Server**
+5. Go to **Settings** → **Dashboard** → **Plugins** → **Available**
+6. Find **MyAnimeList**, select it, and click **Install** (latest version)
+7. Return to **Plugins** (**Settings** → **Admin Dashboard** → **Plugins**) to confirm it appears in your installed plugins list
 
-[See the official Jellyfin documentation for install instructions](https://jellyfin.org/docs/general/server/plugins/index.html#installing).
+### Manual Installation
 
-1. Download the latest from the [releases tab](https://github.com/jellyfin/jellyfin-plugin-anilist/releases).
-2. Extract the zip file.
-3. Copy the dll files into `plugins/myanimelist` (see [official](https://jellyfin.org/docs/general/server/plugins/) documentation on where to find the plugins folder).
-4. Restart your Jellyfin instance.
-5. Navigate to Plugins in Jellyfin (Settings > Admin Dashboard > Plugins) to verify installation.
+> For general plugin installation details, see the [official Jellyfin documentation](https://jellyfin.org/docs/general/server/plugins/index.html#installing).
 
-### Building from visual studio
+1. Download the latest release from the [Releases page](https://github.com/ryandash/jellyfin-plugin-myanimelist/releases)
+2. Extract the downloaded `.zip` file
+3. Copy all extracted `.dll` files into:
+plugins/myanimelist
+- Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
+4. Restart **Jellyfin Server**
+5. Navigate to **Settings** → **Admin Dashboard** → **Plugins** to verify the plugin is installed
 
-1. Git clone the latest version of this repository
-2. Download and install visual studio with .Net desktop development
-3. Build jikan.net
-4. Open my repository solution and add any missing references and build
-5. By default a debug build should output to `C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList`, if not then Copy all dll files from the output directory to [Jellyfins Plugin directory](https://jellyfin.org/docs/general/server/plugins/) under plugins/myanimelist
-7. Restart Jellyfin Server (Administration> Dashboard > Restart) and navigate to Plugins in Jellyfin (Administration > Dashboard > My Plugins) to verify installation.
+---
+
+### Building from Visual Studio
+
+1. Clone this repository:
+```bash
+git clone https://github.com/ryandash/jellyfin-plugin-myanimelist.git
+```
+2. Install Visual Studio with the .NET Desktop Development workload
+4. Open the solution file in Visual Studio
+5. Restore any missing dependencies and build the solution
+    > See the [plugin directory documentation](https://jellyfin.org/docs/general/server/plugins/) if needed
+    - Default output path for building was set in the project file as: `C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList`
+    - If the plugin is not output to the correct plugin location check the log for the output directory or change the default debug build location
+7. Restart **Jellyfin Server**
+8. Go to **Settings** → **Dashboard** → **Plugins** to confirm the plugin is installed
 
 ## Licence
 
