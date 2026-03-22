@@ -68,6 +68,8 @@ Anime
 6. Find **MyAnimeList**, select it, and click **Install** (latest version)
 7. Return to **Plugins** (**Settings** → **Admin Dashboard** → **Plugins**) to confirm it appears in your installed plugins list
 
+---
+
 ### Manual Installation
 
 > For general plugin installation details, see the [official Jellyfin documentation](https://jellyfin.org/docs/general/server/plugins/index.html#installing).
