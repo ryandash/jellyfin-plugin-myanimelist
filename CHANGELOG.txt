@@ -1,19 +1,13 @@
-7fcdfd8 Reduce API calls + improve caching control and efficiency
+7d9bb2a Fix seasons with parts
 
-- Change from Jikan's GetAnimeAsync to GetAnimeFullAsync which includes relation data with the goal to reduce unnecessary api calls
+- Fix a bug caused during refactoring a while ago that caused incorrect season numbers for anime with parts + handle multiple sequels a little better
 
-- Refactor code that uses anime relations
+- Handle sequel with no known episode count in episode provider
 
-- Fix minor cache writing bug
+791034b Update README for plugin installation instructions
+57a50fe Update README.md
+846cbba Add manual installation section to README
 
-- Optimize some DTOs
-
-- Bump search/recent cache to 60 minute default
-
-- Change cache minimum to 0 (allows always getting fresh data)
-
-fc187a3 Update build and publish.yaml
-
-- Update building actions
-
-f5b3d51 Update manifest
+Added a note about general plugin installation details.
+a4e463c Update installation instructions in README.md
+205646f Update manifest
