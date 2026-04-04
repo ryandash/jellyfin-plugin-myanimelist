@@ -54,9 +54,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     {
                         anime = new AnimeObject
                         {
-                            anime = await _searchHelper
-                            .GetCurrentAnimeSeasonAsync(malId, info.ParentIndexNumber ?? epResult.Season.GetValueOrDefault(1), cancellationToken)
-                            .ConfigureAwait(false)
+                            anime = await _searchHelper.GetCurrentAnimeSeasonAsync(_log, malId, info.ParentIndexNumber ?? epResult.Season.GetValueOrDefault(1), cancellationToken).ConfigureAwait(false)
                         };
                         episodeData = anime.toEpisodeData();
                     }
@@ -74,6 +72,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return result;
 
                 var (episodeNumber, updatedAnime) = await GetSeasonEpisodeNumberAsync(
+                    _log,
                     info.IndexNumber.Value,
                     info.ParentIndexNumber!.Value,
                     anime.anime,
@@ -118,9 +117,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         }
 
         private async Task<(int episodeNumber, AnimeFullCacheDto anime)> GetSeasonEpisodeNumberAsync(
-    int episodeNumber, int seasonNumber,
-    AnimeFullCacheDto anime, CancellationToken cancellationToken)
+            ILogger _log, int episodeNumber, int seasonNumber,
+            AnimeFullCacheDto anime, CancellationToken cancellationToken)
         {
+            if (!anime.Episodes.HasValue)
+            {
+                return (episodeNumber, anime);
+            }
+
             var relations = anime.Relations ?? (await JikanAPI.GetAnimeFullAsync(anime.MalId.Value, cancellationToken, true).ConfigureAwait(false))
                                                  ?.Relations ?? new List<RelatedEntryDto>();
 
@@ -135,24 +139,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     : null;
             }
 
-            while (anime.Episodes.GetValueOrDefault() > 0 && episodeNumber > anime.Episodes.Value)
+            while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
             {
                 var sequelAnime = await GetRelatedAnimeAsync("Sequel").ConfigureAwait(false);
-                if (sequelAnime == null || sequelAnime.Episodes.GetValueOrDefault() == 0)
+                if (sequelAnime == null || (sequelAnime.Episodes.HasValue && sequelAnime.Episodes.Value == 0))
                     break;
 
                 episodeNumber -= anime.Episodes.Value;
                 anime = sequelAnime;
                 relations = anime.Relations ?? new List<RelatedEntryDto>();
+
+                if (!sequelAnime.Episodes.HasValue)
+                    break;
             }
 
             if (episodeNumber == 0)
             {
                 var prequelAnime = await GetRelatedAnimeAsync("Prequel").ConfigureAwait(false);
-                if (prequelAnime?.Episodes.GetValueOrDefault() > 0)
+                if (prequelAnime != null && (!prequelAnime.Episodes.HasValue || prequelAnime.Episodes.Value > 0))
                 {
                     anime = prequelAnime;
-                    episodeNumber += anime.Episodes.Value;
+                    if (prequelAnime.Episodes.HasValue)
+                        episodeNumber += prequelAnime.Episodes.Value;
                 }
                 return (episodeNumber, anime);
             }
@@ -170,7 +178,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         var sideStoryAnime = await JikanAPI.GetAnimeFullAsync(sideStory, cancellationToken)
                             .ConfigureAwait(false);
 
-                        var numEpisodes = sideStoryAnime?.Episodes.GetValueOrDefault();
+                        var numEpisodes = sideStoryAnime?.Episodes;
                         if (!numEpisodes.HasValue) break;
 
                         if (tempEpisodeNumber > numEpisodes.Value)

@@ -66,8 +66,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return info switch
             {
                 MovieInfo => (await JikanAPI.GetAnimeFullAsync(malIdFromName.Value, cancellationToken).ConfigureAwait(false)),
-                EpisodeInfo => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken).ConfigureAwait(false),
-                _ => await GetCurrentAnimeSeasonAsync(malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken).ConfigureAwait(false)
+                EpisodeInfo => await GetCurrentAnimeSeasonAsync(_log, malIdFromName.Value, info.ParentIndexNumber ?? 1, cancellationToken).ConfigureAwait(false),
+                _ => await GetCurrentAnimeSeasonAsync(_log, malIdFromName.Value, info.IndexNumber ?? 1, cancellationToken).ConfigureAwait(false)
             };
         }
         private string StripLibraryPath(string itemPath, ILogger log, bool enableDebug)
@@ -166,8 +166,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
         private static readonly Regex QuoteMatches = new Regex("\"([^\"]+)\"", RegexOptions.Compiled);
 
-        private async Task<long?> GetBestAnimeID(
-    ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
+        private async Task<long?> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             var searchResults = await JikanAPI.SearchAnimeAsync(searchTerm, cancellationToken).ConfigureAwait(false);
             string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();
@@ -265,64 +264,145 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(long malId, int seasonNumber, CancellationToken cancellationToken)
+        public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int seasonNumber, CancellationToken cancellationToken)
         {
             async Task<List<long>> GetRelatedAnimeIdsAsync(long id, string relationType)
             {
                 var animeWithRelations = await JikanAPI.GetAnimeFullAsync(id, cancellationToken, true).ConfigureAwait(false);
+
                 var relations = animeWithRelations?.Relations;
+                if (relations == null || relations.Count == 0)
+                    return new List<long>(0);
 
-                if (relations == null)
-                    return new List<long>();
+                var result = new List<long>();
 
-                return relations
-                    .Where(r => r?.Relation?.Equals(relationType, StringComparison.OrdinalIgnoreCase) == true)
-                    .SelectMany(r => r.Entry ?? new List<long>())
-                    .Where(e => e > 0)
-                    .ToList();
+                foreach (var r in relations)
+                {
+                    if (r?.Relation == null ||
+                        !r.Relation.Equals(relationType, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var entries = r.Entry;
+                    if (entries == null)
+                        continue;
+
+                    foreach (var e in entries)
+                    {
+                        if (e > 0)
+                            result.Add(e);
+                    }
+                }
+
+                return result;
+            }
+
+            static int GetTypePriority(string type) => type?.ToUpperInvariant() switch
+            {
+                "TV" => 0,
+                "ONA" => 1,
+                "TV SPECIAL" => 2,
+                "MOVIE" => 3,
+                "OVA" => 4,
+                "SPECIAL" => 5,
+                _ => int.MaxValue
+            };
+
+            async Task<AnimeFullCacheDto> GetFirstSequelAsync(long id)
+            {
+                var sequelIds = await GetRelatedAnimeIdsAsync(id, "Sequel").ConfigureAwait(false);
+
+                AnimeFullCacheDto best = null;
+                int bestPriority = int.MaxValue;
+
+                foreach (var sequelId in sequelIds)
+                {
+                    var anime = await JikanAPI
+                        .GetAnimeFullAsync(sequelId, cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (anime?.Type == null)
+                        continue;
+
+                    var priority = GetTypePriority(anime.Type);
+
+                    if (priority < bestPriority)
+                    {
+                        best = anime;
+                        bestPriority = priority;
+
+                        if (priority == 0)
+                            return best;
+                    }
+                }
+
+                return best;
+            }
+
+            static bool IsPartTwoOrLater(string title)
+            {
+                var idx = title.IndexOf("part", StringComparison.OrdinalIgnoreCase);
+                if (idx < 0)
+                    return false;
+
+                idx += 4;
+
+                while (idx < title.Length && title[idx] == ' ')
+                    idx++;
+
+                int start = idx;
+                while (idx < title.Length && char.IsDigit(title[idx]))
+                    idx++;
+
+                if (start == idx)
+                    return false;
+
+                return int.TryParse(title[start..idx], out var part) && part > 1;
+            }
+
+            static bool IsSkippable(AnimeFullCacheDto anime)
+            {
+                var isPart = anime.Titles?.Any(t => t.Title != null && IsPartTwoOrLater(t.Title)) == true;
+
+                var isSpecial = anime.Titles?.Any(t =>
+                    t.Title != null &&
+                    (t.Title.Contains("OVA", StringComparison.OrdinalIgnoreCase) ||
+                     (t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) &&
+                      !t.Title.Contains("TV Special", StringComparison.OrdinalIgnoreCase)))) == true;
+
+                var isWrongType =
+                    !string.Equals(anime.Type, "TV", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(anime.Type, "ONA", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(anime.Type, "TV Special", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(anime.Type, "MOVIE", StringComparison.OrdinalIgnoreCase);
+
+                var isSingleEpisode = anime.Episodes.GetValueOrDefault() == 1 && !string.Equals(anime.Type, "MOVIE", StringComparison.OrdinalIgnoreCase);
+
+                return isPart || isSpecial || isWrongType || isSingleEpisode;
             }
 
             var anime = await JikanAPI.GetAnimeFullAsync(malId, cancellationToken).ConfigureAwait(false);
-            if (anime == null)
+            if (anime?.MalId == null)
                 return null;
-
-            static bool IsSkippable(AnimeFullCacheDto anime) =>
-                anime.Episodes == 1 ||
-                anime.Titles?.Any(t => t.Title.Contains("OVA", StringComparison.OrdinalIgnoreCase) ||
-                                       t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) &&
-                                       !t.Title.Contains("TV Special", StringComparison.OrdinalIgnoreCase) ||
-                                       t.Title.Contains("part ", StringComparison.OrdinalIgnoreCase)) == true ||
-                !(anime.Type.Equals("TV", StringComparison.OrdinalIgnoreCase) ||
-                  anime.Type.Equals("ONA", StringComparison.OrdinalIgnoreCase) ||
-                  anime.Type.Equals("TV Special", StringComparison.OrdinalIgnoreCase));
-
-            async Task<AnimeFullCacheDto> GetNextValidSequelAsync(long currentMalId)
-            {
-                var sequelIds = await GetRelatedAnimeIdsAsync(currentMalId, "Sequel").ConfigureAwait(false);
-                foreach (var id in sequelIds)
-                {
-                    var candidate = await JikanAPI.GetAnimeFullAsync(id, cancellationToken).ConfigureAwait(false);
-                    if (candidate != null && !IsSkippable(candidate))
-                        return candidate;
-                }
-                return null;
-            }
 
             if (anime.Episodes == 1)
             {
-                var next = await GetNextValidSequelAsync(anime.MalId!.Value).ConfigureAwait(false);
+                var next = await GetFirstSequelAsync(anime.MalId.Value).ConfigureAwait(false);
                 if (next != null)
                     anime = next;
             }
 
             int currentSeason = 1;
+
             while (currentSeason < seasonNumber)
             {
-                var nextSeason = await GetNextValidSequelAsync(anime.MalId!.Value).ConfigureAwait(false);
-                if (nextSeason == null)
+                var next = await GetFirstSequelAsync(anime.MalId!.Value).ConfigureAwait(false);
+                if (next == null)
                     break;
 
-                anime = nextSeason;
+                anime = next;
+
+                if (IsSkippable(anime)) continue;
+
                 currentSeason++;
             }
 
