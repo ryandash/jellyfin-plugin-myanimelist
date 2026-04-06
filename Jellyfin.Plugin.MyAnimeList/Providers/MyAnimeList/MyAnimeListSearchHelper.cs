@@ -340,11 +340,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             static bool IsPartTwoOrLater(string title)
             {
-                var idx = title.IndexOf("part", StringComparison.OrdinalIgnoreCase);
+                var idx = title.IndexOf("part ", StringComparison.OrdinalIgnoreCase);
                 if (idx < 0)
                     return false;
 
-                idx += 4;
+                idx += 5;
 
                 while (idx < title.Length && title[idx] == ' ')
                     idx++;
