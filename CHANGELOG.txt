@@ -1,13 +1,5 @@
-7d9bb2a Fix seasons with parts
+56c3748 Match "part " not "part"
 
-- Fix a bug caused during refactoring a while ago that caused incorrect season numbers for anime with parts + handle multiple sequels a little better
+- Oops part number is not a blank space
 
-- Handle sequel with no known episode count in episode provider
-
-791034b Update README for plugin installation instructions
-57a50fe Update README.md
-846cbba Add manual installation section to README
-
-Added a note about general plugin installation details.
-a4e463c Update installation instructions in README.md
-205646f Update manifest
+202af72 Update manifest
