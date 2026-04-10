@@ -37,7 +37,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         }
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
-        public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, CancellationToken cancellationToken)
+        public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, CancellationToken cancellationToken)
         {
             var client = Plugin.Instance.GetHttpClient();
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
@@ -64,6 +64,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             {
                 if (!mediaTypeCondition(item.payload.media_type)) continue;
                 AnimeFullCacheDto anime = await JikanAPI.GetAnimeFullAsync(item.id, cancellationToken).ConfigureAwait(false);
+                if (hasParsedYear)
+                {
+                    int? animeYear = anime.Aired?.From?.Year;
+
+                    bool isInYearRange = !animeYear.HasValue || Math.Abs(animeYear.Value - parsedYear) <= 1;
+                    if (!isInYearRange)
+                        continue;
+                }
+
                 foreach (var titleObj in anime.Titles)
                 {
                     var similarity = FuzzierSharp.Fuzz.Ratio(titleObj.Title.Replace(searchTerm, string.Empty).ToLowerInvariant(), normalizedSearch);

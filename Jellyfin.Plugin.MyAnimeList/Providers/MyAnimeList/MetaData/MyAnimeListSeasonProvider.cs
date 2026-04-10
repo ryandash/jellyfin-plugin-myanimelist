@@ -9,7 +9,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         public MyAnimeListSeasonProvider(ILogger<MyAnimeListSeasonProvider> logger, ILibraryManager libraryManager) : base(logger, libraryManager)
         {
-
         }
 
         protected override Season ConvertToItem(AnimeObject media)

@@ -5,11 +5,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using AnitomySharp;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using static AnitomySharp.AnitomySharp;
+using static Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.MyAnimeListApi;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
@@ -53,8 +56,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             if (enableDebug) _log.LogInformation("Original name: {name}", info.Name);
-            string searchName = FilterName(GetSearchName(info, _log, enableDebug));
-            if (enableDebug) _log.LogInformation("Filtered name: {name}", searchName);
+            string searchName = GetSearchName(info, _log, enableDebug);
+            if (enableDebug) _log.LogInformation("Search name: {name}", searchName);
             long? malIdFromName = await GetBestAnimeID(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt, cancellationToken).ConfigureAwait(false);
             if (!malIdFromName.HasValue)
             {
@@ -144,32 +147,44 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
         }
 
-        private static readonly Regex SeasonRegex = new Regex(@"(\s|\.)S[0-9]{1,2}", RegexOptions.Compiled);
-        private static readonly Regex AltNameRegex = new Regex(@"\s*~(\w|[0-9]|\s)+~", RegexOptions.Compiled);
-        private static readonly Regex NativeNameRegex = new Regex(@"\((\w|[0-9]|\s)+\)$", RegexOptions.Compiled);
-        private static readonly Regex AmpersandRegex = new Regex(@"\s?&\s?", RegexOptions.Compiled);
-        private static readonly Regex HashRegex = new Regex(@"#", RegexOptions.Compiled);
-        private static readonly Regex JellyfinFolderFormatRegex = new Regex(@"\([0-9]{4}\)\s*\[(\w|[0-9]|-)+\]$", RegexOptions.Compiled);
-
-        private string FilterName(string searchName)
-        {
-            searchName = SeasonRegex.Replace(searchName, string.Empty);               // Remove season designation
-            searchName = AltNameRegex.Replace(searchName, string.Empty);              // Remove ALT NAME
-            searchName = NativeNameRegex.Replace(searchName, string.Empty);           // Remove native name
-            searchName = AmpersandRegex.Replace(searchName, " and ");                 // Replace "&" with "and"
-            searchName = HashRegex.Replace(searchName, " ");                          // Replace "#" with space
-            searchName = JellyfinFolderFormatRegex.Replace(searchName, string.Empty); // Truncate Jellyfin folder format
-
-            return searchName.Trim();
-        }
-
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
-        private static readonly Regex QuoteMatches = new Regex("\"([^\"]+)\"", RegexOptions.Compiled);
+
+        private static void ExtractTitleAndYear(string searchTerm, out string title, out string year)
+        {
+            title = null;
+            year = null;
+            IEnumerable<Element> elements = Parse(searchTerm);
+
+            foreach (var e in elements)
+            {
+                switch (e.Category)
+                {
+                    case Element.ElementCategory.ElementAnimeTitle:
+                        title ??= e.Value;
+                        break;
+
+                    case Element.ElementCategory.ElementAnimeYear:
+                        year ??= e.Value;
+                        break;
+                }
+
+                if (title != null && year != null)
+                    return;
+            }
+        }
 
         private async Task<long?> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
-            var searchResults = await JikanAPI.SearchAnimeAsync(searchTerm, cancellationToken).ConfigureAwait(false);
-            string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();
+            ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
+
+            bool hasParsedYear = int.TryParse(year, out int parsedYear);
+
+            var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, cancellationToken).ConfigureAwait(false);
+            string normalizedSearch = NormalizeRegex.Replace(searchTitle, string.Empty).ToLowerInvariant();
+
+            Func<string, bool> mediaTypeCondition = isMovie
+                ? mediaType => string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase)
+                : mediaType => !string.Equals(mediaType, "Movie", StringComparison.OrdinalIgnoreCase);
 
             long? bestBackupMalId = null;
             int bestBackupSimilarity = -1;
@@ -179,12 +194,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             foreach (var anime in searchResults)
             {
-                bool isCorrectType = isMovie
-                    ? string.Equals(anime.Type, "Movie", StringComparison.OrdinalIgnoreCase)
-                    : !string.Equals(anime.Type, "Movie", StringComparison.OrdinalIgnoreCase);
+                if (!mediaTypeCondition(anime.Type)) continue;
 
-                if (!isCorrectType)
-                    continue;
+                if (hasParsedYear)
+                {
+                    int? animeYear = anime.Aired?.From?.Year;
+
+                    bool isInYearRange = !animeYear.HasValue || Math.Abs(animeYear.Value - parsedYear) <= 1;
+                    if (!isInYearRange)
+                        continue;
+                }
 
                 foreach (var titleObj in anime.Titles)
                 {
@@ -218,38 +237,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             }
                         }
                     }
-
-                    // Case 3: if title contains the searchTerm as substring
-                    if (title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) &&
-                        similarity > bestBackupSimilarity)
-                    {
-                        bestBackupMalId = anime.MalId;
-                        bestBackupSimilarity = similarity;
-                        continue;
-                    }
-
-                    // Case 4: if the title contains quoted words (Typically long titles)
-                    if (title.Contains('"'))
-                    {
-                        var quoteMatches = QuoteMatches.Matches(title);
-                        foreach (Match match in quoteMatches)
-                        {
-                            string quotedWord = match.Groups[1].Value.ToLowerInvariant();
-                            if (!string.IsNullOrEmpty(quotedWord))
-                            {
-                                int quotedSimilarity = FuzzierSharp.Fuzz.Ratio(
-                                    NormalizeRegex.Replace(quotedWord, string.Empty),
-                                    normalizedSearch);
-
-                                if (quotedSimilarity >= 95 && quotedSimilarity > bestBackupSimilarity)
-                                {
-                                    bestBackupMalId = anime.MalId;
-                                    bestBackupSimilarity = quotedSimilarity;
-                                    continue;
-                                }
-                            }
-                        }
-                    }
                 }
             }
 
@@ -261,7 +248,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return ignoreBestAttempt
                 ? null
-                : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, cancellationToken).ConfigureAwait(false);
+                : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int seasonNumber, CancellationToken cancellationToken)

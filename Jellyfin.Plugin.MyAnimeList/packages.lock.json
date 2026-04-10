@@ -2,6 +2,12 @@
   "version": 1,
   "dependencies": {
     "net9.0": {
+      "AnitomySharp.NET6": {
+        "type": "Direct",
+        "requested": "[0.5.1, )",
+        "resolved": "0.5.1",
+        "contentHash": "d4bGuBi0ORcN3aCTkl3oQP+BLDxMiVNUIiPFqukEJJZFblXmOC3z8zv3sJtWOtQ6+YEtrkZCaw7ZSht2nKfHIQ=="
+      },
       "FuzzierSharp": {
         "type": "Direct",
         "requested": "[3.0.1, )",
