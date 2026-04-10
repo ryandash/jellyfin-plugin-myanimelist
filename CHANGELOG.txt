@@ -1,5 +1,25 @@
-56c3748 Match "part " not "part"
+ebfda87 Adjust Httpclient and factory slightly
 
-- Oops part number is not a blank space
+- Remove ProductInfoHeaderValue from UserAgent
+- Initialize Jikan using the http client
+- Cleanup
 
-202af72 Update manifest
+044c839 Minor improvements + fix IdMapping
+
+- Slightly better version of GetBestAnimeID
+
+- Fix up IdMapping after api change and use cloudflare instead of github to allow more mapping possibilities
+
+4bef9f1 Improve search results
+
+- Remove IHasOrder approach to ordering providers
+
+- Remove search matching cases that rarely happen and occasionally have bad results with Jikan and instead rely on best guess from myanimelist results
+
+- Replace filtering with AnitomySharp title and year extraction and add additional year check to improve result accuracy
+
+e630637 Improve next best attempt
+
+- Check all titles for each anime in next best attempt MyAnimeList search to improve accuracy (NOTE: Jikan results can return none when searching with Synonyms)
+
+9e8a41e Update manifest
