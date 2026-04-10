@@ -39,10 +39,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
         public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, CancellationToken cancellationToken)
         {
-            var client = Plugin.Instance.GetHttpClient();
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
 
-            var response = await client.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var response = await Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return null;
 
             string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

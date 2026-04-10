@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using MediaBrowser.Common.Configuration;
@@ -29,11 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList
 
         public HttpClient GetHttpClient()
         {
-            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
-            httpClient.DefaultRequestHeaders.UserAgent.Add(
-                new ProductInfoHeaderValue(Name, Version.ToString()));
-
-            return httpClient;
+            return _httpClientFactory.CreateClient(NamedClient.Default);
         }
 
         /// <inheritdoc />
@@ -61,14 +56,14 @@ namespace Jellyfin.Plugin.MyAnimeList
         /// <inheritdoc />
         public IEnumerable<PluginPageInfo> GetPages()
         {
-            return new[]
-            {
+            return
+            [
                 new PluginPageInfo
                 {
                     Name = Name,
                     EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
                 }
-            };
+            ];
         }
     }
 }

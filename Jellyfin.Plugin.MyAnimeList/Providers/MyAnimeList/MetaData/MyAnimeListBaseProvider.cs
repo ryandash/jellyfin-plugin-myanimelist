@@ -66,10 +66,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return results;
         }
 
-        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = Plugin.Instance.GetHttpClient();
-            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            return Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken);
         }
     }
 }

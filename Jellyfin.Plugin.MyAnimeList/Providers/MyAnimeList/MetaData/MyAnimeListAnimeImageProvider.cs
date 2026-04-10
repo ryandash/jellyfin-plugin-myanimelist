@@ -17,10 +17,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
     {
-        private readonly ILogger _log;
+
         public MyAnimeListAnimeImageProvider(ILogger<MyAnimeListAnimeImageProvider> logger)
         {
-            _log = logger;
         }
 
         public string Name => "MyAnimeList";
@@ -85,11 +84,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             return Array.Empty<RemoteImageInfo>();
         }
 
-        public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = Plugin.Instance.GetHttpClient();
-
-            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            return Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken);
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
+using JikanDotNet.Config;
 using MediaBrowser.Common.Configuration;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
@@ -19,6 +20,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         private static bool _initialized;
         private static readonly object _initLock = new();
         private static readonly PluginConfiguration config = Plugin.Instance.Configuration;
+        private static Lazy<Jikan> _jikanInstance;
         public static void Initialize(IApplicationPaths paths)
         {
             if (_initialized) return;
@@ -41,10 +43,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 LoadCache(EpisodesCacheFile, _episodesCache);
                 LoadCache(CharactersCacheFile, _charactersCache);
                 LoadCache(PicturesCacheFile, _picturesCache);
+                _jikanInstance = new(() => new Jikan(new JikanClientConfiguration(), Plugin.Instance.GetHttpClient()));
             }
         }
 
-        private static readonly Lazy<Jikan> _jikanInstance = new(() => new Jikan());
         private static Jikan Instance => _jikanInstance.Value;
 
         private static readonly JsonSerializerOptions JsonOptions = new()
