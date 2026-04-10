@@ -31,6 +31,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<TItem>();
+            if (info.Path == null)
+                return result;
 
             var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false);
             if (anime == null)

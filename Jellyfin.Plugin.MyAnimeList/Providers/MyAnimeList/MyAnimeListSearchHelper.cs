@@ -176,7 +176,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private async Task<long?> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
         {
             ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
-
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
 
             var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, cancellationToken).ConfigureAwait(false);
@@ -207,10 +206,25 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                 foreach (var titleObj in anime.Titles)
                 {
-                    string title = titleObj.Title.ToLowerInvariant();
+                    string rawTitle = titleObj.Title;
+                    if (string.IsNullOrWhiteSpace(rawTitle))
+                        continue;
+                    rawTitle = rawTitle.ToLowerInvariant();
+
+                    string cleanTitle;
+                    if (rawTitle.Contains('('))
+                    {
+                        ExtractTitleAndYear(rawTitle, out cleanTitle, out _);
+                        if (string.IsNullOrWhiteSpace(cleanTitle))
+                            continue;
+                    }
+                    else
+                    {
+                        cleanTitle = rawTitle;
+                    }
 
                     // Case 1: direct similarity check
-                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(title, string.Empty), normalizedSearch);
+                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanTitle, string.Empty), normalizedSearch);
                     if (similarity == 100)
                         return anime.MalId;
 
@@ -221,21 +235,29 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     }
 
                     // Case 2: if title contains ':', compare first part only
-                    if (title.Contains(':'))
-                    {
-                        string firstPart = title[..title.IndexOf(':')].Trim();
-                        if (!string.IsNullOrEmpty(firstPart))
-                        {
-                            string normalizedFirstPart = NormalizeRegex.Replace(firstPart, string.Empty);
-                            int partSimilarity = FuzzierSharp.Fuzz.Ratio(normalizedFirstPart, normalizedSearch);
+                    int colonIndex = rawTitle.IndexOf(':');
+                    if (colonIndex <= 0) continue;
 
-                            if (partSimilarity >= 95 && partSimilarity > bestBackupSimilarity)
-                            {
-                                bestBackupMalId = anime.MalId;
-                                bestBackupSimilarity = partSimilarity;
-                                continue;
-                            }
-                        }
+                    string firstPart = rawTitle[..colonIndex].Trim();
+                    if (string.IsNullOrWhiteSpace(firstPart)) continue;
+                    string cleanFirstPart;
+                    if (firstPart.Contains('('))
+                    {
+                        ExtractTitleAndYear(firstPart, out cleanFirstPart, out _);
+                        if (string.IsNullOrWhiteSpace(cleanFirstPart))
+                            continue;
+                    }
+                    else
+                    {
+                        cleanFirstPart = firstPart;
+                    }
+
+                    int partSimilarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanFirstPart, string.Empty), normalizedSearch);
+                    if (partSimilarity >= 95 && partSimilarity > bestBackupSimilarity)
+                    {
+                        bestBackupMalId = anime.MalId;
+                        bestBackupSimilarity = partSimilarity;
+                        continue;
                     }
                 }
             }
@@ -248,7 +270,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return ignoreBestAttempt
                 ? null
-                : await MyAnimeListApi.GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, cancellationToken).ConfigureAwait(false);
+                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int seasonNumber, CancellationToken cancellationToken)

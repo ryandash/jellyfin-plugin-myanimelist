@@ -9,6 +9,7 @@ using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using static Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.IdMappings;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using EpisodeInfo = MediaBrowser.Controller.Providers.EpisodeInfo;
 
@@ -25,7 +26,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
-
             if (info.Path == null || !info.IndexNumber.HasValue)
                 return result;
 
@@ -35,29 +35,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             EpisodeCacheDto episodeData = null;
             AnimeObject anime = null;
 
-            if (config.UseExternalIDs && info is EpisodeInfo episodeInfo && episodeInfo.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
+            if (config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
             {
                 if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
-                var epResult = await _idMapping.GetAnimeEpisodeMappingAsync(_log, tvdbid, cancellationToken).ConfigureAwait(false);
+                AnimeEpisodeMapping epResult = await _idMapping.GetAnimeEpisodeMappingAsync(_log, tvdbid, cancellationToken).ConfigureAwait(false);
 
                 if (epResult?.MalId is long malId)
                 {
-                    if (enableDebug) _log.LogInformation("MalID: {MalId} Season: {Season} Episode: {Episode}",
-                        malId, epResult.Season, epResult.Episode);
+                    if (enableDebug) _log.LogInformation("MalID: {MalId} Episode: {Episode}", malId, epResult.Episode);
 
                     if (epResult.Episode.HasValue)
                     {
-                        episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode!.Value, cancellationToken).ConfigureAwait(false);
-
-                    }
-                    else
-                    {
-                        anime = new AnimeObject
-                        {
-                            anime = await _searchHelper.GetCurrentAnimeSeasonAsync(_log, malId, info.ParentIndexNumber ?? epResult.Season.GetValueOrDefault(1), cancellationToken).ConfigureAwait(false)
-                        };
-                        episodeData = anime.toEpisodeData();
+                        episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
