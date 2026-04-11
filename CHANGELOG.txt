@@ -1,25 +1,25 @@
-ebfda87 Adjust Httpclient and factory slightly
+c880d13 Update MyAnimeListSearchHelper.cs
 
-- Remove ProductInfoHeaderValue from UserAgent
-- Initialize Jikan using the http client
-- Cleanup
+- Remove unnecessary debug info
 
-044c839 Minor improvements + fix IdMapping
+dbf96e8 Match with [mal-{id}] series folder + bug fix
 
-- Slightly better version of GetBestAnimeID
+- Add the ability to match series with [mal-{id}] in the folder name
 
-- Fix up IdMapping after api change and use cloudflare instead of github to allow more mapping possibilities
+- Fix broken Jikan instance
 
-4bef9f1 Improve search results
+- Minor cleanup
 
-- Remove IHasOrder approach to ordering providers
+293c394 Update manifest
 
-- Remove search matching cases that rarely happen and occasionally have bad results with Jikan and instead rely on best guess from myanimelist results
+b20f76b Bump Jellyfin.Controller from 10.11.6 to 10.11.8
 
-- Replace filtering with AnitomySharp title and year extraction and add additional year check to improve result accuracy
+---
+updated-dependencies:
+- dependency-name: Jellyfin.Controller
+  dependency-version: 10.11.8
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+...
 
-e630637 Improve next best attempt
-
-- Check all titles for each anime in next best attempt MyAnimeList search to improve accuracy (NOTE: Jikan results can return none when searching with Synonyms)
-
-9e8a41e Update manifest
+Signed-off-by: dependabot[bot] <support@github.com>
