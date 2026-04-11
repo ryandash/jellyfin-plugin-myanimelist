@@ -69,11 +69,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 }
             }
 
-            foreach (string root in _libraryRoots)
-            {
-                _log.LogInformation("Roots: {root}", root);
-            }
-
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             if (enableDebug) _log.LogInformation("Original name: {name}", info.Name);
             string searchName = GetSearchName(info, _log, enableDebug);
