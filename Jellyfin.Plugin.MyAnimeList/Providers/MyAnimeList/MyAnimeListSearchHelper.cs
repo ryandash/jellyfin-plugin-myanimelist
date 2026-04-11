@@ -31,16 +31,31 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToArray();
         }
 
+        private static readonly Regex MalIdRegex = new Regex(@"\[mal-(\d+)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static long? ExtractMalIdFromSearchName(string searchName)
+        {
+            var match = MalIdRegex.Match(searchName);
+            if (!match.Success)
+                return null;
+
+            if (long.TryParse(match.Groups[1].Value, out var malId))
+                return malId;
+
+            return null;
+        }
+
         public async Task<AnimeFullCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
         {
+            var config = Plugin.Instance.Configuration;
+            bool enableDebug = config.EnableDebug;
+
             string malId = info switch
             {
                 EpisodeInfo episodeInfo => episodeInfo.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeList),
                 _ => info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList)
             };
 
-            var config = Plugin.Instance.Configuration;
-            bool enableDebug = config.EnableDebug;
             if (!string.IsNullOrEmpty(malId))
             {
                 if (!config.IgnoreMetadata || (info is EpisodeInfo && !config.IgnoreEpisodeMetadata) || SearchResult)
@@ -54,10 +69,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 }
             }
 
+            foreach (string root in _libraryRoots)
+            {
+                _log.LogInformation("Roots: {root}", root);
+            }
+
             if (enableDebug) _log.LogInformation("Original path: {path}", info.Path);
             if (enableDebug) _log.LogInformation("Original name: {name}", info.Name);
             string searchName = GetSearchName(info, _log, enableDebug);
             if (enableDebug) _log.LogInformation("Search name: {name}", searchName);
+            long? extractedMalId = ExtractMalIdFromSearchName(searchName);
+            if (extractedMalId.HasValue)
+            {
+                if (enableDebug) _log.LogInformation("Extracted MAL ID from name: {malId}", extractedMalId.Value);
+
+                return await JikanAPI.GetAnimeFullAsync(extractedMalId.Value, cancellationToken).ConfigureAwait(false);
+            }
+
             long? malIdFromName = await GetBestAnimeID(_log, searchName, info is MovieInfo, config.IgnoreBestAttempt, cancellationToken).ConfigureAwait(false);
             if (!malIdFromName.HasValue)
             {
@@ -95,13 +123,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return itemPath;
         }
 
+        private static readonly char[] separator = ['-', '_'];
         private string GetSearchName(ItemLookupInfo info, ILogger _log, bool enableDebug)
         {
             if (string.IsNullOrEmpty(info.Path))
                 return info.Name;
             string relativePath = StripLibraryPath(info.Path, _log, enableDebug);
             var splitPath = relativePath.Split(Path.DirectorySeparatorChar);
-            if (enableDebug) _log.LogInformation($"Split location: {splitPath.Length} \"{string.Join("\", \"", splitPath)}\"");
+            if (enableDebug) _log.LogInformation($"Remaining strings: \"{string.Join("\", \"", splitPath)}\"");
             if (splitPath.Length < 1) return info.Name;
             int index = splitPath.Length - 1;
 
@@ -123,12 +152,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             switch (info)
             {
                 case EpisodeInfo episode:
-                    string title = episode.Name.Split(['-', '_']).Last().Trim();
+                    string title = Path.GetFileNameWithoutExtension(info.Path)
+                        .Split(separator, StringSplitOptions.RemoveEmptyEntries)
+                        .LastOrDefault()?
+                        .Trim();
 
                     return (episode.ParentIndexNumber == 0
+                        && !string.IsNullOrWhiteSpace(title)
                         && !title.Any(char.IsDigit))
-                       ? title
-                       : GetFolderForEpisodeOrMovie(splitPath, index);
+                        ? title
+                        : GetFolderForEpisodeOrMovie(splitPath, index);
 
                 case MovieInfo:
                     return GetFolderForEpisodeOrMovie(splitPath, index);
