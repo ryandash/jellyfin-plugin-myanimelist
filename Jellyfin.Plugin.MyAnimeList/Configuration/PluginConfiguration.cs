@@ -27,7 +27,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonLanguageFilterPreference = LanguageFilterType.All;
             MaxPeople = 0;
             MaxGenres = 5;
-            cacheOtherTime = 1;
+            cacheBackupOtherTime = 1;
             cacheSearchTime = 60;
         }
 
@@ -49,7 +49,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool UseExternalIDs { get; set; }
 
         // === Cache time ===
-        public int cacheOtherTime { get; set; }
+        public int cacheBackupOtherTime { get; set; }
         public int cacheSearchTime { get; set; }
 
         // === Debugging ===

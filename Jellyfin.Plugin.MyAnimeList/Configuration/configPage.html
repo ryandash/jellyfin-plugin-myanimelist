@@ -48,12 +48,12 @@
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="chkCacheSearchTime">Search/Recent Cache Duration (Minutes)</label>
                             <input id="chkCacheSearchTime" name="chkCacheSearchTime" type="number" is="emby-input" min="0" />
-                            <div class="fieldDescription">Cache for ongoing or recently finished (≤1 month) search, anime and episode data</div>
+                            <div class="fieldDescription">Cache duration for search data.</div>
                         </div>
                         <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="chkCacheOtherTime">Other Cache Duration (Days)</label>
-                            <input id="chkCacheOtherTime" name="chkCacheOtherTime" type="number" is="emby-input" min="0" />
-                            <div class="fieldDescription">Cache for older anime, character data, and images</div>
+                            <label class="inputLabel inputLabelUnfocused" for="chkCacheBackupOtherTime">Backup for Other Cache Duration (Days)</label>
+                            <input id="chkCacheBackupOtherTime" name="chkCacheBackupOtherTime" type="number" is="emby-input" min="0" />
+                            <div class="fieldDescription">Cache backup duration for non-search data. Used only when the Jikan API header data does not provide expiration.</div>
                         </div>
                         <label class="emby-checkbox-label">
                             <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
@@ -94,66 +94,66 @@
 
             <script type="text/javascript">
                 var MyAnimeListConfigurationPage = {
-                    pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
+                pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
 
-                    loadConfiguration: function () {
-                        Dashboard.showLoadingMsg();
+                loadConfiguration: function () {
+                Dashboard.showLoadingMsg();
 
-                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
-                            document.getElementById('titleLanguage').value = config.TitlePreference;
-                            document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
-                            document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
-                            document.getElementById('chkMaxPeople').value = config.MaxPeople;
-                            document.getElementById('chkMaxGenres').value = config.MaxGenres;
-                            document.getElementById('chkCacheOtherTime').value = config.cacheOtherTime;
-                            document.getElementById('chkCacheSearchTime').value = config.cacheSearchTime;
+                ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                document.getElementById('titleLanguage').value = config.TitlePreference;
+                document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
+                document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
+                document.getElementById('chkMaxPeople').value = config.MaxPeople;
+                document.getElementById('chkMaxGenres').value = config.MaxGenres;
+                document.getElementById('chkCacheBackupOtherTime').value = config.cacheBackupOtherTime;
+                document.getElementById('chkCacheSearchTime').value = config.cacheSearchTime;
 
-                            document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
-                            document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
-                            document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
-                            document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
-                            document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
-                            document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
-                            document.getElementById('chkEnableDebug').checked = config.EnableDebug;
+                document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
+                document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
+                document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
+                document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
+                document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
+                document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
+                document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
-                            Dashboard.hideLoadingMsg();
-                        });
-                    },
+                Dashboard.hideLoadingMsg();
+                });
+                },
 
-                    saveConfiguration: function () {
-                        Dashboard.showLoadingMsg();
+                saveConfiguration: function () {
+                Dashboard.showLoadingMsg();
 
-                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
-                            config.TitlePreference = document.getElementById('titleLanguage').value;
-                            config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;
-                            config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
-                            config.MaxPeople = document.getElementById('chkMaxPeople').value;
-                            config.MaxGenres = document.getElementById('chkMaxGenres').value;
-                            config.cacheOtherTime = document.getElementById('chkCacheOtherTime').value;
-                            config.cacheSearchTime = document.getElementById('chkCacheSearchTime').value;
+                ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                config.TitlePreference = document.getElementById('titleLanguage').value;
+                config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;
+                config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
+                config.MaxPeople = document.getElementById('chkMaxPeople').value;
+                config.MaxGenres = document.getElementById('chkMaxGenres').value;
+                config.cacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
+                config.cacheSearchTime = document.getElementById('chkCacheSearchTime').value;
 
-                            config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
-                            config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
-                            config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;
-                            config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
-                            config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
-                            config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
-                            config.EnableDebug = document.getElementById('chkEnableDebug').checked;
+                config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
+                config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
+                config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;
+                config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
+                config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
+                config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
+                config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
-                            ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
-                                Dashboard.processPluginConfigurationUpdateResult(result);
-                            });
-                        });
-                    },
+                ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+                });
+                });
+                },
                 };
 
                 document.getElementById('MyAnimeListConfigurationPage').addEventListener('pageshow', function () {
-                    MyAnimeListConfigurationPage.loadConfiguration();
+                MyAnimeListConfigurationPage.loadConfiguration();
                 });
 
                 document.getElementById('MyAnimeListConfigurationForm').addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    MyAnimeListConfigurationPage.saveConfiguration();
+                e.preventDefault();
+                MyAnimeListConfigurationPage.saveConfiguration();
                 });
             </script>
         </div>
