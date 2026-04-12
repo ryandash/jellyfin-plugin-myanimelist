@@ -4,54 +4,49 @@
 
 This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe/) and MyAnimeList's public API.
 
+#### Please report any issues you find.
+
 To automate syncing with MyAnimeList using this metadata you can try using [MyAnimeList Sync](https://github.com/ryandash/jellyfin-myanimelist-sync) which is a fork of [vosmiic/jellyfin-ani-sync](https://github.com/vosmiic/jellyfin-ani-sync) customized to use the MyAnimeList metadata.
 
 Folders must be formatted as shown below to get the best results.\
-For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.\
-Please report any issues you find.
-```
-Anime
-├── Anime Name A
-│   ├── Specials
-│   │   └── Anime Name - S00E0# - Special Title.mkv
-│   ├── Season 01
-│   │   ├── Anime Name A S01E01-E02.mkv
-│   │   ├── Anime Name A S01E03.mkv
-│   │   └── Anime Name A S01E04.mkv
-│   └── Season 02
-│       ├── Anime Name A S02E01.mkv
-│       ├── Anime Name A S02E02.mkv
-│       ├── Anime Name A S02E03 Part 1.mkv
-│       └── Anime Name A S02E03 Part 2.mkv
-└── Anime Name B
-    └── Season 01
-        ├── Anime Name B S01E01.mkv
-        └── Anime Name B S01E02.mkv
-```
+For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.
 
-Example of folders with file:
-```
+```bash
 Anime
-└── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen
-    └── Season 01
-        └── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka V: Houjou no Megami-hen S01E01.mkv
-```
-or 
-```
-Anime
-└── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka
-    └── Season 05
-        └── Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka S05E01.mkv
+└── Anime Name A
+    ├── Specials
+    │   └── Anime Name - S00E0# - Special Title.mkv
+    ├── Season 01
+    │   ├── Anime Name A - S01E01-E02.mkv
+    │   └── Anime Name A - S01E03.mkv
+    └── Season 02
+        ├── Anime Name A - S02E01.mkv
+        ├── Anime Name A - S02E02 Part 1.mkv
+        └── Anime Name A - S02E02 Part 2.mkv
 ```
 
 Example Special episode + special movie:
 Note: If a special have multiple episodes the episode number needs to be incremented to select the correct special.
-```
+```bash
 Anime
 └── Violet Evergarden
     └── Specials
         ├── Violet Evergarden - S00E01 - The Day You Understand I Love You Will Surely Come.mkv
         └── Violet Evergarden - S00E01 - Recollections.mkv
+```
+
+#### Optional: MyAnimeList ID in Folder Name
+
+You can optionally include a MyAnimeList ID directly in the series folder name that will be used instead of searching.
+
+Format:
+Anime Name [mal-<mal_id>]
+Example:
+```bash
+Anime
+└── Attack on Titan [mal-16498]
+    └── Season 01
+        └── Attack on Titan - S01E01.mkv
 ```
 
 ## Installation
@@ -60,8 +55,11 @@ Anime
 
 1. Open **Settings** → **Dashboard** → **Plugins** → **Repositories**
 2. Click **Add Repository**, then enter:
-   - **Repository URL:** `https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json`
-   - **Name:** Any name you prefer (e.g., *MyAnimeList Metadata Plugin*)
+   - **Name:** Any name you prefer (e.g. `MyAnimeList Metadata Plugin`)
+   - **Repository URL:**
+     ```bash
+     https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json
+     ```
 3. Click **Save**
 4. Restart **Jellyfin Server**
 5. Go to **Settings** → **Dashboard** → **Plugins** → **Available**
