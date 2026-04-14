@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
+namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
     public static class JikanHttpMetadataStore
     {

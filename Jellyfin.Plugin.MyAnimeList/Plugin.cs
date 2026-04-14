@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;

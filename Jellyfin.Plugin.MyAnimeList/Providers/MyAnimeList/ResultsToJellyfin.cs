@@ -102,7 +102,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
     public class AnimeObject : AnimeSearchResult
     {
-        public List<CharacterCacheDto> characters { get; set; }
+        public List<AnimeCharacterDto> characters { get; set; }
 
         public EpisodeCacheDto toEpisodeData()
         {

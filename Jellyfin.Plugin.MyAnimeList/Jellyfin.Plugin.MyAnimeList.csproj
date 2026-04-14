@@ -4,9 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>6.5.5.0</Version>
-    <AssemblyVersion>6.5.5.0</AssemblyVersion>
-    <FileVersion>6.5.5.0</FileVersion>
+    <Version>6.6.0.0</Version>
+    <AssemblyVersion>6.6.0.0</AssemblyVersion>
+    <FileVersion>6.6.0.0</FileVersion>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>
@@ -23,6 +23,7 @@
     <PackageReference Include="FuzzierSharp" Version="3.0.1" />
     <PackageReference Include="Jellyfin.Controller" Version="10.11.8" />
     <PackageReference Include="JikanDotNet" Version="2.10.2" />
+    <PackageReference Include="LiteDB" Version="5.0.21" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
   </ItemGroup>
@@ -32,6 +33,7 @@
       <PluginDeps Include="$(NuGetPackageRoot)fuzziersharp\*\lib\netstandard2.1\FuzzierSharp.dll" />
       <PluginDeps Include="$(NuGetPackageRoot)jikandotnet\*\lib\net8.0\JikanDotNet.dll" />
       <PluginDeps Include="$(NuGetPackageRoot)anitomysharp.net6\*\lib\net6.0\AnitomySharp.dll" />
+      <PluginDeps Include="$(NuGetPackageRoot)litedb\*\lib\netstandard2.0\LiteDB.dll" />
     </ItemGroup>
 
     <Copy SourceFiles="@(PluginDeps)" DestinationFolder="$(OutDir)" />
@@ -42,6 +44,7 @@
       <PluginDeps Include="$(OutDir)FuzzierSharp.dll" />
       <PluginDeps Include="$(OutDir)JikanDotNet.dll" />
       <PluginDeps Include="$(OutDir)AnitomySharp.dll" />
+      <PluginDeps Include="$(OutDir)LiteDB.dll" />
     </ItemGroup>
 
     <Delete Files="@(PluginDeps)" />

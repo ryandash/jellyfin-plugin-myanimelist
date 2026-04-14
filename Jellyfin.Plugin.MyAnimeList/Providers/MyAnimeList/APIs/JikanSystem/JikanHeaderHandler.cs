@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
+namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
     public class JikanHeaderHandler : DelegatingHandler
     {
