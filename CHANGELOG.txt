@@ -1,25 +1,29 @@
-c880d13 Update MyAnimeListSearchHelper.cs
+bc50679 Improve Litedb Implementation
 
-- Remove unnecessary debug info
+- Make caching scheduler that runs the timer for the expiration time instead of a timer that runs every hour
 
-dbf96e8 Match with [mal-{id}] series folder + bug fix
+- Store batches of data to litedb 5 seconds after first write instead of constantly writing small changes
 
-- Add the ability to match series with [mal-{id}] in the folder name
+- Flush remaining data instead of dropping it when Jellyfin stops
 
-- Fix broken Jikan instance
+f8b264f Cache saving use LiteDB
 
-- Minor cleanup
+- Change implementation to use LiteDB instead of raw json files improving resilience to sudden Jellyfin shutdown
 
-293c394 Update manifest
+- Version bump to 6.6.0.0
 
-b20f76b Bump Jellyfin.Controller from 10.11.6 to 10.11.8
+- Reduce saved data redundancy for characters data
 
----
-updated-dependencies:
-- dependency-name: Jellyfin.Controller
-  dependency-version: 10.11.8
-  dependency-type: direct:production
-  update-type: version-update:semver-patch
-...
+423a21d Use Jikan expiration headers for cache
 
-Signed-off-by: dependabot[bot] <support@github.com>
+- Use the Expires field from Jikan API's header response data to determine when non-search cache should be refreshed
+
+- Rearranged and cleaned up the JikanAPI class slightly
+
+8d9b271 Update README.md
+
+- Remove examples that make the README long
+
+- Add optional MyAnimeList ID in Folder Name
+
+5cd4993 Update manifest
