@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LiteDB;
@@ -12,7 +14,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         private readonly ConcurrentDictionary<string, CacheItem> _memory = new();
         private readonly ConcurrentDictionary<string, bool> _indexed = new();
-        private readonly Timer _cleanupTimer;
+        private readonly ConcurrentDictionary<string, ILiteCollection<CacheRecord>> _collections = new();
+        private readonly CacheExpiryScheduler _expiryScheduler;
+        private readonly Task _workerTask;
         private readonly bool disableLocalCache;
 
         private class CacheItem
@@ -41,22 +45,24 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         public LiteDbCacheStore(string path, bool disableLocalCache)
         {
             this.disableLocalCache = disableLocalCache;
-           
-            _cleanupTimer = new Timer(_ =>
-            {
-                var now = DateTime.UtcNow.Ticks;
 
-                foreach (var kv in _memory)
-                {
-                    if (kv.Value.ExpiryTicks < now)
-                        _memory.TryRemove(kv.Key, out CacheItem _);
-                }
-            }, null, TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+            _expiryScheduler = new CacheExpiryScheduler(CleanupMemory);
 
             if (disableLocalCache) return;
 
             _db = new LiteDatabase($"{path}\\cache.db");
-            Task.Run(ProcessQueue);
+            _workerTask = Task.Run(ProcessQueue);
+        }
+
+        private void CleanupMemory()
+        {
+            var now = DateTime.UtcNow.Ticks;
+
+            foreach (var kv in _memory)
+            {
+                if (kv.Value.ExpiryTicks < now)
+                    _memory.TryRemove(kv.Key, out _);
+            }
         }
 
         private readonly ConcurrentQueue<WriteItem> _writeQueue = new();
@@ -66,32 +72,54 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private async Task ProcessQueue()
         {
             if (disableLocalCache || _db == null) return;
+
             try
             {
                 while (!_cts.IsCancellationRequested)
                 {
                     await _signal.WaitAsync(_cts.Token).ConfigureAwait(false);
 
+                    if (_cts.IsCancellationRequested)
+                        break;
+
+                    await Task.Delay(TimeSpan.FromSeconds(5), _cts.Token).ConfigureAwait(false);
+
+                    var batch = new List<WriteItem>();
+
                     while (_writeQueue.TryDequeue(out var item))
                     {
-                        try
-                        {
-                            var json = System.Text.Json.JsonSerializer.Serialize(item.Value);
+                        batch.Add(item);
+                    }
 
+                    if (batch.Count == 0)
+                        continue;
+
+                    var grouped = batch
+                        .Select(item =>
+                        {
                             var (type, id) = ParseKey(item.Key);
-                            var col = _db.GetCollection<CacheRecord>(type);
+                            return (item, type, id);
+                        })
+                        .GroupBy(x => x.type);
 
-                            col.Upsert(new CacheRecord
-                            {
-                                Key = id,
-                                DataJson = json,
-                                ExpiryTicks = item.ExpiryTicks
-                            });
-                        }
-                        catch
+                    foreach (var group in grouped)
+                    {
+                        var col = _collections.GetOrAdd(group.Key, k => _db.GetCollection<CacheRecord>(k));
+
+                        if (_indexed.TryAdd(group.Key, true))
                         {
-
+                            col.EnsureIndex(x => x.Key);
+                            col.EnsureIndex(x => x.ExpiryTicks);
                         }
+
+                        var records = group.Select(x => new CacheRecord
+                        {
+                            Key = x.id,
+                            DataJson = System.Text.Json.JsonSerializer.Serialize(x.item.Value),
+                            ExpiryTicks = x.item.ExpiryTicks
+                        });
+
+                        col.Upsert(records);
                     }
                 }
             }
@@ -130,7 +158,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
 
             var (type, id) = ParseKey(key);
-            var col = _db.GetCollection<CacheRecord>(type);
+            var col = _collections.GetOrAdd(type, k => _db.GetCollection<CacheRecord>(k));
             if (_indexed.TryAdd(type, true))
             {
                 col.EnsureIndex(x => x.Key);
@@ -142,32 +170,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 return default;
             }
 
-            T value;
-
             if (record.ExpiryTicks < now || string.IsNullOrEmpty(record.DataJson))
             {
                 col.Delete(id);
-                value = default;
-            }
-            else
-            {
-                try
-                {
-                    value = System.Text.Json.JsonSerializer.Deserialize<T>(record.DataJson);
-
-                    if (value == null)
-                    {
-                        col.Delete(id);
-                        return default;
-                    }
-                }
-                catch
-                {
-                    col.Delete(id);
-                    return default;
-                }
+                return default;
             }
 
+            T value = System.Text.Json.JsonSerializer.Deserialize<T>(record.DataJson);
             _memory[key] = new CacheItem
             {
                 Value = value,
@@ -186,6 +195,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Value = value,
                 ExpiryTicks = expiryTicks
             };
+            _expiryScheduler.Schedule(expiryTicks);
 
             if (disableLocalCache || _db == null)
             {
@@ -202,11 +212,55 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             _signal.Release();
         }
 
+        private void FlushRemaining()
+        {
+            if (disableLocalCache || _db == null) return;
+
+            var batch = new List<WriteItem>();
+
+            while (_writeQueue.TryDequeue(out var item))
+            {
+                batch.Add(item);
+            }
+
+            if (batch.Count == 0)
+                return;
+
+            var grouped = batch
+                .Select(item =>
+                {
+                    var (type, id) = ParseKey(item.Key);
+                    return (item, type, id);
+                })
+                .GroupBy(x => x.type);
+
+            foreach (var group in grouped)
+            {
+                var col = _collections.GetOrAdd(group.Key, k => _db.GetCollection<CacheRecord>(k));
+
+                var records = group.Select(x => new CacheRecord
+                {
+                    Key = x.id,
+                    DataJson = System.Text.Json.JsonSerializer.Serialize(x.item.Value),
+                    ExpiryTicks = x.item.ExpiryTicks
+                });
+
+                col.Upsert(records);
+            }
+        }
+
         public void Dispose()
         {
             _cts.Cancel();
             _signal.Release();
-            _cleanupTimer?.Dispose();
+            try
+            {
+                _workerTask?.Wait();
+            }
+            catch { }
+            FlushRemaining();
+
+            _expiryScheduler.Dispose();
             _db?.Dispose();
         }
     }
