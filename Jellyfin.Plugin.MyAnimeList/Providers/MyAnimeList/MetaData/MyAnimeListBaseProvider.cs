@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         protected readonly ILogger _log;
         protected readonly MyAnimeListSearchHelper _searchHelper;
 
-        public string Name => "MyAnimeList";
+        public string Name => ProviderNames.MyAnimeList;
 
         protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager)
         {

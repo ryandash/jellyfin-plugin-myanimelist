@@ -24,7 +24,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public string Name => "MyAnimeList";
 
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode;
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode || item is Person;
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
@@ -69,7 +69,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
             var images = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
             var media = new AnimeObject { anime = anime };
-            var imageUrl = media.GetImageUrl();
+
+            var imageUrl = media.GetImageUrl(media.anime.Images.JPG);
             if (images != null && imageUrl != null)
                 return
                 [

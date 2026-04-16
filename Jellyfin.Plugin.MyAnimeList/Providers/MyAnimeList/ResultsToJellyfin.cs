@@ -75,9 +75,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ?? anime.Titles.FirstOrDefault(t => t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))?.Title;
         }
 
-        public string GetImageUrl()
+        public string GetImageUrl(ImageDto jpg)
         {
-            var jpg = anime.Images.JPG;
             return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl;
         }
 
@@ -93,7 +92,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
                 PremiereDate = GetAiredDate(),
-                ImageUrl = GetImageUrl(),
+                ImageUrl = GetImageUrl(anime.Images.JPG),
                 SearchProviderName = ProviderNames.MyAnimeList,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
@@ -177,15 +176,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     Name = SwapName(x.va.Person.Name),
                     Role = SwapName(x.edge.Character.Name),
                     Type = PersonKind.Actor,
-                    ImageUrl = x.va.Person.Images.JPG.MaximumImageUrl
-                              ?? x.va.Person.Images.JPG.LargeImageUrl
-                              ?? x.va.Person.Images.JPG.ImageUrl
-                              ?? x.va.Person.Images.JPG.MediumImageUrl
-                              ?? x.va.Person.Images.JPG.SmallImageUrl,
-                    ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.Url } }
+                    ImageUrl = GetImageUrl(x.va.Person.Images.JPG),
+                    ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.MalId.ToString() } }
                 })
                 .Take(config.MaxPeople > 0 ? config.MaxPeople : int.MaxValue)
-                .ToList(); ;
+                .ToList();
         }
 
         public string[] GetGenres()

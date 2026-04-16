@@ -23,6 +23,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                         yield return $"https://myanimelist.net/anime/{externalId}/";
                         break;
                     case Person:
+                        yield return $"https://myanimelist.net/people/{externalId}/";
+                        break;
                     case Episode:
                         yield return externalId;
                         break;
