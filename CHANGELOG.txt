@@ -1,29 +1,6 @@
-bc50679 Improve Litedb Implementation
+f64146b Cleanup + Fix person images
 
-- Make caching scheduler that runs the timer for the expiration time instead of a timer that runs every hour
+- Cleanup a little
+- Get Person images
 
-- Store batches of data to litedb 5 seconds after first write instead of constantly writing small changes
-
-- Flush remaining data instead of dropping it when Jellyfin stops
-
-f8b264f Cache saving use LiteDB
-
-- Change implementation to use LiteDB instead of raw json files improving resilience to sudden Jellyfin shutdown
-
-- Version bump to 6.6.0.0
-
-- Reduce saved data redundancy for characters data
-
-423a21d Use Jikan expiration headers for cache
-
-- Use the Expires field from Jikan API's header response data to determine when non-search cache should be refreshed
-
-- Rearranged and cleaned up the JikanAPI class slightly
-
-8d9b271 Update README.md
-
-- Remove examples that make the README long
-
-- Add optional MyAnimeList ID in Folder Name
-
-5cd4993 Update manifest
+caf6303 Update manifest
