@@ -1,6 +1,15 @@
-f64146b Cleanup + Fix person images
+355ffe7 Bug fixes
 
-- Cleanup a little
-- Get Person images
+- Fix up TVDB to MAL mapping
 
-caf6303 Update manifest
+- Remove external mapping for regular episodes (Can be added back later as this will be faster)
+
+- Fast return for season 0/Special
+
+- Fix for potential race condition during Jellfin restart for LiteDB initialization
+
+- Minor cleanup
+
+- Better descriptions for config options
+
+7effc59 Update manifest
