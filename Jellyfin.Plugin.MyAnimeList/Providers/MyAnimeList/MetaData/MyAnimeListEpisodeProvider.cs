@@ -35,8 +35,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             EpisodeCacheDto episodeData = null;
             AnimeObject anime = null;
+            int seasonnumber = info.ParentIndexNumber ?? 1;
 
-            if (config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid))
+            if (config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid) && seasonnumber == 0)
             {
                 if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
@@ -50,11 +51,22 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     {
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
                     }
+                    else
+                    {
+                        anime = new AnimeObject
+                        {
+                            anime = await JikanAPI.GetAnimeFullAsync(malId, cancellationToken).ConfigureAwait(false)
+                        };
+                        episodeData = anime.toEpisodeData();
+                    }
                 }
             }
 
             if (episodeData == null)
             {
+                if (config.ExcludeSpecials && seasonnumber == 0)
+                    return result;
+
                 anime = new AnimeObject
                 {
                     anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false)
@@ -66,7 +78,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 var (episodeNumber, updatedAnime) = await GetSeasonEpisodeNumberAsync(
                     _log,
                     info.IndexNumber.Value,
-                    info.ParentIndexNumber!.Value,
+                    seasonnumber,
                     anime.anime,
                     cancellationToken
                 ).ConfigureAwait(false);
@@ -157,7 +169,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 return (episodeNumber, anime);
             }
 
-            if (seasonNumber == 0 && !Plugin.Instance.Configuration.ExcludeSpecials)
+            if (seasonNumber == 0)
             {
                 var sideStories = relations.FirstOrDefault(r =>
                     r.Relation.Equals("Side Story", StringComparison.OrdinalIgnoreCase))?.Entry;

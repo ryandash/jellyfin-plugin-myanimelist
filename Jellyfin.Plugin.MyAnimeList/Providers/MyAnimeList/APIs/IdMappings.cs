@@ -26,23 +26,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         private class MappingEntry
         {
-            [JsonPropertyName("season")]
-            public int? Season { get; set; }
-
-            [JsonPropertyName("episode")]
-            public int? Episode { get; set; }
-
-            [JsonPropertyName("thetvdb url")]
-            public string TvdbUrl { get; set; }
-
             [JsonPropertyName("myanimelist url")]
             public string MalUrl { get; set; }
 
             [JsonPropertyName("myanimelist")]
             public long? MalId { get; set; }
-
-            [JsonPropertyName("thetvdb")]
-            public string Tvdb { get; set; }
         }
 
         private async Task<List<MappingEntry>> GetMappingsAsync(ILogger log, string tvdbId, CancellationToken token)
@@ -94,13 +82,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 : null;
         }
 
-        public async Task<AnimeEpisodeMapping> GetAnimeEpisodeMappingAsync(ILogger _log, string tvdbId, CancellationToken token)
+        public async Task<AnimeEpisodeMapping> GetAnimeEpisodeMappingAsync(ILogger log, string tvdbId, CancellationToken token)
         {
-            var mappings = await GetMappingsAsync(_log, tvdbId, token).ConfigureAwait(false);
+            var mappings = await GetMappingsAsync(log, tvdbId, token).ConfigureAwait(false);
             var entry = mappings.FirstOrDefault();
             if (entry == null)
             {
-                _log.LogInformation($"No mapping found for TVDB ID: {tvdbId}");
+                log.LogInformation($"No mapping found for TVDB ID: {tvdbId}");
                 return null;
             }
 

@@ -33,7 +33,7 @@
                                 <option id="optLanguageJapanese" value="Japanese">Japanese</option>
                                 <option id="optLanguageAll" value="All">Do not filter</option>
                             </select>
-                            <div class="fieldDescription">This setting will only keep people with chosen language. Choosing Localized will retain everybody except Japanese VAs.</div>
+                            <div class="fieldDescription">Only include people matching the selected language. Choosing “Localized” will include all except Japanese voice actors.</div>
                         </div>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="chkMaxPeople">Max People</label>
@@ -53,7 +53,7 @@
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="chkCacheBackupOtherTime">Backup for Other Cache Duration (Days)</label>
                             <input id="chkCacheBackupOtherTime" name="chkCacheBackupOtherTime" type="number" is="emby-input" min="0" />
-                            <div class="fieldDescription">Cache backup duration for non-search data. Used only when the Jikan API header data does not provide expiration.</div>
+                            <div class="fieldDescription">Fallback cache duration for non-search data. Used when the Jikan API does not provide an expiration time.</div>
                         </div>
                         <label class="emby-checkbox-label">
                             <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
@@ -61,23 +61,23 @@
                         </label>
                         <label class="emby-checkbox-label" style="margin-left: 40px;">
                             <input id="chkIgnoreEpisodeMetadata" name="chkIgnoreEpisodeMetadata" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore episode specific metadata</span>
+                            <span>Ignore episode-specific metadata when fetching new data</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkIgnoreBestAttempt" name="chkIgnoreBestAttempt" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore best attempt search result.</span>
+                            <span>Disable fallback to the closest matching search result.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
-                            <span>Exclude Special Episodes from EpisodeProvider</span>
+                            <span>Exclude special episodes from regular searches. TVDB-to-MAL mapping can still be used.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkDisableLocalCache" name="chkDisableLocalCache" type="checkbox" is="emby-checkbox" />
-                            <span>Disable storing cache in Files (still stores in memory)</span>
+                            <span>Disable file-based caching. Data will still be cached in memory.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkUseExternalIDs" name="chkUseExternalIDs" type="checkbox" is="emby-checkbox" />
-                            <span>Use other external IDs to map to MAL IDs in BETA (TVDB → MAL mapping currently)</span>
+                            <span>Enable TVDB-to-MAL mapping for special episodes (season 0). This feature is in beta.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
