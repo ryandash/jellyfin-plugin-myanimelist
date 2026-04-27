@@ -23,7 +23,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager)
         {
             _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
+            var plugin = Plugin.Instance;
+            _searchHelper = new MyAnimeListSearchHelper(libraryManager, plugin.GetHttpClient(), plugin.Configuration);
         }
 
         protected abstract TItem ConvertToItem(AnimeObject media);
@@ -47,7 +48,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             result.HasMetadata = true;
             result.Item = ConvertToItem(media);
             result.People = media.GetPeopleInfo();
-            result.Provider = ProviderNames.MyAnimeList;
+            result.Provider = Name;
 
             return result;
         }

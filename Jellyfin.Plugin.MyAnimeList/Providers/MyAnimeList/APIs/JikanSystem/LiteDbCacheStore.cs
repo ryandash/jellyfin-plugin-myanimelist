@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LiteDB;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
@@ -95,12 +96,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     await Task.Delay(TimeSpan.FromSeconds(5), _cts.Token).ConfigureAwait(false);
 
-                    var batch = new List<WriteItem>();
+                    var batchMap = new Dictionary<string, WriteItem>();
 
                     while (_writeQueue.TryDequeue(out var item))
                     {
-                        batch.Add(item);
+                        batchMap[item.Key] = item;
                     }
+
+                    var batch = batchMap.Values.ToList();
 
                     if (batch.Count == 0)
                         continue;
@@ -227,12 +230,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             if (disableLocalCache || _db == null) return;
 
-            var batch = new List<WriteItem>();
-
+            var batchMap = new Dictionary<string, WriteItem>();
             while (_writeQueue.TryDequeue(out var item))
             {
-                batch.Add(item);
+                batchMap[item.Key] = item;
             }
+
+            var batch = batchMap.Values.ToList();
 
             if (batch.Count == 0)
                 return;

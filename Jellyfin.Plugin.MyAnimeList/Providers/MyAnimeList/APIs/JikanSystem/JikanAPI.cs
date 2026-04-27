@@ -20,8 +20,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static readonly object InitLock = new();
         private static bool _initialized;
 
-        private static PluginConfiguration Config => Plugin.Instance.Configuration;
-
         private static readonly HttpClient HttpClient =
             new(new JikanHeaderHandler(new HttpClientHandler()))
             {
@@ -35,10 +33,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         private static ICacheStore Cache;
 
-        private static TimeSpan BackupExpiry => TimeSpan.FromDays(Config.cacheBackupOtherTime);
-        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(Config.cacheSearchTime);
+        private static TimeSpan BackupExpiry;
+        private static TimeSpan SearchExpiry;
 
-        public static void Initialize(IApplicationPaths paths)
+        public static void Initialize(IApplicationPaths paths, PluginConfiguration _config)
         {
             if (_initialized) return;
 
@@ -50,30 +48,54 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 var baseDir = Path.Combine(paths.CachePath, "myanimelist");
                 Directory.CreateDirectory(baseDir);
 
-                Cache = new LiteDbCacheStore(baseDir, Config.DisableLocalCache);
+                BackupExpiry = TimeSpan.FromDays(_config.cacheBackupOtherTime);
+                SearchExpiry = TimeSpan.FromMinutes(_config.cacheSearchTime);
+
+                Cache = new LiteDbCacheStore(baseDir, _config.DisableLocalCache);
             }
         }
 
-        private static async Task<T> GetOrFetchAsync<T>(string key, string url, Func<Task<T>> fetch, Func<T, T> normalize = null) where T : class
+        private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
+
+        private static async Task<T> GetOrFetchAsync<T>(string key, string url, Func<Task<T>> fetch, Func<T, T> normalize = null, bool ignoreCache = false) where T : class
         {
             var now = DateTime.UtcNow;
 
-            var cached = Cache.Get<T>(key);
-            if (cached != null)
-                return cached;
+            if (!ignoreCache)
+            {
+                var cached = Cache.Get<T>(key);
+                if (cached != null)
+                    return cached;
+            }
 
-            var result = await fetch().ConfigureAwait(false);
+            var lazyTask = _inFlight.GetOrAdd(key, _ =>
+                new Lazy<Task<object>>(() => FetchAndCache(), LazyThreadSafetyMode.ExecutionAndPublication)
+            );
 
-            if (normalize != null)
-                result = normalize(result);
+            try
+            {
+                return (T)await lazyTask.Value.ConfigureAwait(false);
+            }
+            finally
+            {
+                _inFlight.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(key, lazyTask));
+            }
 
-            var expiry = JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
-                ? exp
-                : now.Add(BackupExpiry);
+            async Task<object> FetchAndCache()
+            {
+                var result = await fetch().ConfigureAwait(false);
 
-            Cache.Put(key, result, expiry);
+                if (normalize != null)
+                    result = normalize(result);
 
-            return result;
+                var expiry = JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
+                    ? exp
+                    : now.Add(BackupExpiry);
+
+                Cache.Put(key, result, expiry);
+
+                return result;
+            }
         }
 
         private static string AnimeFullUrl(long id) => $"anime/{id}/full";
@@ -81,51 +103,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static string AnimeCharactersUrl(long id) => $"anime/{id}/characters";
         private static string CharacterUrl(long id) => $"characters/{id}";
         private static string AnimePicturesUrl(long id) => $"anime/{id}/pictures";
-        private static readonly ConcurrentDictionary<long, SemaphoreSlim> RelationLocks = new();
 
         public static async Task<AnimeFullCacheDto> GetAnimeFullAsync(long malId, CancellationToken token, bool needRelations = false)
         {
             var key = $"anime:{malId}";
 
             var cached = Cache.Get<AnimeFullCacheDto>(key);
-            if (cached != null)
+            if (cached != null && (!needRelations || cached.Relations != null))
             {
-                if (!needRelations || cached.Relations != null)
-                    return cached;
-
-                var gate = RelationLocks.GetOrAdd(malId, _ => new SemaphoreSlim(1, 1));
-                await gate.WaitAsync(token).ConfigureAwait(false);
-
-                try
-                {
-                    if (cached.Relations != null)
-                        return cached;
-
-                    var relations = await Instance.GetAnimeRelationsAsync(malId, token);
-                    cached.Relations = RelatedEntryDto.FilterRelations(relations.Data);
-
-                    Cache.Put(key, cached, DateTime.UtcNow.Add(BackupExpiry));
-
-                    return cached;
-                }
-                finally
-                {
-                    gate.Release();
-                }
+                return cached;
             }
 
-            var full = await Instance.GetAnimeFullDataAsync(malId, token);
-            var dto = AnimeFullCacheDto.From(full.Data);
-
-            var now = DateTime.UtcNow;
-            var expiry =
-                JikanHttpMetadataStore.TryGetExpiry(AnimeFullUrl(malId), out var headerExp)
-                    ? headerExp
-                    : now.Add(SearchExpiry);
-
-            Cache.Put(key, dto, expiry);
-
-            return dto;
+            return await GetOrFetchAsync(
+                key,
+                AnimeFullUrl(malId),
+                async () =>
+                {
+                    var full = await Instance.GetAnimeFullDataAsync(malId, token);
+                    return AnimeFullCacheDto.From(full.Data);
+                },
+                ignoreCache: cached != null
+            );
         }
 
         public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)

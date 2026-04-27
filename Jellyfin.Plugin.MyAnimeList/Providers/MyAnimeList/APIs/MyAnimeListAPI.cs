@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -38,12 +39,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         }
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
-        public static async Task<long?> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, CancellationToken cancellationToken)
+        public static async Task<(long?, int)> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, HttpClient client, CancellationToken cancellationToken)
         {
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
 
-            var response = await Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) return null;
+            var response = await client.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return (null, 0);
 
             string jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             var searchResult = JsonSerializer.Deserialize<Root>(jsonResponse) ?? new Root();
@@ -56,7 +57,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             var bestItem = (Item)null;
             var animeCategory = searchResult.categories?.FirstOrDefault(c => c.type == "anime");
             if (animeCategory == null)
-                return null;
+                return (null, 0);
 
             string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();
 
@@ -77,7 +78,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 {
                     var similarity = FuzzierSharp.Fuzz.Ratio(titleObj.Title.Replace(searchTerm, string.Empty).ToLowerInvariant(), normalizedSearch);
                     if (similarity == 100)
-                        return item.id;
+                        return (item.id, similarity);
 
                     if (similarity > highestSimilarity)
                     {
@@ -87,7 +88,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
                 }
             }
 
-            return highestSimilarity > 95 ? bestItem?.id : searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id;
+            return highestSimilarity > 95 ? (bestItem?.id, highestSimilarity) : (searchResult.categories.FirstOrDefault()?.items.FirstOrDefault()?.id, 50);
         }
     }
 }
