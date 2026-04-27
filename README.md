@@ -25,8 +25,7 @@ Anime
         └── Anime Name A - S02E02 Part 2.mkv
 ```
 
-Example Special episode + special movie:
-Note: If a special have multiple episodes the episode number needs to be incremented to select the correct special.
+#### Example Special episode + special movie:
 ```bash
 Anime
 └── Violet Evergarden
@@ -34,6 +33,7 @@ Anime
         ├── Violet Evergarden - S00E01 - The Day You Understand I Love You Will Surely Come.mkv
         └── Violet Evergarden - S00E01 - Recollections.mkv
 ```
+###### Note: If a special has multiple episodes the episode number needs to be incremented to select the correct special.
 
 #### Optional: MyAnimeList ID in Folder Name
 
