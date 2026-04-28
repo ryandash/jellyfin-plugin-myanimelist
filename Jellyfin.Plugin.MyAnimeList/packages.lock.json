@@ -32,9 +32,9 @@
       },
       "JikanDotNet": {
         "type": "Direct",
-        "requested": "[2.10.2, )",
-        "resolved": "2.10.2",
-        "contentHash": "4XB7CT3qr5JLYABUryS2DZpRsTFtEi2pdWdkqucwM5m/w4QqKO5d0ZuoaJeGJJcdcOd06+Dz2nkJFdR/wnoMNA=="
+        "requested": "[2.10.4, )",
+        "resolved": "2.10.4",
+        "contentHash": "XFmeM4D8Pw9tvXtnYeva4e6JwTXv51jfgkLfwuh1KO/ysNmkzPrbnfZ+Tla9/cK0fltcR1kAZiu4Qht1miLI8A=="
       },
       "LiteDB": {
         "type": "Direct",
