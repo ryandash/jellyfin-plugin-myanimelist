@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static TimePeriodDto Convert(JikanDotNet.TimePeriod source)
         {
-            return source == null ? null : new TimePeriodDto { From = source.From, To = source.To };
+            return source == null ? null : new TimePeriodDto { From = source.From?.DateTime, To = source.To?.DateTime };
         }
     }
 }
