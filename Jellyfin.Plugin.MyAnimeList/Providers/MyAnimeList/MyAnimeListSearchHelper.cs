@@ -21,10 +21,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     public class MyAnimeListSearchHelper
     {
         private readonly string[] _libraryRoots;
-        private readonly HttpClient _httpClient;
-        private readonly PluginConfiguration _config;
 
-        public MyAnimeListSearchHelper(ILibraryManager libraryManager, HttpClient httpClient, PluginConfiguration config)
+        public MyAnimeListSearchHelper(ILibraryManager libraryManager)
         {
             _libraryRoots = libraryManager
                 .GetVirtualFolders()
@@ -33,8 +31,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .Select(l => l.TrimEnd(Path.DirectorySeparatorChar))
                 .OrderByDescending(l => l.Length)
                 .ToArray();
-            _httpClient = httpClient;
-            _config = config;
         }
 
         private static readonly Regex MalIdRegex = new Regex(@"\[mal-(\d+)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -53,6 +49,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public async Task<AnimeFullCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
         {
+            PluginConfiguration _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
             bool enableDebug = _config.EnableDebug;
 
             string malId = info switch
@@ -281,7 +278,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return ignoreBestAttempt
                 ? (null, 0)
-                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClient, cancellationToken).ConfigureAwait(false);
+                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, Plugin.Instance?.GetHttpClient() ?? new HttpClient(), cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int similarityConfidence, int seasonNumber, CancellationToken cancellationToken)

@@ -23,8 +23,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager)
         {
             _log = logger;
-            var plugin = Plugin.Instance;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager, plugin.GetHttpClient(), plugin.Configuration);
+            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
         }
 
         protected abstract TItem ConvertToItem(AnimeObject media);

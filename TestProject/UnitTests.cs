@@ -33,10 +33,8 @@ namespace UnitTestProject
 
             JikanAPI.Initialize(new FakeApplicationPaths(), new PluginConfiguration());
 
-            _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object, new HttpClient(), new PluginConfiguration());
+            _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object);
             _output = output;
-
-
         }
 
         [Fact]
