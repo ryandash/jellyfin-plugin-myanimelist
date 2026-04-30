@@ -1,15 +1,35 @@
-355ffe7 Bug fixes
+c2f903b Fix building
 
-- Fix up TVDB to MAL mapping
+ddc2434 Fix plugin setting updating
 
-- Remove external mapping for regular episodes (Can be added back later as this will be faster)
+- Update plugin setting live instead of requiring Jellyfin restart
 
-- Fast return for season 0/Special
+4ef2810 Update TimePeriodDto.cs
 
-- Fix for potential race condition during Jellfin restart for LiteDB initialization
+- Fix for DateTimeOffset to DateTime
 
-- Minor cleanup
+d42f78b Bump JikanDotNet from 2.10.2 to 2.10.4
 
-- Better descriptions for config options
+---
+updated-dependencies:
+- dependency-name: JikanDotNet
+  dependency-version: 2.10.4
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+...
 
-7effc59 Update manifest
+Signed-off-by: dependabot[bot] <support@github.com>
+5c3c578 Add tests, prevent extra API calls, and fix some bugs
+
+- Version bump
+- Add some integration tests
+- Adjust some parameters  and move functions to make integration tests easier to test
+- Fix a bug where poor search results such as "Initial D" mapped to the wrong series. Use search and title similarity confidence ratio to determine if finding the first season is necessary (A little hacky).
+- Fix using wrong backup expiry for getAnimeFull caching
+- Force duplicate API fetch calls to wait for the first fetch result (may reduce api calls and be faster)
+- Try and simplify JikanAPI GetAnimeFullAsync by removing GetAnimeRelationsAsync and instead get AnimeFull data (no performance difference from what I can see)
+
+b80a34d Improve README formatting for special episodes
+
+Updated formatting for special episode examples and notes.
+1f2f908 Update manifest
