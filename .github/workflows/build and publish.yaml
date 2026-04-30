@@ -28,13 +28,17 @@ jobs:
         run: dotnet restore main_repo
 
       - name: Build Plugin
-        run: dotnet build main_repo -c Release
+        run: dotnet build main_repo/Jellyfin.Plugin.MyAnimeList -c Release
 
       - name: Extract Version and ABI from csproj
         id: extract_version_abi
         run: |
-          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" main_repo/**/*.csproj)
-          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" main_repo/**/*.csproj)
+          CSPROJ="main_repo/Jellyfin.Plugin.MyAnimeList/Jellyfin.Plugin.MyAnimeList.csproj"
+          
+          VERSION=$(dotnet msbuild "$CSPROJ" -nologo -v:q -getProperty:Version)
+          TARGET_ABI=$(dotnet msbuild "$CSPROJ" -nologo -v:q -getItem:PackageReference \
+            | grep "^PackageReference=Jellyfin.Controller " \
+            | sed -E 's/.*Version=([^ ]+).*/\1/')
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
 
