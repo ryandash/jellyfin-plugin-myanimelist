@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LiteDB;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using MessagePack;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
@@ -21,6 +21,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
+        private static readonly MessagePackSerializerOptions Options = MessagePackSerializerOptions.Standard.WithResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
 
         private class CacheItem
         {
@@ -33,15 +34,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             [BsonId]
             public string Key { get; set; }
 
-            public string DataJson { get; set; }
+            [BsonField]
+            public byte[] Data { get; set; }
 
             public long ExpiryTicks { get; set; }
         }
 
         private class WriteItem
         {
-            public string Key;
-            public object Value;
+            public string Type;
+            public string Id;
+            public byte[] Data;
             public long ExpiryTicks;
         }
 
@@ -96,11 +99,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     await Task.Delay(TimeSpan.FromSeconds(5), _cts.Token).ConfigureAwait(false);
 
-                    var batchMap = new Dictionary<string, WriteItem>();
-
+                    var batchMap = new Dictionary<(string type, string id), WriteItem>();
                     while (_writeQueue.TryDequeue(out var item))
                     {
-                        batchMap[item.Key] = item;
+                        batchMap[(item.Type, item.Id)] = item;
                     }
 
                     var batch = batchMap.Values.ToList();
@@ -108,13 +110,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     if (batch.Count == 0)
                         continue;
 
-                    var grouped = batch
-                        .Select(item =>
-                        {
-                            var (type, id) = ParseKey(item.Key);
-                            return (item, type, id);
-                        })
-                        .GroupBy(x => x.type);
+                    var grouped = batch.GroupBy(x => x.Type);
 
                     foreach (var group in grouped)
                     {
@@ -122,15 +118,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                         if (_indexed.TryAdd(group.Key, true))
                         {
-                            col.EnsureIndex(x => x.Key);
                             col.EnsureIndex(x => x.ExpiryTicks);
                         }
 
                         var records = group.Select(x => new CacheRecord
                         {
-                            Key = x.id,
-                            DataJson = System.Text.Json.JsonSerializer.Serialize(x.item.Value),
-                            ExpiryTicks = x.item.ExpiryTicks
+                            Key = x.Id,
+                            Data = x.Data,
+                            ExpiryTicks = x.ExpiryTicks
                         });
 
                         col.Upsert(records);
@@ -158,6 +153,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         public T Get<T>(string key)
         {
             var now = DateTime.UtcNow.Ticks;
+
             if (_memory.TryGetValue(key, out var mem))
             {
                 if (mem != default && mem.ExpiryTicks > now)
@@ -173,31 +169,33 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var (type, id) = ParseKey(key);
             var col = _collections.GetOrAdd(type, k => _db.GetCollection<CacheRecord>(k));
-            if (_indexed.TryAdd(type, true))
-            {
-                col.EnsureIndex(x => x.Key);
-                col.EnsureIndex(x => x.ExpiryTicks);
-            }
             var record = col.FindById(id);
             if (record == null)
             {
                 return default;
             }
 
-            if (record.ExpiryTicks < now || string.IsNullOrEmpty(record.DataJson))
+            if (record.ExpiryTicks < now || record.Data == null || record.Data.Length == 0)
             {
                 col.Delete(id);
                 return default;
             }
-
-            T value = System.Text.Json.JsonSerializer.Deserialize<T>(record.DataJson);
-            _memory[key] = new CacheItem
+            try
             {
-                Value = value,
-                ExpiryTicks = record.ExpiryTicks
-            };
+                var value = MessagePackSerializer.Deserialize<T>(record.Data, Options);
+                _memory[key] = new CacheItem
+                {
+                    Value = value,
+                    ExpiryTicks = record.ExpiryTicks
+                };
 
-            return value;
+                return value;
+            }
+            catch
+            {
+                col.Delete(id);
+                return default;
+            }
         }
 
         public void Put<T>(string key, T value, DateTime expiry)
@@ -216,10 +214,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 return;
             }
 
+            var (type, id) = ParseKey(key);
+
             _writeQueue.Enqueue(new WriteItem
             {
-                Key = key,
-                Value = value,
+                Type = type,
+                Id = id,
+                Data = MessagePackSerializer.Serialize(value, Options),
                 ExpiryTicks = expiryTicks
             });
 
@@ -230,10 +231,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             if (disableLocalCache || _db == null) return;
 
-            var batchMap = new Dictionary<string, WriteItem>();
+            var batchMap = new Dictionary<(string type, string id), WriteItem>();
             while (_writeQueue.TryDequeue(out var item))
             {
-                batchMap[item.Key] = item;
+                batchMap[(item.Type, item.Id)] = item;
             }
 
             var batch = batchMap.Values.ToList();
@@ -241,13 +242,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             if (batch.Count == 0)
                 return;
 
-            var grouped = batch
-                .Select(item =>
-                {
-                    var (type, id) = ParseKey(item.Key);
-                    return (item, type, id);
-                })
-                .GroupBy(x => x.type);
+            var grouped = batch.GroupBy(x => x.Type);
 
             foreach (var group in grouped)
             {
@@ -255,12 +250,22 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 var records = group.Select(x => new CacheRecord
                 {
-                    Key = x.id,
-                    DataJson = System.Text.Json.JsonSerializer.Serialize(x.item.Value),
-                    ExpiryTicks = x.item.ExpiryTicks
+                    Key = x.Id,
+                    Data = x.Data,
+                    ExpiryTicks = x.ExpiryTicks
                 });
 
                 col.Upsert(records);
+            }
+
+            var now = DateTime.UtcNow.Ticks;
+            foreach (var col in _collections.Values)
+            {
+                try
+                {
+                    col.DeleteMany(x => x.ExpiryTicks < now);
+                }
+                catch { /* collection may not exist or be empty */ }
             }
         }
 

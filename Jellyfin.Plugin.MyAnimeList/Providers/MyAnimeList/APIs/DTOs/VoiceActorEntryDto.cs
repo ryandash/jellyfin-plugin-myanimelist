@@ -6,7 +6,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
     {
         public string Language { get; set; }
 
-        public MalImageSubItemDto Person { get; set; }
+        public PersonDto Person { get; set; }
 
         public static VoiceActorEntryDto From(VoiceActorEntry source)
         {
@@ -15,7 +15,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             return new VoiceActorEntryDto
             {
                 Language = string.IsNullOrWhiteSpace(source.Language) ? null : source.Language,
-                Person = MalImageSubItemDto.From(source.Person)
+                Person = PersonDto.From(source.Person)
             };
         }
     }

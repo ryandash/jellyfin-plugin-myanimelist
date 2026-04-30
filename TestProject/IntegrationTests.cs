@@ -38,7 +38,7 @@ namespace UnitTestProject
         }
 
         [Fact]
-        public async Task GetMalIdHardSeries()
+        public async Task GetSeriesNigetsuri()
         {
             // Synonym name search
             SeriesInfo seriesInfo = new SeriesInfo
@@ -53,8 +53,11 @@ namespace UnitTestProject
             _output.WriteLine(anime.MalId.Value.ToString());
             // Result: Nigashita Sakana wa Ookikatta ga Tsuriageta Sakana ga Ookisugita Ke
             Assert.Equal(62893, anime.MalId.Value);
+        }
 
-
+        [Fact]
+        public async Task GetSeriesInitialD()
+        {
             // Non standard name for MyAnimeList
             SeriesInfo seriesInfo2 = new SeriesInfo
             {
@@ -62,7 +65,7 @@ namespace UnitTestProject
                 IndexNumber = 1
             };
 
-            anime = await _searchHelper.GetAnimeAsync(_log.Object, seriesInfo2, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seriesInfo2, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -71,7 +74,7 @@ namespace UnitTestProject
         }
 
         [Fact]
-        public async Task GetMalIdHardSeasons()
+        public async Task GetSeasonInitialDMovie()
         {
             // Movie season
             SeasonInfo seasonInfo = new SeasonInfo
@@ -87,7 +90,11 @@ namespace UnitTestProject
             // Result: Initial D Third Stage (Movie)
             Assert.Equal(187, anime.MalId.Value);
 
+        }
 
+        [Fact]
+        public async Task GetSeasonInitialDFinal()
+        {
             // Final season after movie
             SeasonInfo seasonInfo2 = new SeasonInfo
             {
@@ -95,14 +102,17 @@ namespace UnitTestProject
                 IndexNumber = 6
             };
 
-            anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo2, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo2, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D Final Stage
             Assert.Equal(22507, anime.MalId.Value);
+        }
 
-
+        [Fact]
+        public async Task GetSeasonDanmachi()
+        {
             // seasons with parts
             SeasonInfo seasonInfo3 = new SeasonInfo
             {
@@ -110,13 +120,17 @@ namespace UnitTestProject
                 IndexNumber = 6
             };
 
-            anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo3, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo3, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka 6th Season
             Assert.Equal(63442, anime.MalId.Value);
+        }
 
+        [Fact]
+        public async Task GetSeasonKimetsu()
+        {
 
             // seasons with movies and tv series intertwined
             SeasonInfo seasonInfo4 = new SeasonInfo
@@ -125,7 +139,7 @@ namespace UnitTestProject
                 IndexNumber = 5
             };
 
-            anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo4, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo4, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -134,7 +148,7 @@ namespace UnitTestProject
         }
 
         [Fact]
-        public async Task GetMalIdHardEpisodes()
+        public async Task GetEpisodeDanmachi()
         {
             // season with parts
             EpisodeInfo episodeInfo = new EpisodeInfo

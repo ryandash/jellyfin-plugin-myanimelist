@@ -40,11 +40,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Type = Normalize(source.Type),
                 Status = Normalize(source.Status),
                 Studios = source.Studios != null && source.Studios.Any()
-            ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n != null).ToArray()
-            : null,
+                    ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n != null).ToArray()
+                    : null,
                 Genres = source.Genres != null && source.Genres.Any()
-            ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n != null).ToArray()
-            : null,
+                    ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n != null).ToArray()
+                    : null,
                 Synopsis = Normalize(source.Synopsis),
                 Relations = RelatedEntryDto.FilterRelations(source.Relations),
             };

@@ -84,6 +84,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             async Task<object> FetchAndCache()
             {
                 var result = await fetch().ConfigureAwait(false);
+                if (result == null)
+                    return null;
 
                 if (normalize != null)
                     result = normalize(result);

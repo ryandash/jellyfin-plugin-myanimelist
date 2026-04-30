@@ -2,7 +2,7 @@ using JikanDotNet;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {
-    public class MalImageSubItemDto
+    public class PersonDto
     {
         public long MalId { get; set; }
 
@@ -14,11 +14,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public ImagesSetDto Images { get; set; }
 
-        public static MalImageSubItemDto From(MalImageSubItem source)
+        public static PersonDto From(MalImageSubItem source)
         {
             if (source == null) return null;
 
-            return new MalImageSubItemDto
+            return new PersonDto
             {
                 MalId = source.MalId,
                 Name = string.IsNullOrWhiteSpace(source.Name) ? null : source.Name,

@@ -66,23 +66,37 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return Array.Empty<RemoteImageInfo>();
             }
 
-            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
-            var images = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
-            var media = new AnimeObject { anime = anime };
+            var media = new AnimeObject { anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false) };
+            var pictures = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
 
-            var imageUrl = media.GetImageUrl(media.anime.Images.JPG);
-            if (images != null && imageUrl != null)
-                return
-                [
-                    new RemoteImageInfo
-                    {
-                        ProviderName = Name,
-                        Type = ImageType.Primary,
-                        Url = imageUrl
-                    }
-                ];
+            var images = new List<RemoteImageInfo>();
 
-            return Array.Empty<RemoteImageInfo>();
+            var mainImageUrl = media.GetImageUrl(media.anime.Images.JPG);
+            if (!string.IsNullOrEmpty(mainImageUrl))
+            {
+                images.Add(new RemoteImageInfo
+                {
+                    ProviderName = Name,
+                    Type = ImageType.Primary,
+                    Url = mainImageUrl
+                });
+            }
+
+            foreach (var pic in pictures)
+            {
+                var picUrl = media.GetImageUrl(pic.JPG);
+
+                if (string.IsNullOrEmpty(picUrl) || picUrl == mainImageUrl)
+                    continue;
+
+                images.Add(new RemoteImageInfo
+                {
+                    ProviderName = Name,
+                    Type = ImageType.Primary,
+                    Url = picUrl
+                });
+            }
+            return (images.Count == 0) ? Array.Empty<RemoteImageInfo>() : images;
         }
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
