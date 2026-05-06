@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
@@ -94,9 +95,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         ? await JikanAPI.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false)
                         : anime.toEpisodeData();
                 }
-                catch (JikanRequestException)
+                catch (JikanRequestException ex)
                 {
-                    _log.LogInformation("No episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+
+                    if (ex.ApiError?.Status is not (HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable))
+                    {
+                        _log.LogInformation("No episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                    }
                 }
             }
 

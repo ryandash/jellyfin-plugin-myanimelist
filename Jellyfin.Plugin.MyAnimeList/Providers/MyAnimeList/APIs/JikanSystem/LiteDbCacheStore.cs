@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +13,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
     public class LiteDbCacheStore : IDisposable, ICacheStore
     {
         private readonly LiteDatabase _db;
-        private static LiteDatabase _sharedDb;
-        private static readonly object _dbLock = new();
+        private DateTime _lastFileCleanup = DateTime.UtcNow;
+        private static readonly TimeSpan FileCleanupInterval = TimeSpan.FromHours(1);
 
         private readonly ConcurrentDictionary<string, CacheItem> _memory = new();
         private readonly ConcurrentDictionary<string, bool> _indexed = new();
@@ -56,15 +57,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             if (disableLocalCache) return;
 
-            lock (_dbLock)
-            {
-                if (_sharedDb == null)
-                {
-                    _sharedDb = new LiteDatabase($"Filename={path}\\cache.db;Connection=shared;");
-                }
-
-                _db = _sharedDb;
-            }
+            _db = new LiteDatabase($"Filename={path}\\cache.db;Connection=shared;");
 
             _workerTask = Task.Run(ProcessQueue);
         }
@@ -129,6 +122,24 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         });
 
                         col.Upsert(records);
+                    }
+
+                    if (DateTime.UtcNow - _lastFileCleanup > FileCleanupInterval)
+                    {
+                        var now = DateTime.UtcNow.Ticks;
+
+                        foreach (var name in _db.GetCollectionNames())
+                        {
+                            var col = _db.GetCollection<CacheRecord>(name);
+                            col.EnsureIndex(x => x.ExpiryTicks);
+                            try
+                            {
+                                col.DeleteMany(x => x.ExpiryTicks < now);
+                            }
+                            catch { }
+                        }
+
+                        _lastFileCleanup = DateTime.UtcNow;
                     }
                 }
             }
