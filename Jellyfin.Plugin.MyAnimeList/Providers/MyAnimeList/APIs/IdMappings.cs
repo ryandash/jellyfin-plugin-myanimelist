@@ -21,7 +21,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
         public IdMappings()
         {
-            _httpClient = Plugin.Instance.GetHttpClient();
+            _httpClient = Plugin.Instance?.GetHttpClient() ?? new HttpClient();
         }
 
         private class MappingEntry

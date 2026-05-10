@@ -23,6 +23,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
         private static readonly MessagePackSerializerOptions Options = MessagePackSerializerOptions.Standard.WithResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
+        private const int CacheSchemaVersion = 2;
 
         private class CacheItem
         {
@@ -56,6 +57,47 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             _expiryScheduler = new CacheExpiryScheduler(CleanupMemory);
 
             if (disableLocalCache) return;
+
+            var versionFile = Path.Combine(path, "cache.version");
+
+            bool rebuild = false;
+
+            try
+            {
+                if (!File.Exists(versionFile))
+                {
+                    rebuild = true;
+                }
+                else
+                {
+                    var text = File.ReadAllText(versionFile);
+
+                    if (!int.TryParse(text, out var version) ||
+                        version != CacheSchemaVersion)
+                    {
+                        rebuild = true;
+                    }
+                }
+            }
+            catch
+            {
+                rebuild = true;
+            }
+
+            if (rebuild)
+            {
+                try
+                {
+                    Directory.Delete(path, recursive: true);
+                }
+                catch
+                {
+                }
+
+                Directory.CreateDirectory(path);
+
+                File.WriteAllText(versionFile, CacheSchemaVersion.ToString());
+            }
 
             _db = new LiteDatabase($"Filename={path}\\cache.db;Connection=shared;");
 
