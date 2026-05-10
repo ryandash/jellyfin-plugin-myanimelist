@@ -31,7 +31,7 @@ namespace UnitTestProject
             _libraryManagerMock.Setup(m => m.GetVirtualFolders())
                 .Returns(new List<VirtualFolderInfo> { mockFolder });
 
-            JikanAPI.Initialize(new FakeApplicationPaths(), new PluginConfiguration());
+            JikanAPI.Initialize(new FakeApplicationPaths());
 
             _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object);
             _output = output;

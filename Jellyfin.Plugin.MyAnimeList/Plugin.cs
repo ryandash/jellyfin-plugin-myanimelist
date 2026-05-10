@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Common.Configuration;
@@ -23,12 +24,16 @@ namespace Jellyfin.Plugin.MyAnimeList
         {
             Instance = this;
             _httpClientFactory = httpClientFactory;
-            JikanAPI.Initialize(applicationPaths, this.Configuration);
+            JikanAPI.Initialize(applicationPaths);
         }
 
         public HttpClient GetHttpClient()
         {
-            return _httpClientFactory.CreateClient(NamedClient.Default);
+            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
+            httpClient.DefaultRequestHeaders.UserAgent.Add(
+                new ProductInfoHeaderValue(Name, Version.ToString()));
+
+            return httpClient;
         }
 
         /// <inheritdoc />

@@ -17,9 +17,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
     {
+        private static HttpClient _httpClient;
 
         public MyAnimeListAnimeImageProvider(ILogger<MyAnimeListAnimeImageProvider> logger)
         {
+            _httpClient = Plugin.Instance?.GetHttpClient() ?? new HttpClient();
         }
 
         public string Name => "MyAnimeList";
@@ -101,7 +103,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken);
+            return _httpClient.GetAsync(url, cancellationToken);
         }
     }
 }

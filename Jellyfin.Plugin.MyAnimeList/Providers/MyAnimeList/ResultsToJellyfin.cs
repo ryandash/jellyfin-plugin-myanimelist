@@ -14,6 +14,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class EpisodeSearchResult
     {
+        public static PluginConfiguration config = Plugin.Instance.Configuration;
         public EpisodeCacheDto episode { get; set; }
 
         public DateTime? GetDate() => episode.Aired;
@@ -37,8 +38,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         internal Episode ToEpisode(int totalDigits)
         {
-            var config = Plugin.Instance.Configuration;
-
             return new Episode
             {
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, episode.Url } },
@@ -54,6 +53,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
     public class AnimeSearchResult
     {
+        public static PluginConfiguration config = Plugin.Instance.Configuration;
         public AnimeFullCacheDto anime;
 
         public string GetPreferredTitle(TitlePreferenceType preference, string language)
@@ -86,7 +86,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public RemoteSearchResult ToSearchResult()
         {
-            var config = Plugin.Instance.Configuration;
             return new RemoteSearchResult
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
@@ -105,7 +104,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public EpisodeCacheDto toEpisodeData()
         {
-            var config = Plugin.Instance.Configuration;
             return new EpisodeCacheDto
             {
                 Url = anime.Url,
@@ -156,9 +154,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public List<PersonInfo> GetPeopleInfo()
         {
-            var config = Plugin.Instance.Configuration;
-
-            return characters
+            return characters?
                 .SelectMany(edge => edge.VoiceActors, (edge, va) => new { edge, va })
                 .Where(x =>
                 {
@@ -180,7 +176,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.MalId.ToString() } }
                 })
                 .Take(config.MaxPeople > 0 ? config.MaxPeople : int.MaxValue)
-                .ToList();
+                .ToList()
+                ?? new List<PersonInfo>();
         }
 
         public string[] GetGenres()
@@ -189,7 +186,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .Where(g => !string.IsNullOrWhiteSpace(g))
                 .ToArray() ?? Array.Empty<string>();
 
-            var max = Plugin.Instance.Configuration.MaxGenres;
+            var max = config.MaxGenres;
             return max > 0 ? genres.Take(max).ToArray() : genres;
         }
 
@@ -201,7 +198,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public Series ToSeries()
         {
-            var config = Plugin.Instance.Configuration;
             var duration = GetDuration(anime.Duration);
             return new Series
             {
@@ -228,7 +224,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public Movie ToMovie()
         {
-            var config = Plugin.Instance.Configuration;
             return new Movie
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
@@ -246,7 +241,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public Season ToSeason()
         {
-            var config = Plugin.Instance.Configuration;
             var duration = GetDuration(anime.Duration);
             return new Season
             {

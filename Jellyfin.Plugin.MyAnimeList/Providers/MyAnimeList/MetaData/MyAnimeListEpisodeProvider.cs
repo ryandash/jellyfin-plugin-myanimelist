@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
@@ -18,10 +19,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     public class MyAnimeListEpisodeProvider : MyAnimeListBaseProvider<Episode, EpisodeInfo>
     {
         private readonly IdMappings _idMapping;
+        private static PluginConfiguration _config;
 
         public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager) : base(logger, libraryManager)
         {
             _idMapping = new IdMappings();
+            _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         }
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
@@ -29,14 +32,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (info.Path == null || !info.IndexNumber.HasValue)
                 return result;
 
-            var config = Plugin.Instance.Configuration;
-            var enableDebug = config.EnableDebug;
+            var enableDebug = _config.EnableDebug;
 
             EpisodeCacheDto episodeData = null;
             AnimeObject anime = null;
             int seasonnumber = info.ParentIndexNumber ?? 1;
 
-            if (config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid) && seasonnumber == 0)
+            if (_config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid) && seasonnumber == 0)
             {
                 if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
@@ -63,7 +65,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             if (episodeData == null)
             {
-                if (config.ExcludeSpecials && seasonnumber == 0)
+                if (_config.ExcludeSpecials && seasonnumber == 0)
                     return result;
 
                 anime = new AnimeObject

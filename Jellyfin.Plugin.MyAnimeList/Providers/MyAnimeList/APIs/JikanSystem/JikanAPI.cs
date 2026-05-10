@@ -36,7 +36,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static TimeSpan BackupExpiry;
         private static TimeSpan SearchExpiry;
 
-        public static void Initialize(IApplicationPaths paths, PluginConfiguration _config)
+        public static void Initialize(IApplicationPaths paths)
         {
             if (_initialized) return;
 
@@ -47,6 +47,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 var baseDir = Path.Combine(paths.CachePath, "myanimelist");
                 Directory.CreateDirectory(baseDir);
+
+                var _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
                 BackupExpiry = TimeSpan.FromDays(_config.cacheBackupOtherTime);
                 SearchExpiry = TimeSpan.FromMinutes(_config.cacheSearchTime);
@@ -246,10 +248,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 async () =>
                 {
                     var res = await Instance.GetAnimePicturesAsync(malId, token);
-                    return res.Data
+                    return res.Data?
                         .Select(ImagesSetDto.From)
                         .Where(x => x != null)
-                        .ToList();
+                        .ToList()
+                        ?? new List<ImagesSetDto>();
                 }
             );
         }
