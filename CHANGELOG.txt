@@ -1,27 +1,6 @@
-12568d5 Cache reset + minor improvements
+898b11a Fix images + potential bugs
 
-- Add a cache version check to reset the cache folder after an update
+- Fix for null pictures
+- Fix some other potential nulls
 
-- Initialize httpclient once instead of trying to get instance version every time
-
-0bf0e36 Cleanup database over time
-
-- Version bump
-
-- Cleanup database entries that are never accessed again
-
-- Fix potential log spam when Jikan is having issues
-
-194d7be Improve serializing data + get all pictures
-
-- Version bump
-
-- Serialize data better using MessagePack for minor performance gain when reading and reduced file size when writing
-
-- Split up tests
-
-- Fix bug where not all pictures were being processed from results
-
-- Minor cleanup
-
-b68d029 Update manifest
+5bbe1d0 Update manifest
