@@ -1,6 +1,13 @@
-898b11a Fix images + potential bugs
+019856c Add retry for Jikan + null cleanup
 
-- Fix for null pictures
-- Fix some other potential nulls
+- Version bump
 
-5bbe1d0 Update manifest
+- Retry api calls if response from Jikan is null
+
+- Separate fetch and data conversion/normalization to prevent null crash
+
+- Separate GetAnimeCharactersAsync into multiple methods to make it easier to read (minor performance loss putting data in cache then pull from cache)
+
+- Better database cleanup and handle null better
+
+759ec44 Update manifest
