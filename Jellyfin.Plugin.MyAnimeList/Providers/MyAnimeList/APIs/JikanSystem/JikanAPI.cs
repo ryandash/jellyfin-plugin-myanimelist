@@ -10,6 +10,7 @@ using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
 using JikanDotNet.Config;
+using JikanDotNet.Exceptions;
 using LiteDB;
 using MediaBrowser.Common.Configuration;
 
@@ -57,48 +58,81 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
-        private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
+        private static readonly ConcurrentDictionary<string, Lazy<Task<object?>>> _inFlight = new();
 
-        private static async Task<T> GetOrFetchAsync<T>(string key, string url, Func<Task<T>> fetch, Func<T, T> normalize = null, bool ignoreCache = false) where T : class
+        private static async Task<TCache?> GetOrFetchAsync<TApi, TCache>(string key, string url, Func<Task<TApi>> fetch, Func<TApi, TCache?> normalize, bool ignoreCache = false) where TCache : class
         {
-            var now = DateTime.UtcNow;
 
             if (!ignoreCache)
             {
-                var cached = Cache.Get<T>(key);
+                var cached = Cache.Get<TCache>(key);
+
                 if (cached != null)
                     return cached;
             }
 
-            var lazyTask = _inFlight.GetOrAdd(key, _ =>
-                new Lazy<Task<object>>(() => FetchAndCache(), LazyThreadSafetyMode.ExecutionAndPublication)
+            var lazyTask = _inFlight.GetOrAdd(
+                key,
+                _ => new Lazy<Task<object?>>(
+                    () => FetchAndCache(),
+                    LazyThreadSafetyMode.ExecutionAndPublication)
             );
 
             try
             {
-                return (T)await lazyTask.Value.ConfigureAwait(false);
+                var result = await lazyTask.Value.ConfigureAwait(false);
+
+                return result is TCache typed ? typed : null;
             }
             finally
             {
-                _inFlight.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(key, lazyTask));
+                _inFlight.TryRemove(
+                    new KeyValuePair<string, Lazy<Task<object?>>>(key, lazyTask));
             }
 
-            async Task<object> FetchAndCache()
+            async Task<object?> FetchAndCache()
             {
-                var result = await fetch().ConfigureAwait(false);
-                if (result == null)
-                    return null;
+                const int maxAttempts = 3;
 
-                if (normalize != null)
-                    result = normalize(result);
+                for (int attempt = 1; attempt <= maxAttempts; attempt++)
+                {
+                    try
+                    {
+                        var apiResult = await fetch().ConfigureAwait(false);
 
-                var expiry = JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
-                    ? exp
-                    : now.Add(BackupExpiry);
+                        if (apiResult != null)
+                        {
+                            var normalized = normalize(apiResult);
 
-                Cache.Put(key, result, expiry);
+                            if (normalized != null)
+                            {
+                                var expiry =
+                                    JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
+                                        ? exp
+                                        : DateTime.UtcNow.Add(BackupExpiry);
 
-                return result;
+                                Cache.Put(key, normalized, expiry);
+
+                                return normalized;
+                            }
+                        }
+                    }
+                    catch (JikanRequestException)
+                    {
+                    }
+                    catch (HttpRequestException)
+                    {
+                    }
+
+                    if (attempt < maxAttempts)
+                    {
+                        await Task.Delay(
+                            TimeSpan.FromSeconds(attempt * 2))
+                            .ConfigureAwait(false);
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -113,7 +147,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             var key = $"anime:{malId}";
 
             var cached = Cache.Get<AnimeFullCacheDto>(key);
-            if (cached != null && (!needRelations || cached.Relations != null))
+
+            if (cached != null &&
+                (!needRelations || cached.Relations != null))
             {
                 return cached;
             }
@@ -121,11 +157,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             return await GetOrFetchAsync(
                 key,
                 AnimeFullUrl(malId),
-                async () =>
-                {
-                    var full = await Instance.GetAnimeFullDataAsync(malId, token);
-                    return AnimeFullCacheDto.From(full.Data);
-                },
+
+                fetch: () => Instance.GetAnimeFullDataAsync(malId, token),
+
+                normalize: res => AnimeFullCacheDto.From(res.Data),
+
                 ignoreCache: cached != null
             );
         }
@@ -137,11 +173,30 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             return GetOrFetchAsync(
                 key,
                 AnimeEpisodesUrl(malId),
-                async () =>
-                {
-                    var res = await Instance.GetAnimeEpisodeAsync(malId, episodeNumber, token);
-                    return EpisodeCacheDto.From(res.Data);
-                }
+
+                fetch: () => Instance.GetAnimeEpisodeAsync(
+                    malId,
+                    episodeNumber,
+                    token),
+
+                normalize: res => EpisodeCacheDto.From(res.Data)
+            );
+        }
+
+        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token)
+        {
+            var key = $"pictures:{malId}";
+
+            return GetOrFetchAsync(
+                key,
+                AnimePicturesUrl(malId),
+
+                fetch: () => Instance.GetAnimePicturesAsync(malId, token),
+
+                normalize: res => res.Data
+                    .Select(ImagesSetDto.From)
+                    .Where(x => x != null)
+                    .ToList()
             );
         }
 
@@ -164,97 +219,116 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             var ids = search.Data
                 .Where(a => a.MalId.HasValue)
                 .OrderBy(a => a.MalId.Value)
+                .Select(a => (anime: a, id: a.MalId.Value))
                 .ToList();
 
             var anime = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
-                        $"anime:{a.MalId}",
-                        AnimeFullUrl(a.MalId.Value),
-                        async () =>
-                        {
-                            return AnimeFullCacheDto.From(a);
-                        }
+                        $"anime:{a.id}",
+                        AnimeFullUrl(a.id),
+
+                        fetch: () => Task.FromResult(a.anime),
+
+                        normalize: AnimeFullCacheDto.From
                     )
                 )
             );
 
-            Cache.Put(key, ids.Select(a => a.MalId.Value).ToList(), DateTime.UtcNow.Add(SearchExpiry));
+            Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
 
             return anime.ToList();
         }
 
-        public static async Task<List<AnimeCharacterDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
+        private static Task<List<AnimeCharacterIdCacheDto>?> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)
         {
             var key = $"characters:{malId}";
 
-            var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>(key);
-            if (cached != null)
-            {
-                var tasks = cached.Select(async r =>
-                {
-                    var character = await GetOrFetchAsync(
-                        $"character:{r.CharacterId}",
-                        CharacterUrl(r.CharacterId),
-                        async () =>
-                        {
-                            var res = await Instance.GetCharacterAsync(r.CharacterId, token);
-                            return CharacterCacheDto.From(res.Data);
-                        }
-                    );
-
-                    return new AnimeCharacterDto
-                    {
-                        Character = character,
-                        Role = r.Role,
-                        VoiceActors = r.VoiceActors
-                    };
-                });
-
-                return (await Task.WhenAll(tasks)).ToList();
-            }
-
-            var res = await Instance.GetAnimeCharactersAsync(malId, token);
-            var animeCharacters = res.Data;
-
-            var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
-                ? exp
-                : DateTime.UtcNow.Add(BackupExpiry);
-
-            foreach (AnimeCharacter cha in animeCharacters)
-            {
-                if (cha?.Character?.MalId > 0)
-                {
-                    var character = CharacterCacheDto.From(cha.Character);
-                    if (character != null)
-                    {
-                        Cache.Put($"character:{cha.Character.MalId}", character, expiry);
-                    }
-                }
-            }
-
-            Cache.Put(key, animeCharacters.Select(AnimeCharacterIdCacheDto.From).Where(x => x != null)
-                .OrderBy(x => x.CharacterId).ToList(), expiry);
-
-            return animeCharacters.Select(AnimeCharacterDto.From).ToList();
-        }
-
-        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token)
-        {
-            var key = $"pictures:{malId}";
-
             return GetOrFetchAsync(
                 key,
-                AnimePicturesUrl(malId),
-                async () =>
+                AnimeCharactersUrl(malId),
+
+                fetch: () => Instance.GetAnimeCharactersAsync(malId, token),
+
+                normalize: res =>
                 {
-                    var res = await Instance.GetAnimePicturesAsync(malId, token);
-                    return res.Data?
-                        .Select(ImagesSetDto.From)
+                    var expiry =
+                        JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
+                            ? exp
+                            : DateTime.UtcNow.Add(BackupExpiry);
+
+                    foreach (var cha in res.Data)
+                    {
+                        if (cha?.Character?.MalId > 0)
+                        {
+                            var character = CharacterCacheDto.From(cha.Character);
+
+                            if (character != null)
+                            {
+                                Cache.Put(
+                                    $"character:{cha.Character.MalId}",
+                                    character,
+                                    expiry);
+                            }
+                        }
+                    }
+
+                    return res.Data
+                        .Select(AnimeCharacterIdCacheDto.From)
                         .Where(x => x != null)
-                        .ToList()
-                        ?? new List<ImagesSetDto>();
-                }
-            );
+                        .OrderBy(x => x.CharacterId)
+                        .ToList();
+                });
+        }
+
+        private static async Task<List<AnimeCharacterDto>> HydrateCharactersAsync(List<AnimeCharacterIdCacheDto> cached, CancellationToken token)
+        {
+            var tasks = cached.Select(async r =>
+            {
+                var character = await GetOrFetchAsync(
+                    $"character:{r.CharacterId}",
+                    CharacterUrl(r.CharacterId),
+
+                    fetch: () => Instance.GetCharacterAsync(
+                        r.CharacterId,
+                        token),
+
+                    normalize: res => CharacterCacheDto.From(res.Data)
+                );
+
+                return new AnimeCharacterDto
+                {
+                    Character = character,
+                    Role = r.Role,
+                    VoiceActors = r.VoiceActors
+                };
+            });
+
+            return (await Task.WhenAll(tasks))
+                .Where(x => x?.Character != null)
+                .ToList();
+        }
+
+
+        public static async Task<List<AnimeCharacterDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
+        {
+            var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>($"characters:{malId}");
+
+            if (cached != null)
+            {
+                return await HydrateCharactersAsync(cached, token);
+            }
+
+            var index = await GetAnimeCharacterIndexAsync(malId, token);
+
+            if (index == null)
+                return new List<AnimeCharacterDto>();
+
+            Cache.Put(
+                $"characters:{malId}",
+                index,
+                DateTime.UtcNow.Add(BackupExpiry));
+
+            return await HydrateCharactersAsync(index, token);
         }
     }
 }

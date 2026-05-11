@@ -236,6 +236,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             try
             {
                 var value = MessagePackSerializer.Deserialize<T>(record.Data, Options);
+                if (value is null)
+                {
+                    col.Delete(id);
+                    return default;
+                }
                 _memory[key] = new CacheItem
                 {
                     Value = value,
@@ -253,6 +258,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         public void Put<T>(string key, T value, DateTime expiry)
         {
+            if (value == null) return;
             var expiryTicks = expiry.ToUniversalTime().Ticks;
 
             _memory[key] = new CacheItem
@@ -328,7 +334,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             _signal.Release();
             try
             {
-                _workerTask?.Wait();
+                _workerTask?.GetAwaiter().GetResult();
             }
             catch { }
             FlushRemaining();
