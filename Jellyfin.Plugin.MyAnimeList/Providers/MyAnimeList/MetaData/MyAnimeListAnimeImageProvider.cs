@@ -21,7 +21,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public string Name => ProviderNames.MyAnimeList;
 
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode;
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Person;
 
         public MyAnimeListAnimeImageProvider(IHttpClientFactory httpClientFactory)
         {
@@ -40,49 +40,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (string.IsNullOrEmpty(malId))
                 return Array.Empty<RemoteImageInfo>();
 
-            long aid;
 
-            if (item is Episode episode)
+            if (!long.TryParse(malId, out long aid))
+                return Array.Empty<RemoteImageInfo>();
+
+            var images = new List<RemoteImageInfo>();
+            string mainImageUrl;
+            if (item is Person)
             {
-                // MAL has not support regular episode images
-                if (episode.ParentIndexNumber != 0)
-                {
-                    return Array.Empty<RemoteImageInfo>();
-                }
-
-                int start = malId.IndexOf("/anime/", StringComparison.Ordinal);
-                if (start < 0)
-                    return Array.Empty<RemoteImageInfo>();
-
-                start += 7;
-                int end = malId.IndexOf('/', start);
-                if (end < 0)
-                    return Array.Empty<RemoteImageInfo>();
-
-                if (!long.TryParse(malId.AsSpan(start, end - start), out aid))
-                    return Array.Empty<RemoteImageInfo>();
+                var person = await JikanAPI.getPersonAsync(aid, cancellationToken).ConfigureAwait(false);
+                mainImageUrl = ImagesSetDto.GetImageUrl(person.Images.JPG);
             }
             else
             {
-                if (!long.TryParse(malId, out aid))
-                    return Array.Empty<RemoteImageInfo>();
+                var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
+                mainImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG);
             }
 
-            var images = new List<RemoteImageInfo>();
+            if (string.IsNullOrEmpty(mainImageUrl))
+                return Array.Empty<RemoteImageInfo>();
 
-            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
-            var mainImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG);
-            if (!string.IsNullOrEmpty(mainImageUrl))
-            {
-                images.Add(new RemoteImageInfo
+            return
+            [
+                new RemoteImageInfo
                 {
                     ProviderName = Name,
                     Type = ImageType.Primary,
                     Url = mainImageUrl
-                });
-            }
-
-            return images;
+                }
+            ];
         }
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
