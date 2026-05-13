@@ -23,7 +23,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
         private static readonly MessagePackSerializerOptions Options = MessagePackSerializerOptions.Standard.WithResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
-        private const int CacheSchemaVersion = 2;
+        private const int CacheSchemaVersion = 3;
 
         private class CacheItem
         {
