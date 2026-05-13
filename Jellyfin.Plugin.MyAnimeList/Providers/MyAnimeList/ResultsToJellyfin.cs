@@ -46,7 +46,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProductionYear = GetDate()?.Year,
                 EndDate = GetDate(),
                 RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
-                Overview = episode.Synopsis
+                Overview = episode.Synopsis,
+                CommunityRating = (float?)episode.Score,
             };
         }
     }

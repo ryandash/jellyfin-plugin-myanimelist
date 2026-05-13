@@ -137,6 +137,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         }
 
         private static string AnimeFullUrl(long id) => $"anime/{id}/full";
+        private static string AnimeSpecificEpisodesUrl(long id, int ep) => $"anime/{id}/episodes/{ep}";
         private static string AnimeEpisodesUrl(long id) => $"anime/{id}/episodes";
         private static string AnimeCharactersUrl(long id) => $"anime/{id}/characters";
         private static string CharacterUrl(long id) => $"characters/{id}";
@@ -166,20 +167,108 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
-        public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
+        public static async Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
         {
-            var key = $"episode:{malId}:{episodeNumber}";
+            var key = $"{malId}:episode:{episodeNumber}";
 
-            return GetOrFetchAsync(
+            var cached = Cache.Get<EpisodeCacheDto>(key);
+
+            if (cached != null && cached.HasFullDetails)
+            {
+                return cached;
+            }
+
+            var detailed = await GetOrFetchAsync(
                 key,
-                AnimeEpisodesUrl(malId),
+                AnimeSpecificEpisodesUrl(malId, episodeNumber),
 
                 fetch: () => Instance.GetAnimeEpisodeAsync(
                     malId,
                     episodeNumber,
                     token),
 
-                normalize: res => EpisodeCacheDto.From(res.Data)
+                normalize: res => EpisodeCacheDto.From(res.Data),
+
+                ignoreCache: true
+            );
+
+            if (cached != null && detailed != null)
+            {
+                EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
+
+                Cache.Put(
+                    key,
+                    cached,
+                    DateTime.UtcNow.Add(BackupExpiry));
+
+                return cached;
+            }
+
+            return detailed ?? cached ?? null;
+        }
+
+        public static Task<List<EpisodeCacheDto>> GetAnimeEpisodesAsync(long malId, CancellationToken token)
+        {
+            var key = $"episodes:{malId}";
+
+            return GetOrFetchAsync(
+                key,
+                AnimeEpisodesUrl(malId),
+
+                fetch: async () =>
+                {
+                    var allEpisodes = new List<AnimeEpisode>();
+
+                    int page = 1;
+
+                    while (true)
+                    {
+                        var res = await Instance.GetAnimeEpisodesAsync(
+                            malId,
+                            page,
+                            token);
+
+                        if (res?.Data == null || res.Data.Count == 0)
+                            break;
+
+                        allEpisodes.AddRange(res.Data);
+
+                        if (res.Pagination?.HasNextPage != true)
+                            break;
+
+                        page++;
+                    }
+
+                    return allEpisodes;
+                },
+
+                normalize: res =>
+                {
+                    if (res == null)
+                        return null;
+
+                    var expiry =
+                        JikanHttpMetadataStore.TryGetExpiry(
+                            AnimeEpisodesUrl(malId),
+                            out var exp)
+                            ? exp
+                            : DateTime.UtcNow.Add(BackupExpiry);
+
+                    var episodes = res
+                        .Select(EpisodeCacheDto.From)
+                        .Where(x => x != null)
+                        .ToList();
+
+                    foreach (var ep in episodes)
+                    {
+                        Cache.Put(
+                            $"{malId}:episode:{ep.EpisodeNumber}",
+                            ep,
+                            expiry);
+                    }
+
+                    return episodes;
+                }
             );
         }
 

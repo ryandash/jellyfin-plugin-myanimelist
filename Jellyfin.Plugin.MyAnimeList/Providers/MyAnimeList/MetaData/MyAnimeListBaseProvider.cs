@@ -43,8 +43,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var media = new AnimeObject
             {
                 anime = anime,
-                characters = await JikanAPI.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false)
+                characters = await JikanAPI.GetAnimeCharactersAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false),
             };
+
+            if (info is SeasonInfo)
+            {
+                _ = await JikanAPI.GetAnimeEpisodesAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false);
+            }
 
             result.HasMetadata = true;
             result.Item = ConvertToItem(media);
