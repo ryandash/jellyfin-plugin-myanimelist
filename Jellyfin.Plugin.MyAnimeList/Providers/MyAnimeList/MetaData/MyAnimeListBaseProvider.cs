@@ -17,13 +17,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     {
         protected readonly ILogger _log;
         protected readonly MyAnimeListSearchHelper _searchHelper;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public string Name => ProviderNames.MyAnimeList;
 
-        protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager)
+        protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
             _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager);
+            _searchHelper = new MyAnimeListSearchHelper(libraryManager, httpClientFactory);
+            _httpClientFactory = httpClientFactory;
         }
 
         protected abstract TItem ConvertToItem(AnimeObject media);
@@ -68,7 +70,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return Plugin.Instance.GetHttpClient().GetAsync(url, cancellationToken);
+            var client = _httpClientFactory.CreateClient(ProviderNames.MyAnimeList);
+            return client.GetAsync(url, cancellationToken);
         }
     }
 }

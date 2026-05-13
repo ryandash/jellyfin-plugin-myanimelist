@@ -58,9 +58,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
-        private static readonly ConcurrentDictionary<string, Lazy<Task<object?>>> _inFlight = new();
+        private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
 
-        private static async Task<TCache?> GetOrFetchAsync<TApi, TCache>(string key, string url, Func<Task<TApi>> fetch, Func<TApi, TCache?> normalize, bool ignoreCache = false) where TCache : class
+        private static async Task<TCache> GetOrFetchAsync<TApi, TCache>(string key, string url, Func<Task<TApi>> fetch, Func<TApi, TCache> normalize, bool ignoreCache = false) where TCache : class
         {
 
             if (!ignoreCache)
@@ -73,7 +73,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var lazyTask = _inFlight.GetOrAdd(
                 key,
-                _ => new Lazy<Task<object?>>(
+                _ => new Lazy<Task<object>>(
                     () => FetchAndCache(),
                     LazyThreadSafetyMode.ExecutionAndPublication)
             );
@@ -87,10 +87,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             finally
             {
                 _inFlight.TryRemove(
-                    new KeyValuePair<string, Lazy<Task<object?>>>(key, lazyTask));
+                    new KeyValuePair<string, Lazy<Task<object>>>(key, lazyTask));
             }
 
-            async Task<object?> FetchAndCache()
+            async Task<object> FetchAndCache()
             {
                 const int maxAttempts = 3;
 
@@ -141,6 +141,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static string AnimeCharactersUrl(long id) => $"anime/{id}/characters";
         private static string CharacterUrl(long id) => $"characters/{id}";
         private static string AnimePicturesUrl(long id) => $"anime/{id}/pictures";
+        private static string PeopleUrl(long id) => $"people/{id}";
 
         public static async Task<AnimeFullCacheDto> GetAnimeFullAsync(long malId, CancellationToken token, bool needRelations = false)
         {
@@ -200,6 +201,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
+        public static Task<PersonDto> getPersonAsync(long malId, CancellationToken token)
+        {
+            var key = $"person:{malId}";
+
+            return GetOrFetchAsync(
+                key,
+                PeopleUrl(malId),
+
+                fetch: () => Instance.GetPersonAsync(malId, token),
+
+                normalize: res => PersonDto.From(res.Data)
+            );
+        }
+
         public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, CancellationToken token)
         {
             var key = $"search:{term}";
@@ -239,7 +254,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             return anime.ToList();
         }
 
-        private static Task<List<AnimeCharacterIdCacheDto>?> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)
+        private static Task<List<AnimeCharacterIdCacheDto>> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)
         {
             var key = $"characters:{malId}";
 
@@ -258,16 +273,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     foreach (var cha in res.Data)
                     {
-                        if (cha?.Character?.MalId > 0)
+                        CharacterEntry character = cha.Character;
+                        if (character.MalId > 0)
                         {
-                            var character = CharacterCacheDto.From(cha.Character);
+                            var characterCache = CharacterCacheDto.From(character);
 
-                            if (character != null)
+                            if (characterCache != null)
                             {
                                 Cache.Put(
-                                    $"character:{cha.Character.MalId}",
-                                    character,
+                                    $"character:{character.MalId}",
+                                    characterCache,
                                     expiry);
+
+                            }
+                        }
+
+                        foreach (var va in cha.VoiceActors)
+                        {
+                            MalImageSubItem person = va.Person;
+                            if (person.MalId > 0)
+                            {
+                                var personCache = PersonDto.From(va.Person);
+
+                                if (personCache != null)
+                                {
+                                    Cache.Put(
+                                        $"person:{person.MalId}",
+                                        personCache,
+                                        expiry);
+                                }
                             }
                         }
                     }
@@ -284,22 +318,46 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             var tasks = cached.Select(async r =>
             {
+                var charID = r.CharacterId;
                 var character = await GetOrFetchAsync(
-                    $"character:{r.CharacterId}",
-                    CharacterUrl(r.CharacterId),
+                    $"character:{charID}",
+                    CharacterUrl(charID),
 
                     fetch: () => Instance.GetCharacterAsync(
-                        r.CharacterId,
+                        charID,
                         token),
 
                     normalize: res => CharacterCacheDto.From(res.Data)
                 );
 
+                var voiceActors = new List<VoiceActorEntryDto>();
+                foreach (var va in r.VoiceActors)
+                {
+                    var personId = va.Person.MalId;
+                    var person = await GetOrFetchAsync(
+                        $"person:{personId}",
+                        PeopleUrl(personId),
+
+                        fetch: () => Instance.GetPersonAsync(personId, token),
+
+                        normalize: res => PersonDto.From(res.Data)
+                    );
+
+                    if (person != null)
+                    {
+                        voiceActors.Add(new VoiceActorEntryDto
+                        {
+                            Language = va.Language,
+                            Person = person
+                        });
+                    }
+                }
+
                 return new AnimeCharacterDto
                 {
                     Character = character,
                     Role = r.Role,
-                    VoiceActors = r.VoiceActors
+                    VoiceActors = voiceActors
                 };
             });
 
@@ -307,7 +365,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 .Where(x => x?.Character != null)
                 .ToList();
         }
-
 
         public static async Task<List<AnimeCharacterDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
         {

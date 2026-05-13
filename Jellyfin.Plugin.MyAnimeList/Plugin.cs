@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Common.Configuration;
-using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -15,25 +12,13 @@ namespace Jellyfin.Plugin.MyAnimeList
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        IHttpClientFactory _httpClientFactory;
         public Plugin(
             IApplicationPaths applicationPaths,
-            IXmlSerializer xmlSerializer,
-            IHttpClientFactory httpClientFactory)
+            IXmlSerializer xmlSerializer)
             : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
-            _httpClientFactory = httpClientFactory;
             JikanAPI.Initialize(applicationPaths);
-        }
-
-        public HttpClient GetHttpClient()
-        {
-            var httpClient = _httpClientFactory.CreateClient(NamedClient.Default);
-            httpClient.DefaultRequestHeaders.UserAgent.Add(
-                new ProductInfoHeaderValue(Name, Version.ToString()));
-
-            return httpClient;
         }
 
         /// <inheritdoc />

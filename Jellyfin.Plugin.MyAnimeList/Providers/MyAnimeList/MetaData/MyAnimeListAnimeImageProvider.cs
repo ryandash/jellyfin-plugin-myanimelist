@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -17,16 +18,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
     {
-        private static HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public MyAnimeListAnimeImageProvider(ILogger<MyAnimeListAnimeImageProvider> logger)
+        public string Name => ProviderNames.MyAnimeList;
+
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode;
+
+        public MyAnimeListAnimeImageProvider(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = Plugin.Instance?.GetHttpClient() ?? new HttpClient();
+            _httpClientFactory = httpClientFactory;
         }
-
-        public string Name => "MyAnimeList";
-
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Episode || item is Person;
 
         public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
         {
@@ -68,12 +69,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return Array.Empty<RemoteImageInfo>();
             }
 
-            var media = new AnimeObject { anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false) };
+            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
             var pictures = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
 
             var images = new List<RemoteImageInfo>();
 
-            var mainImageUrl = media.GetImageUrl(media.anime.Images.JPG);
+            var mainImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG);
             if (!string.IsNullOrEmpty(mainImageUrl))
             {
                 images.Add(new RemoteImageInfo
@@ -86,7 +87,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             foreach (var pic in pictures)
             {
-                var picUrl = media.GetImageUrl(pic.JPG);
+                var picUrl = ImagesSetDto.GetImageUrl(pic.JPG);
 
                 if (string.IsNullOrEmpty(picUrl) || picUrl == mainImageUrl)
                     continue;
@@ -98,12 +99,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     Url = picUrl
                 });
             }
-            return (images.Count == 0) ? Array.Empty<RemoteImageInfo>() : images;
+            return images;
         }
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            return _httpClient.GetAsync(url, cancellationToken);
+            var client = _httpClientFactory.CreateClient(ProviderNames.MyAnimeList);
+            return client.GetAsync(url, cancellationToken);
         }
     }
 }

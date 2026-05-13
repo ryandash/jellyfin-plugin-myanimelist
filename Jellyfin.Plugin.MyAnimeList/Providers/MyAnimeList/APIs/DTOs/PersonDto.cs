@@ -27,5 +27,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Images = ImagesSetDto.From(source.Images)
             };
         }
+
+        public static PersonDto From(Person source)
+        {
+            if (source == null) return null;
+
+            return new PersonDto
+            {
+                MalId = source.MalId,
+                Name = string.IsNullOrWhiteSpace(source.Name) ? null : source.Name,
+                Url = string.IsNullOrWhiteSpace(source.Url) ? null : source.Url,
+                Images = ImagesSetDto.From(source.Images)
+            };
+        }
     }
 }

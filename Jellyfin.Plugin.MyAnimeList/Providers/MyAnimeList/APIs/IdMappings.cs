@@ -13,15 +13,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
     public class IdMappings
     {
         private readonly string _baseUrl = "https://github-checker-worker.ryandash0.workers.dev/";
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly JsonSerializerOptions _options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
 
-        public IdMappings()
+        public IdMappings(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = Plugin.Instance?.GetHttpClient() ?? new HttpClient();
+            _httpClientFactory = httpClientFactory;
         }
 
         private class MappingEntry
@@ -39,7 +39,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
             try
             {
-                using var stream = await _httpClient.GetStreamAsync(url, token)
+                var client = _httpClientFactory.CreateClient(ProviderNames.MyAnimeList);
+                using var stream = await client.GetStreamAsync(url, token)
                     .ConfigureAwait(false);
 
                 var result = await JsonSerializer.DeserializeAsync<List<MappingEntry>>(

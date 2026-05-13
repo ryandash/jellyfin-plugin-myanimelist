@@ -1,9 +1,11 @@
+using Jellyfin.Plugin.MyAnimeList.Providers;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using TestProject;
@@ -32,7 +34,18 @@ namespace UnitTestProject
 
             JikanAPI.Initialize(new FakeApplicationPaths());
 
-            _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object);
+            var services = new ServiceCollection();
+
+            services.AddHttpClient(ProviderNames.MyAnimeList, client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("UnitTest");
+            });
+
+            IHttpClientFactory httpClientFactory =
+    services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+
+            _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object, httpClientFactory);
             _output = output;
         }
 

@@ -4,9 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>6.6.2.3</Version>
-    <AssemblyVersion>6.6.2.3</AssemblyVersion>
-    <FileVersion>6.6.2.3</FileVersion>
+    <Version>6.6.3.0</Version>
+    <AssemblyVersion>6.6.3.0</AssemblyVersion>
+    <FileVersion>6.6.3.0</FileVersion>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>

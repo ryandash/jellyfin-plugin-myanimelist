@@ -21,10 +21,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     public class MyAnimeListSearchHelper
     {
         private readonly string[] _libraryRoots;
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly PluginConfiguration _config;
 
-        public MyAnimeListSearchHelper(ILibraryManager libraryManager)
+        public MyAnimeListSearchHelper(ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
             _libraryRoots = libraryManager
                 .GetVirtualFolders()
@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .OrderByDescending(l => l.Length)
                 .ToArray();
 
-            _httpClient = Plugin.Instance?.GetHttpClient() ?? new HttpClient();
+            _httpClientFactory = httpClientFactory;
             _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         }
 
@@ -283,7 +283,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return ignoreBestAttempt
                 ? (null, 0)
-                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClient, cancellationToken).ConfigureAwait(false);
+                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClientFactory, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int similarityConfidence, int seasonNumber, CancellationToken cancellationToken)

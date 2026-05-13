@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
@@ -21,9 +22,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         private readonly IdMappings _idMapping;
         private static PluginConfiguration _config;
 
-        public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager) : base(logger, libraryManager)
+        public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
-            _idMapping = new IdMappings();
+            _idMapping = new IdMappings(httpClientFactory);
             _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         }
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)

@@ -75,11 +75,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ?? anime.Titles.FirstOrDefault(t => t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))?.Title;
         }
 
-        public string GetImageUrl(ImageDto jpg)
-        {
-            return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl;
-        }
-
         public DateTime? GetAiredDate(bool isStartDate = true) => isStartDate ? anime.Aired.From : anime.Aired.To;
 
         public float GetRating() => (float)(anime.Score ?? 0.0);
@@ -91,7 +86,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
                 PremiereDate = GetAiredDate(),
-                ImageUrl = GetImageUrl(anime.Images.JPG),
+                ImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG),
                 SearchProviderName = ProviderNames.MyAnimeList,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
@@ -172,7 +167,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     Name = SwapName(x.va.Person.Name),
                     Role = SwapName(x.edge.Character.Name),
                     Type = PersonKind.Actor,
-                    ImageUrl = GetImageUrl(x.va.Person.Images.JPG),
+                    ImageUrl = ImagesSetDto.GetImageUrl(x.va.Person.Images.JPG),
                     ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, x.va.Person.MalId.ToString() } }
                 })
                 .Take(config.MaxPeople > 0 ? config.MaxPeople : int.MaxValue)
