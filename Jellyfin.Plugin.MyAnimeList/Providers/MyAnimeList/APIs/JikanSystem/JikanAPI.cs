@@ -140,7 +140,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static string AnimeEpisodesUrl(long id) => $"anime/{id}/episodes";
         private static string AnimeCharactersUrl(long id) => $"anime/{id}/characters";
         private static string CharacterUrl(long id) => $"characters/{id}";
-        private static string AnimePicturesUrl(long id) => $"anime/{id}/pictures";
         private static string PeopleUrl(long id) => $"people/{id}";
 
         public static async Task<AnimeFullCacheDto> GetAnimeFullAsync(long malId, CancellationToken token, bool needRelations = false)
@@ -181,23 +180,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     token),
 
                 normalize: res => EpisodeCacheDto.From(res.Data)
-            );
-        }
-
-        public static Task<List<ImagesSetDto>> GetAnimePicturesAsync(long malId, CancellationToken token)
-        {
-            var key = $"pictures:{malId}";
-
-            return GetOrFetchAsync(
-                key,
-                AnimePicturesUrl(malId),
-
-                fetch: () => Instance.GetAnimePicturesAsync(malId, token),
-
-                normalize: res => res.Data
-                    .Select(ImagesSetDto.From)
-                    .Where(x => x != null)
-                    .ToList()
             );
         }
 
@@ -270,6 +252,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
                             ? exp
                             : DateTime.UtcNow.Add(BackupExpiry);
+
+                    if (res?.Data == null) return null;
 
                     foreach (var cha in res.Data)
                     {

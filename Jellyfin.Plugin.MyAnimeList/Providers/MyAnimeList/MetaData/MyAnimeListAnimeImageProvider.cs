@@ -11,7 +11,6 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
-using Microsoft.Extensions.Logging;
 using Season = MediaBrowser.Controller.Entities.TV.Season;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
@@ -69,11 +68,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     return Array.Empty<RemoteImageInfo>();
             }
 
-            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
-            var pictures = await JikanAPI.GetAnimePicturesAsync(aid, cancellationToken).ConfigureAwait(false);
-
             var images = new List<RemoteImageInfo>();
 
+            var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
             var mainImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG);
             if (!string.IsNullOrEmpty(mainImageUrl))
             {
@@ -85,20 +82,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 });
             }
 
-            foreach (var pic in pictures)
-            {
-                var picUrl = ImagesSetDto.GetImageUrl(pic.JPG);
-
-                if (string.IsNullOrEmpty(picUrl) || picUrl == mainImageUrl)
-                    continue;
-
-                images.Add(new RemoteImageInfo
-                {
-                    ProviderName = Name,
-                    Type = ImageType.Primary,
-                    Url = picUrl
-                });
-            }
             return images;
         }
 

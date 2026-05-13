@@ -9,7 +9,6 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
-using Microsoft.Extensions.Logging;
 using Person = MediaBrowser.Controller.Entities.Person;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
@@ -48,15 +47,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (string.IsNullOrEmpty(mainImageUrl))
                 return Array.Empty<RemoteImageInfo>();
 
-            return new[]
-            {
+            return
+            [
                 new RemoteImageInfo
                 {
                     ProviderName = Name,
                     Type = ImageType.Primary,
                     Url = mainImageUrl
                 }
-            };
+            ];
         }
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
