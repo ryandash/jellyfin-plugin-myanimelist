@@ -44,8 +44,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static void MergeEpisodeDetails(EpisodeCacheDto existing, EpisodeCacheDto detailed)
         {
-            existing.Duration ??= detailed.Duration;
-            existing.Synopsis ??= string.IsNullOrWhiteSpace(detailed.Synopsis) ? null : detailed.Synopsis;
+            if (existing == null || detailed == null)
+                return;
+
+            if (existing.EpisodeNumber <= 0)
+                existing.EpisodeNumber = detailed.EpisodeNumber;
+
+            if (string.IsNullOrWhiteSpace(existing.Title))
+                existing.Title = detailed.Title;
+
+            if (string.IsNullOrWhiteSpace(existing.TitleJapanese))
+                existing.TitleJapanese = detailed.TitleJapanese;
+
+            if (string.IsNullOrWhiteSpace(existing.TitleRomanji))
+                existing.TitleRomanji = detailed.TitleRomanji;
+
+            existing.Aired ??= detailed.Aired;
+
+            if (string.IsNullOrWhiteSpace(existing.Url))
+                existing.Url = detailed.Url;
+
+            existing.Duration = detailed.Duration;
+            existing.Synopsis = detailed.Synopsis;
         }
     }
 }

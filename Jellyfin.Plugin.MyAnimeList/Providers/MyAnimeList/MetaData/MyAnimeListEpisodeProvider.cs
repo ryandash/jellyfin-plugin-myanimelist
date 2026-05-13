@@ -52,6 +52,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     if (epResult.Episode.HasValue)
                     {
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(episodeData.Url))
+                        {
+                            _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
+                            return result;
+                        }
                     }
                     else
                     {
@@ -103,8 +108,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                     if (ex.ApiError?.Status is not (HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable))
                     {
-                        _log.LogInformation("No episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                        _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber} Exception: {ex}", malId, episodeNumber, ex);
                     }
+                }
+                if (string.IsNullOrWhiteSpace(episodeData.Url))
+                {
+                    _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                    return result;
                 }
             }
 
