@@ -169,7 +169,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         public static async Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
         {
-            var key = $"{malId}:episode:{episodeNumber}";
+            var key = $"episode:{malId}:{episodeNumber}";
 
             var cached = Cache.Get<EpisodeCacheDto>(key);
 
@@ -194,7 +194,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             if (cached != null && detailed != null)
             {
-                EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
+                cached = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
 
                 Cache.Put(
                     key,
@@ -247,13 +247,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     if (res == null)
                         return null;
 
-                    var expiry =
-                        JikanHttpMetadataStore.TryGetExpiry(
-                            AnimeEpisodesUrl(malId),
-                            out var exp)
-                            ? exp
-                            : DateTime.UtcNow.Add(BackupExpiry);
-
                     var episodes = res
                         .Select(EpisodeCacheDto.From)
                         .Where(x => x != null)
@@ -261,8 +254,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     foreach (var ep in episodes)
                     {
+                        var expiry =
+                        JikanHttpMetadataStore.TryGetExpiry(
+                            AnimeSpecificEpisodesUrl(malId, ep.EpisodeNumber),
+                            out var exp)
+                            ? exp
+                            : DateTime.UtcNow.Add(BackupExpiry);
+
                         Cache.Put(
-                            $"{malId}:episode:{ep.EpisodeNumber}",
+                            $"episode:{malId}:{ep.EpisodeNumber}",
                             ep,
                             expiry);
                     }
@@ -304,7 +304,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var ids = search.Data
                 .Where(a => a.MalId.HasValue)
-                .OrderBy(a => a.MalId.Value)
                 .Select(a => (anime: a, id: a.MalId.Value))
                 .ToList();
 
@@ -322,7 +321,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
 
-            return anime.ToList();
+            return anime.OrderBy(a => a.MalId.Value).ToList();
         }
 
         private static Task<List<AnimeCharacterIdCacheDto>> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)

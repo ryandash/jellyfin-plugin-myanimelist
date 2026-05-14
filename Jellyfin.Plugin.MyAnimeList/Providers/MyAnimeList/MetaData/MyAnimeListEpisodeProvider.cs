@@ -52,9 +52,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     if (epResult.Episode.HasValue)
                     {
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
-                        if (string.IsNullOrWhiteSpace(episodeData.Url))
+                        if (episodeData == null || string.IsNullOrWhiteSpace(episodeData.Url))
                         {
-                            _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
+                            _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
                             return result;
                         }
                     }
@@ -111,21 +111,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber} Exception: {ex}", malId, episodeNumber, ex);
                     }
                 }
-                if (string.IsNullOrWhiteSpace(episodeData.Url))
+                if (episodeData == null || string.IsNullOrWhiteSpace(episodeData.Url))
                 {
-                    _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                    _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
                     return result;
                 }
             }
-
-            if (episodeData == null)
-                return result;
 
             var episodeResult = new EpisodeSearchResult { episode = episodeData };
 
             result.HasMetadata = true;
             result.Item = episodeResult.ToEpisode(anime!.anime?.Episodes?.ToString().Length ?? 4);
-            result.Item.IndexNumber = info.IndexNumber;
             result.Provider = Name;
 
             return result;

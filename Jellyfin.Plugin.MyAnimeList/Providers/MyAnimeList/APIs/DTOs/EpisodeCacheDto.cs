@@ -5,7 +5,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {
     public class EpisodeCacheDto
     {
-        public long EpisodeNumber { get; set; }
+        public int EpisodeNumber { get; set; }
 
         public string Title { get; set; }
 
@@ -32,7 +32,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
             return new EpisodeCacheDto
             {
-                EpisodeNumber = source.MalId,
+                EpisodeNumber = (int) source.MalId,
                 Url = source.Url,
                 Title = source.Title,
                 TitleJapanese = source.TitleJapanese,
@@ -42,10 +42,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             };
         }
 
-        public static void MergeEpisodeDetails(EpisodeCacheDto existing, EpisodeCacheDto detailed)
+        public static EpisodeCacheDto MergeEpisodeDetails(EpisodeCacheDto existing, EpisodeCacheDto detailed)
         {
             if (existing == null || detailed == null)
-                return;
+                return null;
 
             if (existing.EpisodeNumber <= 0)
                 existing.EpisodeNumber = detailed.EpisodeNumber;
@@ -66,6 +66,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
             existing.Duration = detailed.Duration;
             existing.Synopsis = detailed.Synopsis;
+            return existing;
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LiteDB;
-using MessagePack;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
@@ -22,8 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
-        private static readonly MessagePackSerializerOptions Options = MessagePackSerializerOptions.Standard.WithResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
-        private const int CacheSchemaVersion = 3;
+        private const int CacheSchemaVersion = 4;
 
         private class CacheItem
         {
@@ -36,8 +35,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             [BsonId]
             public string Key { get; set; }
 
-            [BsonField]
-            public byte[] Data { get; set; }
+            public string Data { get; set; }
 
             public long ExpiryTicks { get; set; }
         }
@@ -46,7 +44,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             public string Type;
             public string Id;
-            public byte[] Data;
+            public object Value;
             public long ExpiryTicks;
         }
 
@@ -159,7 +157,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         var records = group.Select(x => new CacheRecord
                         {
                             Key = x.Id,
-                            Data = x.Data,
+                            Data = JsonSerializer.Serialize(x.Value),
                             ExpiryTicks = x.ExpiryTicks
                         });
 
@@ -223,19 +221,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             var (type, id) = ParseKey(key);
             var col = _collections.GetOrAdd(type, k => _db.GetCollection<CacheRecord>(k));
             var record = col.FindById(id);
-            if (record == null)
+            if (record is null)
             {
                 return default;
             }
 
-            if (record.ExpiryTicks < now || record.Data == null || record.Data.Length == 0)
+            if (record.ExpiryTicks < now || record.Data == null)
             {
                 col.Delete(id);
                 return default;
             }
             try
             {
-                var value = MessagePackSerializer.Deserialize<T>(record.Data, Options);
+                var value = JsonSerializer.Deserialize<T>(record.Data);
                 if (value is null)
                 {
                     col.Delete(id);
@@ -279,7 +277,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 Type = type,
                 Id = id,
-                Data = MessagePackSerializer.Serialize(value, Options),
+                Value = value,
                 ExpiryTicks = expiryTicks
             });
 
@@ -310,7 +308,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 var records = group.Select(x => new CacheRecord
                 {
                     Key = x.Id,
-                    Data = x.Data,
+                    Data = JsonSerializer.Serialize(x.Value),
                     ExpiryTicks = x.ExpiryTicks
                 });
 
