@@ -16,7 +16,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static PersonDto From(MalImageSubItem source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new PersonDto
             {
@@ -30,7 +30,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static PersonDto From(Person source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new PersonDto
             {

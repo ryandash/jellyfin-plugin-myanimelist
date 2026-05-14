@@ -30,7 +30,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
-            if (info.Path == null || !info.IndexNumber.HasValue)
+            if (info.Path is null || !info.IndexNumber.HasValue)
                 return result;
 
             var enableDebug = _config.EnableDebug;
@@ -52,7 +52,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     if (epResult.Episode.HasValue)
                     {
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
-                        if (episodeData == null || string.IsNullOrWhiteSpace(episodeData.Url))
+                        if (episodeData.Url is null)
                         {
                             _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
                             return result;
@@ -69,7 +69,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 }
             }
 
-            if (episodeData == null)
+            if (episodeData is null)
             {
                 if (_config.ExcludeSpecials && seasonnumber == 0)
                     return result;
@@ -79,7 +79,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false)
                 };
 
-                if (anime?.anime == null || anime.anime?.MalId == null)
+                if (anime?.anime is null || anime.anime?.MalId is null)
                     return result;
 
                 var (episodeNumber, updatedAnime) = await _searchHelper.GetSeasonEpisodeNumberAsync(
@@ -92,7 +92,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                 anime.anime = updatedAnime;
 
-                if (anime.anime == null)
+                if (anime.anime is null)
                     return result;
 
                 var malId = anime.anime.MalId.GetValueOrDefault();
@@ -111,7 +111,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber} Exception: {ex}", malId, episodeNumber, ex);
                     }
                 }
-                if (episodeData == null || string.IsNullOrWhiteSpace(episodeData.Url))
+                if (string.IsNullOrWhiteSpace(episodeData?.Url))
                 {
                     _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
                     return result;

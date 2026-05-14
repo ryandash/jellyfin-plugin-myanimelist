@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             var response = await base.SendAsync(request, cancellationToken);
 
-            if (response != null)
+            if (response is not null)
             {
                 var fullUrl = request.RequestUri.ToString();
 

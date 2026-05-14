@@ -87,7 +87,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         {
             var mappings = await GetMappingsAsync(log, tvdbId, token).ConfigureAwait(false);
             var entry = mappings.FirstOrDefault();
-            if (entry == null)
+            if (entry is null)
             {
                 log.LogInformation($"No mapping found for TVDB ID: {tvdbId}");
                 return null;

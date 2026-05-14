@@ -19,7 +19,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static List<RelatedEntryDto> FilterRelations(ICollection<RelatedEntry> relations)
         {
-            return relations.Where(r => r != null && AllowedTypes.Contains(r.Relation))
+            return relations.Where(r => r is not null && AllowedTypes.Contains(r.Relation))
                     .Select(From).ToList() ?? Empty;
         }
 

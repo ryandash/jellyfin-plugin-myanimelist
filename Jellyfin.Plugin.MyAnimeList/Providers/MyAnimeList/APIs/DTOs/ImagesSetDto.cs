@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static ImagesSetDto From(ImagesSet source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new ImagesSetDto
             {

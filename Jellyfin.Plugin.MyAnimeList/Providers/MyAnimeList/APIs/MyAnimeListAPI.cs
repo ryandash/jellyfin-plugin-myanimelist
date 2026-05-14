@@ -57,8 +57,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
 
             int highestSimilarity = 0;
             var bestItem = (Item)null;
-            var animeCategory = searchResult.categories?.FirstOrDefault(c => c.type == "anime");
-            if (animeCategory == null)
+            var animeCategory = searchResult.categories?.FirstOrDefault(c => c.type is "anime");
+            if (animeCategory is null)
                 return (null, 0);
 
             string normalizedSearch = NormalizeRegex.Replace(searchTerm, string.Empty).ToLowerInvariant();

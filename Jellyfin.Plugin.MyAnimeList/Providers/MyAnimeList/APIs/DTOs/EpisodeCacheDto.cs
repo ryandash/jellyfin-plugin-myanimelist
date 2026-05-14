@@ -28,23 +28,25 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static EpisodeCacheDto From(AnimeEpisode source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new EpisodeCacheDto
             {
-                EpisodeNumber = (int) source.MalId,
+                EpisodeNumber = (int)source.MalId,
                 Url = source.Url,
                 Title = source.Title,
                 TitleJapanese = source.TitleJapanese,
                 TitleRomanji = source.TitleRomanji,
                 Aired = source.Aired,
-                Score = source.Score,
+                Score = source.Score ?? null,
+                Duration = source.Duration ?? null,
+                Synopsis = source.Synopsis ?? null,
             };
         }
 
         public static EpisodeCacheDto MergeEpisodeDetails(EpisodeCacheDto existing, EpisodeCacheDto detailed)
         {
-            if (existing == null || detailed == null)
+            if (existing is null || detailed is null)
                 return null;
 
             if (existing.EpisodeNumber <= 0)

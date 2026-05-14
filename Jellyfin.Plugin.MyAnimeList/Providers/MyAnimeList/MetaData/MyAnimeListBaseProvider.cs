@@ -33,11 +33,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<TItem>();
-            if (info.Path == null || (info is SeasonInfo && info.IndexNumber == 0))
+            if (info.Path is null || (info is SeasonInfo && info.IndexNumber == 0))
                 return result;
 
             var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false);
-            if (anime == null)
+            if (anime is null)
                 return result;
 
             var media = new AnimeObject
@@ -64,7 +64,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             var results = new List<RemoteSearchResult>();
 
             var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, true).ConfigureAwait(false);
-            if (anime == null)
+            if (anime is null)
                 return results;
 
             var searchResult = new AnimeSearchResult { anime = anime };

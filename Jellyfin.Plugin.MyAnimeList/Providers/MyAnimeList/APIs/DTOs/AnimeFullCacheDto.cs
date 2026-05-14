@@ -25,7 +25,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static AnimeFullCacheDto From(AnimeFull source)
         {
-            if (source == null || !source.MalId.HasValue) return null;
+            if (source is null || !source.MalId.HasValue) return null;
 
             return new AnimeFullCacheDto
             {
@@ -39,11 +39,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Episodes = source.Episodes,
                 Type = Normalize(source.Type),
                 Status = Normalize(source.Status),
-                Studios = source.Studios != null && source.Studios.Any()
-                    ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n != null).ToArray()
+                Studios = source.Studios is not null && source.Studios.Any()
+                    ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n is not null).ToArray()
                     : null,
-                Genres = source.Genres != null && source.Genres.Any()
-                    ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n != null).ToArray()
+                Genres = source.Genres is not null && source.Genres.Any()
+                    ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n is not null).ToArray()
                     : null,
                 Synopsis = Normalize(source.Synopsis),
                 Relations = RelatedEntryDto.FilterRelations(source.Relations),
@@ -52,7 +52,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static AnimeFullCacheDto From(Anime source)
         {
-            if (source == null || !source.MalId.HasValue) return null;
+            if (source is null || !source.MalId.HasValue) return null;
 
             return new AnimeFullCacheDto
             {
@@ -66,11 +66,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Episodes = source.Episodes,
                 Type = Normalize(source.Type),
                 Status = Normalize(source.Status),
-                Studios = source.Studios != null && source.Studios.Any()
-                    ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n != null).ToArray()
+                Studios = source.Studios is not null && source.Studios.Any()
+                    ? source.Studios.Select(s => Normalize(s.Name)).Where(n => n is not null).ToArray()
                     : null,
-                Genres = source.Genres != null && source.Genres.Any()
-                    ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n != null).ToArray()
+                Genres = source.Genres is not null && source.Genres.Any()
+                    ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n is not null).ToArray()
                     : null,
                 Synopsis = Normalize(source.Synopsis),
                 Relations = null,

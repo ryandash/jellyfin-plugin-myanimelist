@@ -214,7 +214,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         break;
                 }
 
-                if (title != null && year != null)
+                if (title is not null && year is not null)
                     return;
             }
         }
@@ -293,19 +293,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 var animeWithRelations = await JikanAPI.GetAnimeFullAsync(id, cancellationToken, true).ConfigureAwait(false);
 
                 var relations = animeWithRelations?.Relations;
-                if (relations == null || relations.Count == 0)
+                if (relations is null || relations.Count == 0)
                     return new List<long>(0);
 
                 var result = new List<long>();
 
                 foreach (var r in relations)
                 {
-                    if (r?.Relation == null ||
+                    if (r?.Relation is null ||
                         !r.Relation.Equals(relationType, StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     var entries = r.Entry;
-                    if (entries == null)
+                    if (entries is null)
                         continue;
 
                     foreach (var e in entries)
@@ -342,7 +342,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         .GetAnimeFullAsync(sequelId, cancellationToken)
                         .ConfigureAwait(false);
 
-                    if (anime?.Type == null)
+                    if (anime?.Type is null)
                         continue;
 
                     var priority = GetTypePriority(anime.Type);
@@ -383,10 +383,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             static bool IsSkippable(AnimeFullCacheDto anime)
             {
-                var isPart = anime.Titles?.Any(t => t.Title != null && IsPartTwoOrLater(t.Title)) == true;
+                var isPart = anime.Titles?.Any(t => t.Title is not null && IsPartTwoOrLater(t.Title)) is true;
 
                 var isSpecial = anime.Titles?.Any(t =>
-                    t.Title != null &&
+                    t.Title is not null &&
                     (t.Title.Contains("OVA", StringComparison.OrdinalIgnoreCase) ||
                      (t.Title.Contains("Special", StringComparison.OrdinalIgnoreCase) &&
                       !t.Title.Contains("TV Special", StringComparison.OrdinalIgnoreCase)))) == true;
@@ -419,13 +419,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
 
             var anime = await JikanAPI.GetAnimeFullAsync(malId, cancellationToken).ConfigureAwait(false);
-            if (anime?.MalId == null)
+            if (anime?.MalId is null)
                 return null;
 
             if (anime.Episodes == 1)
             {
                 var next = await GetFirstSequelAsync(anime.MalId.Value).ConfigureAwait(false);
-                if (next != null)
+                if (next is not null)
                     anime = next;
             }
 
@@ -434,7 +434,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             while (currentSeason < seasonNumber)
             {
                 var next = await GetFirstSequelAsync(anime.MalId!.Value).ConfigureAwait(false);
-                if (next == null)
+                if (next is null)
                     break;
 
                 anime = next;
@@ -473,7 +473,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             while (anime.Episodes.HasValue && anime.Episodes.Value > 0 && episodeNumber > anime.Episodes.Value)
             {
                 var sequelAnime = await GetRelatedAnimeAsync("Sequel").ConfigureAwait(false);
-                if (sequelAnime == null || (sequelAnime.Episodes.HasValue && sequelAnime.Episodes.Value == 0))
+                if (sequelAnime is null || (sequelAnime.Episodes.HasValue && sequelAnime.Episodes.Value == 0))
                     break;
 
                 episodeNumber -= anime.Episodes.Value;
@@ -487,7 +487,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (episodeNumber == 0)
             {
                 var prequelAnime = await GetRelatedAnimeAsync("Prequel").ConfigureAwait(false);
-                if (prequelAnime != null && (!prequelAnime.Episodes.HasValue || prequelAnime.Episodes.Value > 0))
+                if (prequelAnime is not null && (!prequelAnime.Episodes.HasValue || prequelAnime.Episodes.Value > 0))
                 {
                     anime = prequelAnime;
                     if (prequelAnime.Episodes.HasValue)
@@ -501,7 +501,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 var sideStories = relations.FirstOrDefault(r =>
                     r.Relation.Equals("Side Story", StringComparison.OrdinalIgnoreCase))?.Entry;
 
-                if (sideStories != null && episodeNumber > 0)
+                if (sideStories is not null && episodeNumber > 0)
                 {
                     var tempEpisodeNumber = episodeNumber;
                     foreach (var sideStory in sideStories)

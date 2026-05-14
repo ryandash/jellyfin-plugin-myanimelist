@@ -9,6 +9,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public string Title { get; set; }
 
         public static TitleEntryDto From(TitleEntry source) =>
-            source == null ? null : new TitleEntryDto { Type = source.Type, Title = source.Title };
+            source is null ? null : new TitleEntryDto { Type = source.Type, Title = source.Title };
     }
 }

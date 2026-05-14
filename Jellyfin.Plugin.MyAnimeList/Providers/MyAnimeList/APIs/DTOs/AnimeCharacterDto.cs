@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static AnimeCharacterDto From(AnimeCharacter source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new AnimeCharacterDto
             {

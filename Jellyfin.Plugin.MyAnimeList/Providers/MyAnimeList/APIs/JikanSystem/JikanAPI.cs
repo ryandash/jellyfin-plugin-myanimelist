@@ -67,7 +67,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 var cached = Cache.Get<TCache>(key);
 
-                if (cached != null)
+                if (cached is not null)
                     return cached;
             }
 
@@ -100,11 +100,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     {
                         var apiResult = await fetch().ConfigureAwait(false);
 
-                        if (apiResult != null)
+                        if (apiResult is not null)
                         {
                             var normalized = normalize(apiResult);
 
-                            if (normalized != null)
+                            if (normalized is not null)
                             {
                                 var expiry =
                                     JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
@@ -149,8 +149,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var cached = Cache.Get<AnimeFullCacheDto>(key);
 
-            if (cached != null &&
-                (!needRelations || cached.Relations != null))
+            if (cached is not null &&
+                (!needRelations || cached.Relations is not null))
             {
                 return cached;
             }
@@ -163,7 +163,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 normalize: res => AnimeFullCacheDto.From(res.Data),
 
-                ignoreCache: cached != null
+                ignoreCache: cached is not null
             );
         }
 
@@ -173,7 +173,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var cached = Cache.Get<EpisodeCacheDto>(key);
 
-            if (cached != null && cached.HasFullDetails)
+            if (cached is not null && cached.HasFullDetails)
             {
                 return cached;
             }
@@ -187,24 +187,40 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     episodeNumber,
                     token),
 
-                normalize: res => EpisodeCacheDto.From(res.Data),
+                normalize: res =>
+                {
+                    EpisodeCacheDto episodeCacheDto = EpisodeCacheDto.From(res.Data);
+                    return episodeCacheDto;
+                }
+                ,
 
                 ignoreCache: true
             );
 
-            if (cached != null && detailed != null)
+            if (detailed is not null)
             {
-                cached = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
+                if (cached is not null)
+                {
+                    cached = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
 
-                Cache.Put(
-                    key,
-                    cached,
-                    DateTime.UtcNow.Add(BackupExpiry));
+                    var expiry =
+                        JikanHttpMetadataStore.TryGetExpiry(
+                            AnimeSpecificEpisodesUrl(malId, episodeNumber),
+                            out var exp)
+                            ? exp
+                            : DateTime.UtcNow.Add(BackupExpiry);
 
-                return cached;
+                    Cache.Put(
+                        key,
+                        cached,
+                        expiry);
+
+                    return cached;
+                }
+                return detailed;
             }
 
-            return detailed ?? cached ?? null;
+            return null;
         }
 
         public static Task<List<EpisodeCacheDto>> GetAnimeEpisodesAsync(long malId, CancellationToken token)
@@ -228,7 +244,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                             page,
                             token);
 
-                        if (res?.Data == null || res.Data.Count == 0)
+                        if (res?.Data is null || res.Data.Count == 0)
                             break;
 
                         allEpisodes.AddRange(res.Data);
@@ -244,12 +260,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 normalize: res =>
                 {
-                    if (res == null)
+                    if (res is null)
                         return null;
 
                     var episodes = res
                         .Select(EpisodeCacheDto.From)
-                        .Where(x => x != null)
+                        .Where(x => x is not null)
                         .ToList();
 
                     foreach (var ep in episodes)
@@ -291,7 +307,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             var key = $"search:{term}";
 
             var cached = Cache.Get<List<long>>(key);
-            if (cached != null)
+            if (cached is not null)
             {
                 var results = await Task.WhenAll(
                     cached.Select(id => GetAnimeFullAsync(id, token, false))
@@ -341,7 +357,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                             ? exp
                             : DateTime.UtcNow.Add(BackupExpiry);
 
-                    if (res?.Data == null) return null;
+                    if (res?.Data is null) return null;
 
                     foreach (var cha in res.Data)
                     {
@@ -350,7 +366,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         {
                             var characterCache = CharacterCacheDto.From(character);
 
-                            if (characterCache != null)
+                            if (characterCache is not null)
                             {
                                 Cache.Put(
                                     $"character:{character.MalId}",
@@ -367,7 +383,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                             {
                                 var personCache = PersonDto.From(va.Person);
 
-                                if (personCache != null)
+                                if (personCache is not null)
                                 {
                                     Cache.Put(
                                         $"person:{person.MalId}",
@@ -380,7 +396,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     return res.Data
                         .Select(AnimeCharacterIdCacheDto.From)
-                        .Where(x => x != null)
+                        .Where(x => x is not null)
                         .OrderBy(x => x.CharacterId)
                         .ToList();
                 });
@@ -415,7 +431,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         normalize: res => PersonDto.From(res.Data)
                     );
 
-                    if (person != null)
+                    if (person is not null)
                     {
                         voiceActors.Add(new VoiceActorEntryDto
                         {
@@ -434,7 +450,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             });
 
             return (await Task.WhenAll(tasks))
-                .Where(x => x?.Character != null)
+                .Where(x => x?.Character is not null)
                 .ToList();
         }
 
@@ -442,14 +458,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>($"characters:{malId}");
 
-            if (cached != null)
+            if (cached is not null)
             {
                 return await HydrateCharactersAsync(cached, token);
             }
 
             var index = await GetAnimeCharacterIndexAsync(malId, token);
 
-            if (index == null)
+            if (index is null)
                 return new List<AnimeCharacterDto>();
 
             Cache.Put(

@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static VoiceActorEntryDto From(VoiceActorEntry source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new VoiceActorEntryDto
             {

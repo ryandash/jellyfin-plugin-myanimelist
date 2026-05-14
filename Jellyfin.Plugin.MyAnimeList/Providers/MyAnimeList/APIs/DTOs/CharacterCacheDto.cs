@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static CharacterCacheDto From(CharacterEntry source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new CharacterCacheDto
             {
@@ -26,7 +26,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static CharacterCacheDto From(Character source)
         {
-            if (source == null) return null;
+            if (source is null) return null;
 
             return new CharacterCacheDto
             {
