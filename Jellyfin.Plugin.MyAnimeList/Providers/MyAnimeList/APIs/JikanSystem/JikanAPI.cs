@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,7 +93,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             async Task<object> FetchAndCache()
             {
-                const int maxAttempts = 5;
+                const int maxAttempts = 2;
 
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
@@ -117,18 +118,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                             }
                         }
                     }
-                    catch (JikanRequestException)
+                    catch (JikanRequestException ex) when (ex.ApiError?.Status == HttpStatusCode.ServiceUnavailable)
                     {
+                        break;
+                    }
+                    catch (JikanRequestException ex) when (ex.ApiError?.Status == HttpStatusCode.InternalServerError)
+                    {
+                        if (attempt < maxAttempts)
+                        {
+                            await Task.Delay(TimeSpan.FromMinutes(5)).ConfigureAwait(false);
+                        }
                     }
                     catch (HttpRequestException)
                     {
-                    }
-
-                    if (attempt < maxAttempts)
-                    {
-                        await Task.Delay(
-                            TimeSpan.FromSeconds(30))
-                            .ConfigureAwait(false);
+                        if (attempt < maxAttempts)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+                        }
                     }
                 }
 
@@ -457,10 +463,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             if (index is null)
                 return new List<AnimeCharacterDto>();
 
+            var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
+                ? exp
+                : DateTime.UtcNow.Add(BackupExpiry);
+
             Cache.Put(
                 $"characters:{malId}",
                 index,
-                DateTime.UtcNow.Add(BackupExpiry));
+                expiry);
 
             return await HydrateCharactersAsync(index, token);
         }
