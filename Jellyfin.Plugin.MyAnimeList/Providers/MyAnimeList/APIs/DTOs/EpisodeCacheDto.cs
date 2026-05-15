@@ -24,7 +24,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public string Synopsis { get; set; }
 
         public bool HasFullDetails => !string.IsNullOrWhiteSpace(Synopsis)
-            && Duration.HasValue;
+             && !string.IsNullOrWhiteSpace(Url) && Duration.HasValue;
 
         public static EpisodeCacheDto From(AnimeEpisode source)
         {
@@ -46,8 +46,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public static EpisodeCacheDto MergeEpisodeDetails(EpisodeCacheDto existing, EpisodeCacheDto detailed)
         {
-            if (existing is null || detailed is null)
-                return null;
+            if (existing is null)
+                return detailed;
+
+            if (detailed is null)
+                return existing;
 
             if (existing.EpisodeNumber <= 0)
                 existing.EpisodeNumber = detailed.EpisodeNumber;

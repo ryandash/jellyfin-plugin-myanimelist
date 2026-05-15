@@ -52,9 +52,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                     if (epResult.Episode.HasValue)
                     {
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
-                        if (episodeData.Url is null)
+                        if (episodeData?.Url is null)
                         {
-                            _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
+                            _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}. Episode data: {EpisodeData}",
+                                malId,
+                                epResult.Episode.Value,
+                                episodeData == null ? "null" : $"Episode={episodeData.EpisodeNumber}, Title={episodeData.Title}, Url={episodeData.Url}, HasFullDetails={episodeData.HasFullDetails}");
                             return result;
                         }
                     }
@@ -113,7 +116,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 }
                 if (string.IsNullOrWhiteSpace(episodeData?.Url))
                 {
-                    _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, episodeNumber);
+                    _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}. Episode data: {EpisodeData}",
+                        malId,
+                        episodeNumber,
+                        episodeData == null ? "null" : $"Episode={episodeData.EpisodeNumber}, Title={episodeData.Title}, Url={episodeData.Url}, HasFullDetails={episodeData.HasFullDetails}");
                     return result;
                 }
             }

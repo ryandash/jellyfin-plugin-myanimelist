@@ -92,7 +92,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             async Task<object> FetchAndCache()
             {
-                const int maxAttempts = 3;
+                const int maxAttempts = 5;
 
                 for (int attempt = 1; attempt <= maxAttempts; attempt++)
                 {
@@ -127,7 +127,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     if (attempt < maxAttempts)
                     {
                         await Task.Delay(
-                            TimeSpan.FromSeconds(attempt * 2))
+                            TimeSpan.FromSeconds(30))
                             .ConfigureAwait(false);
                     }
                 }
@@ -187,37 +187,26 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     episodeNumber,
                     token),
 
-                normalize: res =>
-                {
-                    EpisodeCacheDto episodeCacheDto = EpisodeCacheDto.From(res.Data);
-                    return episodeCacheDto;
-                }
-                ,
+                normalize: res => EpisodeCacheDto.From(res.Data),
 
                 ignoreCache: true
             );
 
-            if (detailed is not null)
+            // Merge cached and detailed data. If either is null, the merge will return the non-null one
+            var merged = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
+
+            if (merged is not null)
             {
-                if (cached is not null)
-                {
-                    cached = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
+                var expiry =
+                    JikanHttpMetadataStore.TryGetExpiry(
+                        AnimeSpecificEpisodesUrl(malId, episodeNumber),
+                        out var exp)
+                        ? exp
+                        : DateTime.UtcNow.Add(BackupExpiry);
 
-                    var expiry =
-                        JikanHttpMetadataStore.TryGetExpiry(
-                            AnimeSpecificEpisodesUrl(malId, episodeNumber),
-                            out var exp)
-                            ? exp
-                            : DateTime.UtcNow.Add(BackupExpiry);
+                Cache.Put(key, merged, expiry);
 
-                    Cache.Put(
-                        key,
-                        cached,
-                        expiry);
-
-                    return cached;
-                }
-                return detailed;
+                return merged;
             }
 
             return null;
@@ -260,7 +249,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 normalize: res =>
                 {
-                    if (res is null)
+                    if (res.Count == 0)
                         return null;
 
                     var episodes = res
