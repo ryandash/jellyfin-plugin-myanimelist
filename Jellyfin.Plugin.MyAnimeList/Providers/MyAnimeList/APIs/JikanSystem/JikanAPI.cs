@@ -22,16 +22,32 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static readonly object InitLock = new();
         private static bool _initialized;
 
-        private static readonly HttpClient HttpClient =
-            new(new JikanHeaderHandler(new HttpClientHandler()))
+        private static Jikan CreateClient(string baseUrl)
+        {
+            var http = new HttpClient(new JikanHeaderHandler(new HttpClientHandler()))
             {
-                BaseAddress = new Uri("https://api.jikan.moe/v4/")
+                BaseAddress = new Uri(baseUrl)
             };
 
-        private static readonly Lazy<Jikan> JikanInstance =
-            new(() => new Jikan(new JikanClientConfiguration(), HttpClient));
+            return new Jikan(new JikanClientConfiguration(), http);
+        }
 
-        private static Jikan Instance => JikanInstance.Value;
+        private static readonly Lazy<Jikan> PrimaryJikan =
+            new(() => CreateClient("http://jikanapi.freemyip.com:8080/v4/"));
+
+        private static readonly Lazy<Jikan> BackupJikan =
+            new(() => CreateClient("https://api.jikan.moe/v4/"));
+        private static async Task<T> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
+        {
+            try
+            {
+                return await action(PrimaryJikan.Value);
+            }
+            catch
+            {
+                return await action(BackupJikan.Value);
+            }
+        }
 
         private static ICacheStore Cache;
 
@@ -74,9 +90,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var lazyTask = _inFlight.GetOrAdd(
                 key,
-                _ => new Lazy<Task<object>>(
-                    () => FetchAndCache(),
-                    LazyThreadSafetyMode.ExecutionAndPublication)
+                _ => new Lazy<Task<object>>(() => FetchAndCache(), LazyThreadSafetyMode.ExecutionAndPublication)
             );
 
             try
@@ -87,8 +101,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
             finally
             {
-                _inFlight.TryRemove(
-                    new KeyValuePair<string, Lazy<Task<object>>>(key, lazyTask));
+                _inFlight.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(key, lazyTask));
             }
 
             async Task<object> FetchAndCache()
@@ -107,10 +120,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                             if (normalized is not null)
                             {
-                                var expiry =
-                                    JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
-                                        ? exp
-                                        : DateTime.UtcNow.Add(BackupExpiry);
+                                var expiry = JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
+                                    ? exp
+                                    : DateTime.UtcNow.Add(BackupExpiry);
 
                                 Cache.Put(key, normalized, expiry);
 
@@ -165,7 +177,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 AnimeFullUrl(malId),
 
-                fetch: () => Instance.GetAnimeFullDataAsync(malId, token),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeFullDataAsync(malId, token)),
 
                 normalize: res => AnimeFullCacheDto.From(res.Data),
 
@@ -188,10 +200,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 AnimeSpecificEpisodesUrl(malId, episodeNumber),
 
-                fetch: () => Instance.GetAnimeEpisodeAsync(
-                    malId,
-                    episodeNumber,
-                    token),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token)),
 
                 normalize: res => EpisodeCacheDto.From(res.Data),
 
@@ -203,12 +212,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             if (merged is not null)
             {
-                var expiry =
-                    JikanHttpMetadataStore.TryGetExpiry(
-                        AnimeSpecificEpisodesUrl(malId, episodeNumber),
-                        out var exp)
-                        ? exp
-                        : DateTime.UtcNow.Add(BackupExpiry);
+                var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeSpecificEpisodesUrl(malId, episodeNumber), out var exp)
+                    ? exp
+                    : DateTime.UtcNow.Add(BackupExpiry);
 
                 Cache.Put(key, merged, expiry);
 
@@ -234,10 +240,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     while (true)
                     {
-                        var res = await Instance.GetAnimeEpisodesAsync(
-                            malId,
-                            page,
-                            token);
+                        var res = await TryPrimaryThenBackup(j => j.GetAnimeEpisodesAsync(malId, page, token));
 
                         if (res?.Data is null || res.Data.Count == 0)
                             break;
@@ -258,17 +261,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     if (res.Count == 0)
                         return null;
 
-                    var episodes = res
-                        .Select(EpisodeCacheDto.From)
-                        .Where(x => x is not null)
-                        .ToList();
+                    var episodes = res.Select(EpisodeCacheDto.From).Where(x => x is not null).ToList();
 
                     foreach (var ep in episodes)
                     {
-                        var expiry =
-                        JikanHttpMetadataStore.TryGetExpiry(
-                            AnimeSpecificEpisodesUrl(malId, ep.EpisodeNumber),
-                            out var exp)
+                        var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeSpecificEpisodesUrl(malId, ep.EpisodeNumber), out var exp)
                             ? exp
                             : DateTime.UtcNow.Add(BackupExpiry);
 
@@ -291,7 +288,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 PeopleUrl(malId),
 
-                fetch: () => Instance.GetPersonAsync(malId, token),
+                fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token)),
 
                 normalize: res => PersonDto.From(res.Data)
             );
@@ -311,12 +308,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 return results.OrderBy(x => x.MalId).ToList();
             }
 
-            var search = await Instance.SearchAnimeAsync(term, token);
+            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(term, token));
 
-            var ids = search.Data
-                .Where(a => a.MalId.HasValue)
-                .Select(a => (anime: a, id: a.MalId.Value))
-                .ToList();
+            var ids = search.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
 
             var anime = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
@@ -343,14 +337,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 AnimeCharactersUrl(malId),
 
-                fetch: () => Instance.GetAnimeCharactersAsync(malId, token),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeCharactersAsync(malId, token)),
 
                 normalize: res =>
                 {
-                    var expiry =
-                        JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
-                            ? exp
-                            : DateTime.UtcNow.Add(BackupExpiry);
+                    var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
+                        ? exp
+                        : DateTime.UtcNow.Add(BackupExpiry);
 
                     if (res?.Data is null) return null;
 
@@ -389,11 +382,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         }
                     }
 
-                    return res.Data
-                        .Select(AnimeCharacterIdCacheDto.From)
-                        .Where(x => x is not null)
-                        .OrderBy(x => x.CharacterId)
-                        .ToList();
+                    return res.Data.Select(AnimeCharacterIdCacheDto.From).Where(x => x is not null).OrderBy(x => x.CharacterId).ToList();
                 });
         }
 
@@ -406,9 +395,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     $"character:{charID}",
                     CharacterUrl(charID),
 
-                    fetch: () => Instance.GetCharacterAsync(
-                        charID,
-                        token),
+                    fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(charID, token)),
 
                     normalize: res => CharacterCacheDto.From(res.Data)
                 );
@@ -421,7 +408,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         $"person:{personId}",
                         PeopleUrl(personId),
 
-                        fetch: () => Instance.GetPersonAsync(personId, token),
+                        fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(personId, token)),
 
                         normalize: res => PersonDto.From(res.Data)
                     );
@@ -444,9 +431,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 };
             });
 
-            return (await Task.WhenAll(tasks))
-                .Where(x => x?.Character is not null)
-                .ToList();
+            return (await Task.WhenAll(tasks)).Where(x => x?.Character is not null).ToList();
         }
 
         public static async Task<List<AnimeCharacterDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
