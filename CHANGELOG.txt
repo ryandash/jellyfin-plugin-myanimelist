@@ -1,63 +1,13 @@
-279c259 Update JikanAPI.cs
-
-- Adjust delay based on exception types
-
-72fca4e Improve episode responses
-
-- Check if episode data and episode url data is missing and treat that as missing data
-
-- Perform more retries and with longer waits to try and avoid missing data
-
-d26f5f0 Fix some equals checks
-
-- Change == to is and != to is not for null checks
-
-9827ee2 Refactor + cleanup
-
-- Remove MessagePack (did not benefit this scenario enough)
-
-- Fix EpisodeCacheDTO to return merged data
-
-- bump cacheSchemaVersion
-
-- minor cleanup
-
-11cc8ae Update Image Provider
-
-- Remove episodes from image provider (mal does not have episode images so this was returning bad data)
-
-- Combine providers together
-
-de85fdb Handle missing episode URL
-
-- Handle missing episode URL with better log info
-
-c727595 Anime Episodes improvement
-
-- Get all anime episodes information and then fill in missing information if available. Extra benefit of episode scores now being added.
-
-- Lazy fetch all anime episodes for each season before getting individual episodes (this guarantees some information)
-
-802bdd7 Remove GetAnimePicturesAsync
-
-- Remove GetAnimePicturesAsync because there are a lot of bad responses due to missing Jikan cache and a significant amount of overhead to wait for Jikan to get the data.
-
-b5fa134 Update LiteDbCacheStore.cs
-
-- bump CacheSchemaVersion to handle new DTO changes
-
-7462c3c People Images provider + use httpfactory
+4cbe2ff Fix missing result data
 
 - Version bump
 
-- Use httpfactory instead of centralized GetHttpClient for httpclients
+- Pass through basic data if null or if only provider
 
-- Create MyAnimeListPeopleImageProvider  class to handle person images
+544da3d Self hosted Jikan REST API
 
-- Seperate PersonDto info from VoiceActorEntryDto to allow saving each PersonDto in the database for easy lookup
+- Use my own Jikan REST API and treat the main public Jikan API as backup
 
-- Move GetImageUrl into the ImagesSetDto to make the function easier to call globally
+- Minor cleanup
 
-- Fix integration tests
-
-f8477e7 Update manifest
+318480c Update manifest
