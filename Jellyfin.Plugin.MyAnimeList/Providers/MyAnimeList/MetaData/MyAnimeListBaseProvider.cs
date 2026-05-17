@@ -28,11 +28,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             _httpClientFactory = httpClientFactory;
         }
 
-        protected abstract TItem ConvertToItem(AnimeObject media);
+        protected abstract TItem ConvertToItem(AnimeObject media, ItemLookupInfo info);
 
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<TItem>();
+            result.HasMetadata = true;
+            result.Item = new TItem
+            {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                Name = info.Name,
+                OriginalTitle = info.OriginalTitle
+            };
+
             if (info.Path is null || (info is SeasonInfo && info.IndexNumber == 0))
                 return result;
 
@@ -51,8 +60,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _ = await JikanAPI.GetAnimeEpisodesAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false);
             }
 
-            result.HasMetadata = true;
-            result.Item = ConvertToItem(media);
+            result.Item = ConvertToItem(media, info);
             result.People = media.GetPeopleInfo();
             result.Provider = Name;
 

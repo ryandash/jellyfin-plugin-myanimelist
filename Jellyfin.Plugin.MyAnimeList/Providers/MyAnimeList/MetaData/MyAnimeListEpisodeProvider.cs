@@ -30,6 +30,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Episode>();
+            result.HasMetadata = true;
+            result.Item = new Episode
+            {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                IndexNumberEnd = info.IndexNumberEnd,
+                Name = info.Name,
+                OriginalTitle = info.OriginalTitle
+            };
+
             if (info.Path is null || !info.IndexNumber.HasValue)
                 return result;
 
@@ -58,7 +68,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                                 malId,
                                 epResult.Episode.Value,
                                 episodeData == null ? "null" : $"Episode={episodeData.EpisodeNumber}, Title={episodeData.Title}, Url={episodeData.Url}, HasFullDetails={episodeData.HasFullDetails}");
-                            return result;
                         }
                     }
                     else
@@ -102,7 +111,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                 try
                 {
-                    episodeData = anime.anime.Episodes != 1
+                    episodeData = ((anime.anime.Episodes ?? 0) > 1)
                         ? await JikanAPI.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false)
                         : anime.toEpisodeData();
                 }
@@ -120,20 +129,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         malId,
                         episodeNumber,
                         episodeData == null ? "null" : $"Episode={episodeData.EpisodeNumber}, Title={episodeData.Title}, Url={episodeData.Url}, HasFullDetails={episodeData.HasFullDetails}");
-                    return result;
                 }
+            }
+
+            if (episodeData == null)
+            {
+                return result;
             }
 
             var episodeResult = new EpisodeSearchResult { episode = episodeData };
 
-            result.HasMetadata = true;
-            result.Item = episodeResult.ToEpisode(anime!.anime?.Episodes?.ToString().Length ?? 4);
+            result.Item = episodeResult.ToEpisode(info, anime!.anime?.Episodes?.ToString().Length ?? 4);
             result.Provider = Name;
 
             return result;
         }
 
-        protected override Episode ConvertToItem(AnimeObject media)
+        protected override Episode ConvertToItem(AnimeObject media, ItemLookupInfo info)
         {
             throw new NotImplementedException();
         }

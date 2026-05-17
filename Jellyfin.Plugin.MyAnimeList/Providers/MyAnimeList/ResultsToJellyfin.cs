@@ -7,6 +7,7 @@ using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 
@@ -36,10 +37,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        internal Episode ToEpisode(int totalDigits)
+        internal Episode ToEpisode(EpisodeInfo info, int totalDigits)
         {
             return new Episode
             {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                IndexNumberEnd = info.IndexNumberEnd,
+
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, episode.Url } },
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
@@ -192,11 +197,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToArray()
             ?? Array.Empty<string>();
 
-        public Series ToSeries()
+        public Series ToSeries(SeriesInfo info)
         {
             var duration = GetDuration(anime.Duration);
             return new Series
             {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
@@ -218,10 +226,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }; ;
         }
 
-        public Movie ToMovie()
+        public Movie ToMovie(MovieInfo info)
         {
             return new Movie
             {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
@@ -235,11 +246,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        public Season ToSeason()
+        public Season ToSeason(SeasonInfo info)
         {
             var duration = GetDuration(anime.Duration);
             return new Season
             {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
                 OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
                 Overview = anime.Synopsis,
