@@ -91,7 +91,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: ncipollo/release-action@v1.20.0
+        uses: ncipollo/release-action@v1
         with:
           tag: v${{ env.VERSION }}
           name: "Version ${{ env.VERSION }}"
