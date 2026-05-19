@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
-        private const int CacheSchemaVersion = 4;
+        private const int CacheSchemaVersion = 5;
 
         private class CacheItem
         {
@@ -86,18 +86,26 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 try
                 {
-                    Directory.Delete(path, recursive: true);
+                    _db?.Dispose();
                 }
-                catch
-                {
-                }
+                catch { }
 
-                Directory.CreateDirectory(path);
+                try
+                {
+                    if (Directory.Exists(path))
+                    {
+                        foreach (var file in Directory.GetFiles(path))
+                        {
+                            try { File.Delete(file); } catch { }
+                        }
+                    }
+                }
+                catch { }
 
                 File.WriteAllText(versionFile, CacheSchemaVersion.ToString());
             }
 
-            _db = new LiteDatabase($"Filename={path}\\cache.db;Connection=shared;");
+            _db = new LiteDatabase($"Filename={path}\\cache_v{CacheSchemaVersion}.db;Connection=shared;");
 
             _workerTask = Task.Run(ProcessQueue);
         }
@@ -215,30 +223,32 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             if (disableLocalCache || _db is null)
             {
-                return default(T);
+                return default;
             }
 
             var (type, id) = ParseKey(key);
             var col = _collections.GetOrAdd(type, k => _db.GetCollection<CacheRecord>(k));
-            var record = col.FindById(id);
-            if (record is null)
-            {
-                return default;
-            }
 
-            if (record.ExpiryTicks < now || record.Data is null)
-            {
-                col.Delete(id);
-                return default;
-            }
             try
             {
+                var record = col.FindById(id);
+
+                if (record is null ||
+                    record.ExpiryTicks < now ||
+                    record.Data is null)
+                {
+                    col.Delete(id);
+                    return default;
+                }
+
                 var value = JsonSerializer.Deserialize<T>(record.Data);
+
                 if (value is null)
                 {
                     col.Delete(id);
                     return default;
                 }
+
                 _memory[key] = new CacheItem
                 {
                     Value = value,
@@ -249,7 +259,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
             catch
             {
-                col.Delete(id);
+                try
+                {
+                    col.Delete(id);
+                }
+                catch
+                {
+                }
+
                 return default;
             }
         }
