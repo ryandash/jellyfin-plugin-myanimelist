@@ -1,13 +1,9 @@
-4cbe2ff Fix missing result data
+e109e95 Update Jellyfin.Plugin.MyAnimeList.csproj
 
 - Version bump
 
-- Pass through basic data if null or if only provider
+b9019c4 Update LiteDbCacheStore.cs
 
-544da3d Self hosted Jikan REST API
+- Handle update situation where old Jellyfin plugin is still holding onto database file preventing deleting
 
-- Use my own Jikan REST API and treat the main public Jikan API as backup
-
-- Minor cleanup
-
-318480c Update manifest
+87a7d57 Update manifest
