@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,7 +61,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }
 
             result.Item = ConvertToItem(result.Item, media, info);
-            result.People = media.GetPeopleInfo(result.People.ToList());
+            var existingPeople = result.People ?? new List<PersonInfo>();
+            result.People = media.GetPeopleInfo(existingPeople);
             result.Provider = Name;
 
             return result;

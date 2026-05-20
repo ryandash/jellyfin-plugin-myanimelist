@@ -182,13 +182,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return string.IsNullOrWhiteSpace(s) ? string.Empty : s.Trim().ToLowerInvariant();
         }
 
-        public List<PersonInfo> GetPeopleInfo(List<PersonInfo> existingPeople)
+        public List<PersonInfo> GetPeopleInfo(IEnumerable<PersonInfo> existingPeople)
         {
-            existingPeople ??= new List<PersonInfo>();
+            var people = existingPeople?.ToList() ?? new List<PersonInfo>();
 
             var lookup = new Dictionary<(string Name, string Role), PersonInfo>();
 
-            foreach (var p in existingPeople)
+            foreach (var p in people)
             {
                 var key = (Normalize(p.Name), Normalize(p.Role));
 
@@ -235,14 +235,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 }
                     };
 
-                    existingPeople.Add(newPerson);
+                    people.Add(newPerson);
                     lookup[key] = newPerson;
                 }
             }
 
             int limit = config.MaxPeople > 0 ? config.MaxPeople : int.MaxValue;
 
-            return existingPeople.Take(limit).ToList();
+            return people.Take(limit).ToList();
         }
 
         public string[] GetGenres(string[] existingGenres)
