@@ -1,9 +1,23 @@
-e109e95 Update Jellyfin.Plugin.MyAnimeList.csproj
+32a1d16 Potential Null
 
-- Version bump
+- handle potential null
 
-b9019c4 Update LiteDbCacheStore.cs
+4383abb Handle more nulls
 
-- Handle update situation where old Jellyfin plugin is still holding onto database file preventing deleting
+- Minor cleanup
 
-87a7d57 Update manifest
+- Handle some more null cases
+
+- slightly improve exception handling
+
+097071f New metadata to Existing
+
+- Change from creating new metadata to adding to existing metadata
+
+bef7674 Disable fallback by default
+
+- Disable falling back to best attempt search result by default if Jikan search failed. This is now a setting that the user enables
+
+8b30b12 Update build and publish.yaml
+
+2538431 Update manifest
