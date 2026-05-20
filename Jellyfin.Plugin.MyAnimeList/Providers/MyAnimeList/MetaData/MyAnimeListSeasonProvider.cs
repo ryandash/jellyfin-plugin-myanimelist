@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
         }
 
-        protected override Season ConvertToItem(AnimeObject media, ItemLookupInfo info)
-            => media.ToSeason(info as SeasonInfo);
+        protected override Season ConvertToItem(Season existing, AnimeObject media, ItemLookupInfo info)
+            => media.ToSeason(existing, info as SeasonInfo);
     }
 }

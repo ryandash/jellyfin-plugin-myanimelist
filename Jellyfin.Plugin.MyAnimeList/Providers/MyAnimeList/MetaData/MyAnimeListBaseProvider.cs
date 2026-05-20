@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             _httpClientFactory = httpClientFactory;
         }
 
-        protected abstract TItem ConvertToItem(AnimeObject media, ItemLookupInfo info);
+        protected abstract TItem ConvertToItem(TItem existing, AnimeObject media, ItemLookupInfo info);
 
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
@@ -60,8 +61,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _ = await JikanAPI.GetAnimeEpisodesAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false);
             }
 
-            result.Item = ConvertToItem(media, info);
-            result.People = media.GetPeopleInfo();
+            result.Item = ConvertToItem(result.Item, media, info);
+            result.People = media.GetPeopleInfo(result.People.ToList());
             result.Provider = Name;
 
             return result;

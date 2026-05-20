@@ -139,13 +139,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             var episodeResult = new EpisodeSearchResult { episode = episodeData };
 
-            result.Item = episodeResult.ToEpisode(info, anime!.anime?.Episodes?.ToString().Length ?? 4);
+            result.Item = episodeResult.ToEpisode(result.Item, info, anime!.anime?.Episodes?.ToString().Length ?? 4);
             result.Provider = Name;
 
             return result;
         }
 
-        protected override Episode ConvertToItem(AnimeObject media, ItemLookupInfo info)
+        protected override Episode ConvertToItem(Episode existing, AnimeObject media, ItemLookupInfo info)
         {
             throw new NotImplementedException();
         }
