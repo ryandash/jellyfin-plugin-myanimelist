@@ -25,6 +25,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         internal static RelatedEntryDto From(RelatedEntry entry)
         {
+            if (entry is null) return null;
+
             return new RelatedEntryDto
             {
                 Relation = entry.Relation,

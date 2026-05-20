@@ -1,4 +1,5 @@
 using System;
+using JikanDotNet;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {
@@ -8,7 +9,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public DateTime? To { get; set; }
 
-        public static TimePeriodDto Convert(JikanDotNet.TimePeriod source)
+        public static TimePeriodDto Convert(TimePeriod source)
         {
             return source is null ? null : new TimePeriodDto { From = source.From?.DateTime, To = source.To?.DateTime };
         }

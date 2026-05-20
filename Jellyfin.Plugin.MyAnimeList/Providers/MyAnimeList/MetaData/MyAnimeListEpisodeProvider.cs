@@ -115,14 +115,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         ? await JikanAPI.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false)
                         : anime.toEpisodeData();
                 }
-                catch (JikanRequestException ex)
+                catch (JikanRequestException ex) when (ex.ApiError?.Status is not (HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable))
                 {
-
-                    if (ex.ApiError?.Status is not (HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable))
-                    {
-                        _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber} Exception: {ex}", malId, episodeNumber, ex);
-                    }
+                    _log.LogError("Failed to get episode data for MAL ID {MalId}, episode {EpisodeNumber} Exception: {ex}", malId, episodeNumber, ex);
                 }
+                catch (JikanRequestException)
+                {
+                }
+                catch (HttpRequestException)
+                {
+                }
+
                 if (string.IsNullOrWhiteSpace(episodeData?.Url))
                 {
                     _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}. Episode data: {EpisodeData}",
