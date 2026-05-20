@@ -64,8 +64,8 @@
                             <span>Ignore episode-specific metadata when fetching new data</span>
                         </label>
                         <label class="emby-checkbox-label">
-                            <input id="chkIgnoreBestAttempt" name="chkIgnoreBestAttempt" type="checkbox" is="emby-checkbox" />
-                            <span>Disable fallback to the closest matching search result.</span>
+                            <input id="chkEnableBestAttempt" name="chkEnableBestAttempt" type="checkbox" is="emby-checkbox" />
+                            <span>Enable fallback to the closest matching search result.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
@@ -110,7 +110,7 @@
 
                 document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
                 document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
-                document.getElementById('chkIgnoreBestAttempt').checked = config.IgnoreBestAttempt;
+                document.getElementById('chkEnableBestAttempt').checked = config.EnableBestAttempt;
                 document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
                 document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
                 document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
@@ -134,7 +134,7 @@
 
                 config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
                 config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
-                config.IgnoreBestAttempt = document.getElementById('chkIgnoreBestAttempt').checked;
+                config.EnableBestAttempt = document.getElementById('chkEnableBestAttempt').checked;
                 config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
                 config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
                 config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;

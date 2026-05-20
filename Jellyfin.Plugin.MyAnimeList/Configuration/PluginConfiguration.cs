@@ -43,7 +43,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public int MaxGenres { get; set; }
         public bool IgnoreMetadata { get; set; }
         public bool IgnoreEpisodeMetadata { get; set; }
-        public bool IgnoreBestAttempt { get; set; }
+        public bool EnableBestAttempt { get; set; }
         public bool ExcludeSpecials { get; set; }
         public bool DisableLocalCache { get; set; }
         public bool UseExternalIDs { get; set; }

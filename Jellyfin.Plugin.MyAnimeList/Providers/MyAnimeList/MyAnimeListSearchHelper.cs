@@ -96,7 +96,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
             else
             {
-                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, searchName, info is MovieInfo, _config.IgnoreBestAttempt, cancellationToken).ConfigureAwait(false);
+                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, searchName, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
                 if (!malIdFromName.HasValue)
                 {
                     if (enableDebug) _log.LogError("Could not find MalID for: {searchName}", searchName);
@@ -219,7 +219,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
         }
 
-        private async Task<(long?, int)> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool ignoreBestAttempt, CancellationToken cancellationToken)
+        private async Task<(long?, int)> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool enableBestAttempt, CancellationToken cancellationToken)
         {
             ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
@@ -281,9 +281,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (bestMalId.HasValue)
                 return (bestMalId, bestSimilarity);
 
-            return ignoreBestAttempt
-                ? (null, 0)
-                : await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClientFactory, cancellationToken).ConfigureAwait(false);
+            return enableBestAttempt
+                ? await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClientFactory, cancellationToken).ConfigureAwait(false)
+                : (null, 0);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int similarityConfidence, int seasonNumber, CancellationToken cancellationToken)
