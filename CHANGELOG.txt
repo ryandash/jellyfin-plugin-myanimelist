@@ -1,23 +1,29 @@
-32a1d16 Potential Null
+58d054d Fix for NSFW content + Minor improvements
 
-- handle potential null
+- Fix for NSFW content during Jikan search and backup search
 
-4383abb Handle more nulls
+- Add option to enable NSFW content
+
+- Cleaner cache file version check
+
+- Add more debug log info
+
+733912c More debug info
+
+- Add more debug log information
 
 - Minor cleanup
 
-- Handle some more null cases
+7a36283 Simplify results + improve tests
 
-- slightly improve exception handling
+- Simplify returned results
 
-097071f New metadata to Existing
+- Improve integration test logs
 
-- Change from creating new metadata to adding to existing metadata
+- Auto cleaned imports
 
-bef7674 Disable fallback by default
+- Fix Plugin Configuration saving. No longer requires a restart to apply
 
-- Disable falling back to best attempt search result by default if Jikan search failed. This is now a setting that the user enables
+- Fix for occasional bad cache results from main Jikan API search
 
-8b30b12 Update build and publish.yaml
-
-2538431 Update manifest
+f473a13 Update manifest

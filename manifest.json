@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "6.6.5.1",
+        "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v6.6.5.1",
+        "targetAbi": "",
+        "sourceUrl": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/download/v6.6.5.1/myanimelist_6.6.5.1.zip",
+        "checksum": "8840e8f2205de59554345382dbcf8ab9",
+        "timestamp": "2026-05-25T15:33:48Z"
+      },
+      {
         "version": "6.6.5.0",
         "changelog": "https://github.com/ryandash/jellyfin-plugin-myanimelist/releases/tag/v6.6.5.0",
         "targetAbi": "",
