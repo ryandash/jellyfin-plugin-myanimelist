@@ -1,4 +1,5 @@
 using JikanDotNet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,6 +13,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public ImagesSetDto Images { get; set; }
         public TimePeriodDto Aired { get; set; }
         public string Duration { get; set; }
+        public bool NSFW { get; set; }
         public double? Score { get; set; }
         public int? Episodes { get; set; }
         public string Type { get; set; }
@@ -22,6 +24,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public List<RelatedEntryDto> Relations { get; set; }
 
         private static string Normalize(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+        private static readonly HashSet<string> NSFWGenres = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Erotica",
+            "Ecchi",
+            "Hentai"
+        };
 
         public static AnimeFullCacheDto From(AnimeFull source)
         {
@@ -45,6 +54,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Genres = source.Genres is not null && source.Genres.Any()
                     ? source.Genres.Select(g => Normalize(g.Name)).Where(n => n is not null).ToArray()
                     : null,
+                NSFW = source.Genres?.Any(g => !string.IsNullOrWhiteSpace(g.Name) && NSFWGenres.Contains(g.Name)) ?? false,
                 Synopsis = Normalize(source.Synopsis),
                 Relations = RelatedEntryDto.FilterRelations(source.Relations),
             };

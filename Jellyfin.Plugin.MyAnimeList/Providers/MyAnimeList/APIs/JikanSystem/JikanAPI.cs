@@ -68,8 +68,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 var baseDir = Path.Combine(paths.CachePath, "myanimelist");
                 Directory.CreateDirectory(baseDir);
 
-                BackupExpiry = TimeSpan.FromDays(_config.cacheBackupOtherTime);
-                SearchExpiry = TimeSpan.FromMinutes(_config.cacheSearchTime);
+                BackupExpiry = TimeSpan.FromDays(_config.CacheBackupOtherTime);
+                SearchExpiry = TimeSpan.FromMinutes(_config.CacheSearchTime);
 
                 Cache = new LiteDbCacheStore(baseDir, _config.DisableLocalCache);
             }
@@ -167,8 +167,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             var cached = Cache.Get<AnimeFullCacheDto>(key);
 
-            if (cached is not null &&
-                (!needRelations || cached.Relations is not null))
+            if (cached is not null && (!needRelations || cached.Relations is not null))
             {
                 return cached;
             }
@@ -294,9 +293,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
-        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, CancellationToken token)
+        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, bool nsfw, CancellationToken token)
         {
-            var key = $"search:{term}";
+            var key = $"search:{term}:nsfw:{nsfw}";
 
             var cached = Cache.Get<List<long>>(key);
             if (cached is not null)
@@ -311,7 +310,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             AnimeSearchConfig searchConfig = new AnimeSearchConfig
             {
                 Query = term,
-                Page = 1
+                Page = 1,
+                Sfw = !nsfw
             };
             var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
 

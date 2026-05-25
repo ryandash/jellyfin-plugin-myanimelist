@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
-        private const int CacheSchemaVersion = 5;
+        private const int CacheSchemaVersion = 6;
 
         private class CacheItem
         {
@@ -56,53 +56,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             if (disableLocalCache) return;
 
-            var versionFile = Path.Combine(path, "cache.version");
-
-            bool rebuild = false;
-
-            try
+            foreach (var file in Directory.GetFiles(path))
             {
-                if (!File.Exists(versionFile))
+                if (!file.EndsWith($"cache_v{CacheSchemaVersion}.db"))
                 {
-                    rebuild = true;
+                    try { File.Delete(file); } catch { }
                 }
-                else
-                {
-                    var text = File.ReadAllText(versionFile);
-
-                    if (!int.TryParse(text, out var version) ||
-                        version is not CacheSchemaVersion)
-                    {
-                        rebuild = true;
-                    }
-                }
-            }
-            catch
-            {
-                rebuild = true;
-            }
-
-            if (rebuild)
-            {
-                try
-                {
-                    _db?.Dispose();
-                }
-                catch { }
-
-                try
-                {
-                    if (Directory.Exists(path))
-                    {
-                        foreach (var file in Directory.GetFiles(path))
-                        {
-                            try { File.Delete(file); } catch { }
-                        }
-                    }
-                }
-                catch { }
-
-                File.WriteAllText(versionFile, CacheSchemaVersion.ToString());
             }
 
             _db = new LiteDatabase($"Filename={path}\\cache_v{CacheSchemaVersion}.db;Connection=shared;");

@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         }
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
-        public static async Task<(long?, int)> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
+        public static async Task<(long?, int)> GetBestAttemptId(string searchTerm, bool isMovie, bool hasParsedYear, int parsedYear, bool enableNSFW, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
         {
             string url = $"{MyAnimeListSearchApi}{Uri.EscapeDataString(searchTerm)}";
 
@@ -67,6 +67,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
             {
                 if (!mediaTypeCondition(item.payload.media_type)) continue;
                 AnimeFullCacheDto anime = await JikanAPI.GetAnimeFullAsync(item.id, cancellationToken).ConfigureAwait(false);
+                if (anime.NSFW && !enableNSFW) continue;
+
                 if (hasParsedYear)
                 {
                     int? animeYear = anime.Aired?.From?.Year;

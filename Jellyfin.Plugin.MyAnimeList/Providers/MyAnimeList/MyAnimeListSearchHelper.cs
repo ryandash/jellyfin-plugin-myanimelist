@@ -225,11 +225,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         private async Task<(long?, int)> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool enableBestAttempt, CancellationToken cancellationToken)
         {
             bool enableDebug = _config.EnableDebug;
+            bool enableNSFW = _config.EnableNSFW;
             ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
             if (enableDebug) _log.LogInformation($"Search title: {searchTitle}");
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
+            if (enableDebug && hasParsedYear)
+            {
+                _log.LogInformation($"Parsed year: {parsedYear}");
+            }
 
-            var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, cancellationToken).ConfigureAwait(false);
+            var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, enableNSFW, cancellationToken).ConfigureAwait(false);
             if (enableDebug) _log.LogInformation($"Found {searchResults.Count()} search results");
             string normalizedSearch = NormalizeRegex.Replace(searchTitle, string.Empty).ToLowerInvariant();
 
@@ -290,7 +295,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (enableDebug) _log.LogInformation($"Found no good matches without best attempt");
 
             return enableBestAttempt
-                ? await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClientFactory, cancellationToken).ConfigureAwait(false)
+                ? await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, enableNSFW, _httpClientFactory, cancellationToken).ConfigureAwait(false)
                 : (null, 0);
         }
 

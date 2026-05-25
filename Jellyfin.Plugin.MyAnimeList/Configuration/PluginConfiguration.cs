@@ -27,8 +27,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonLanguageFilterPreference = LanguageFilterType.All;
             MaxPeople = 0;
             MaxGenres = 5;
-            cacheBackupOtherTime = 1;
-            cacheSearchTime = 60;
+            IgnoreMetadata = false;
+            IgnoreEpisodeMetadata = false;
+            EnableBestAttempt = false;
+            ExcludeSpecials = false;
+            UseExternalIDs = false;
+            EnableNSFW = false;
+            CacheBackupOtherTime = 1;
+            CacheSearchTime = 60;
+            EnableDebug = false;
         }
 
         // === Title Settings ===
@@ -47,10 +54,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool ExcludeSpecials { get; set; }
         public bool DisableLocalCache { get; set; }
         public bool UseExternalIDs { get; set; }
+        public bool EnableNSFW { get; set; }
 
         // === Cache time ===
-        public int cacheBackupOtherTime { get; set; }
-        public int cacheSearchTime { get; set; }
+        public int CacheBackupOtherTime { get; set; }
+        public int CacheSearchTime { get; set; }
 
         // === Debugging ===
         public bool EnableDebug { get; set; }

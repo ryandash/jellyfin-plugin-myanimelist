@@ -80,6 +80,10 @@
                             <span>Enable TVDB-to-MAL mapping for special episodes (season 0). This feature is in beta.</span>
                         </label>
                         <label class="emby-checkbox-label">
+                            <input id="chkEnableNSFW" name="chkEnableNSFW" type="checkbox" is="emby-checkbox" />
+                            <span>Enable NSFW Results.</span>
+                        </label>
+                        <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
                             <span>Enable more debug information.</span>
                         </label>
@@ -105,8 +109,8 @@
                 document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
                 document.getElementById('chkMaxPeople').value = config.MaxPeople;
                 document.getElementById('chkMaxGenres').value = config.MaxGenres;
-                document.getElementById('chkCacheBackupOtherTime').value = config.cacheBackupOtherTime;
-                document.getElementById('chkCacheSearchTime').value = config.cacheSearchTime;
+                document.getElementById('chkCacheBackupOtherTime').value = config.CacheBackupOtherTime;
+                document.getElementById('chkCacheSearchTime').value = config.CacheSearchTime;
 
                 document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
                 document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
@@ -114,6 +118,7 @@
                 document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
                 document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
                 document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
+                document.getElementById('chkEnableNSFW').checked = config.EnableNSFW;
                 document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
                 Dashboard.hideLoadingMsg();
@@ -129,8 +134,8 @@
                 config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
                 config.MaxPeople = document.getElementById('chkMaxPeople').value;
                 config.MaxGenres = document.getElementById('chkMaxGenres').value;
-                config.cacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
-                config.cacheSearchTime = document.getElementById('chkCacheSearchTime').value;
+                config.CacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
+                config.CacheSearchTime = document.getElementById('chkCacheSearchTime').value;
 
                 config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
                 config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
@@ -138,6 +143,7 @@
                 config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
                 config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
                 config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
+                config.EnableNSFW = document.getElementById('chkEnableNSFW').checked;
                 config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
                 ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
