@@ -85,12 +85,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 _log.LogInformation("Original name: {name}", info.Name);
             }
 
-            string searchName = GetSearchName(info, _log, enableDebug);
-            if (enableDebug) _log.LogInformation("Search name: {name}", searchName);
+            string searchTerm = GetSearchName(info, _log, enableDebug);
+            if (enableDebug) _log.LogInformation("Search term: {searchTerm}", searchTerm);
 
             long malid;
             int similarityConfidence;
-            long? extractedMalId = ExtractMalIdFromSearchName(searchName);
+            long? extractedMalId = ExtractMalIdFromSearchName(searchTerm);
             if (extractedMalId.HasValue)
             {
                 if (enableDebug) _log.LogInformation("Extracted MAL ID from name: {malId}", extractedMalId.Value);
@@ -99,10 +99,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
             else
             {
-                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, searchName, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
+                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, searchTerm, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
                 if (!malIdFromName.HasValue)
                 {
-                    if (enableDebug) _log.LogError("Could not find MalID for: {searchName}", searchName);
+                    if (enableDebug) _log.LogError("Could not find MalID for: {searchTerm}", searchTerm);
                     return null;
                 }
                 malid = malIdFromName.Value;
@@ -230,6 +230,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
 
             var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, cancellationToken).ConfigureAwait(false);
+            if (enableDebug) _log.LogInformation($"Found {searchResults.Count()} search results");
             string normalizedSearch = NormalizeRegex.Replace(searchTitle, string.Empty).ToLowerInvariant();
 
             Func<string, bool> mediaTypeCondition = isMovie
@@ -271,7 +272,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         cleanTitle = rawTitle;
                     }
 
-                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanTitle, string.Empty), normalizedSearch);
+                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanTitle, string.Empty).Trim(), normalizedSearch);
                     if (similarity == 100)
                         return (anime.MalId, similarity);
 
@@ -285,6 +286,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (bestMalId.HasValue)
                 return (bestMalId, bestSimilarity);
+
+            if (enableDebug) _log.LogInformation($"Found no good matches without best attempt");
 
             return enableBestAttempt
                 ? await GetBestAttemptId(normalizedSearch, isMovie, hasParsedYear, parsedYear, _httpClientFactory, cancellationToken).ConfigureAwait(false)

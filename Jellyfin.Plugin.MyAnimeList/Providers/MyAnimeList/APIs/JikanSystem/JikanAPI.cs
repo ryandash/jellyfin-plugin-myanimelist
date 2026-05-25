@@ -308,7 +308,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 return results.OrderBy(x => x.MalId).ToList();
             }
 
-            AnimeSearchConfig searchConfig = new AnimeSearchConfig{
+            AnimeSearchConfig searchConfig = new AnimeSearchConfig
+            {
                 Query = term,
                 Page = 1
             };
