@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
+using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
 {

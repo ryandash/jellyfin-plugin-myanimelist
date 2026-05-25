@@ -1,14 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using JikanDotNet;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
 using Season = MediaBrowser.Controller.Entities.TV.Season;
@@ -38,35 +39,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        internal Episode ToEpisode(Episode existing, EpisodeInfo info, int totalDigits)
+        internal Episode ToEpisode(EpisodeInfo info, int totalDigits)
         {
-            existing.IndexNumber ??= info.IndexNumber;
-            existing.ParentIndexNumber ??= info.ParentIndexNumber;
-            existing.IndexNumberEnd ??= info.IndexNumberEnd;
-
-            existing.SetProviderId(ProviderNames.MyAnimeList, episode.Url);
-
-            if (string.IsNullOrWhiteSpace(existing.Name))
-                existing.Name = GetPreferredTitle(config.TitlePreference, "en");
-
-            if (string.IsNullOrWhiteSpace(existing.OriginalTitle))
-                existing.OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji");
-
             var aired = episode.Aired;
-            existing.ProductionYear ??= aired?.Year;
-            existing.EndDate ??= aired;
-            existing.RunTimeTicks ??= episode.Duration.HasValue
-                ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks
-                : null;
+            Episode episodeObject = new Episode
+            {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                IndexNumberEnd = info.IndexNumberEnd,
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
+                Overview = episode.Synopsis,
+                ProductionYear = aired?.Year,
+                PremiereDate = aired,
+                EndDate = aired,
+                RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
+                CommunityRating = episode.Score > 0 ? (float?)episode.Score : null,
 
-            if (string.IsNullOrWhiteSpace(existing.Overview))
-                existing.Overview = episode.Synopsis;
+            };
 
-            float? rating = (float?)episode.Score;
-            if (!existing.CommunityRating.HasValue && rating > 0)
-                existing.CommunityRating = rating;
-
-            return existing;
+            episodeObject.SetProviderId(ProviderNames.MyAnimeList, episode.Url);
+            return episodeObject;
         }
     }
 
@@ -182,19 +175,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return string.IsNullOrWhiteSpace(s) ? string.Empty : s.Trim().ToLowerInvariant();
         }
 
-        public List<PersonInfo> GetPeopleInfo(IEnumerable<PersonInfo> existingPeople)
+        public List<PersonInfo> GetPeopleInfo()
         {
-            var people = existingPeople?.ToList() ?? new List<PersonInfo>();
-
-            var lookup = new Dictionary<(string Name, string Role), PersonInfo>();
-
-            foreach (var p in people)
-            {
-                var key = (Normalize(p.Name), Normalize(p.Role));
-
-                if (!lookup.ContainsKey(key))
-                    lookup[key] = p;
-            }
+            var people = new List<PersonInfo>();
 
             foreach (var edge in characters ?? Enumerable.Empty<AnimeCharacterDto>())
             {
@@ -211,18 +194,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                     var key = (Normalize(name), Normalize(role));
 
-                    if (lookup.TryGetValue(key, out var existing))
-                    {
-                        existing.ProviderIds ??= new Dictionary<string, string>();
-
-                        existing.ProviderIds[ProviderNames.MyAnimeList] = va.Person.MalId.ToString();
-
-                        if (string.IsNullOrWhiteSpace(existing.ImageUrl))
-                            existing.ImageUrl = ImagesSetDto.GetImageUrl(va.Person.Images.JPG);
-
-                        continue;
-                    }
-
                     var newPerson = new PersonInfo
                     {
                         Name = name,
@@ -230,13 +201,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         Type = PersonKind.Actor,
                         ImageUrl = ImagesSetDto.GetImageUrl(va.Person.Images.JPG),
                         ProviderIds = new Dictionary<string, string>
-                {
-                    { ProviderNames.MyAnimeList, va.Person.MalId.ToString() }
-                }
+                        {
+                            { ProviderNames.MyAnimeList, va.Person.MalId.ToString() }
+                        }
                     };
 
                     people.Add(newPerson);
-                    lookup[key] = newPerson;
                 }
             }
 
@@ -245,133 +215,105 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return people.Take(limit).ToList();
         }
 
-        public string[] GetGenres(string[] existingGenres)
+        public string[] GetGenres()
         {
             var malGenres = anime?.Genres?
                 .Where(g => !string.IsNullOrWhiteSpace(g))
                 .Select(g => g.Trim())
                 ?? Enumerable.Empty<string>();
 
-            var merged = (existingGenres ?? Array.Empty<string>())
-                .Where(g => !string.IsNullOrWhiteSpace(g))
-                .Select(g => g.Trim())
-                .Concat(malGenres)
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-
             if (config.MaxGenres > 0)
-                merged = merged.Take(config.MaxGenres);
+                malGenres = malGenres.Take(config.MaxGenres);
 
-            return merged.ToArray();
+            return malGenres.ToArray();
         }
 
-        public string[] GetStudioNames(string[] existingStudios)
+        public string[] GetStudioNames()
         {
             var malStudios = anime?.Studios?
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s.Trim())
                 ?? Enumerable.Empty<string>();
 
-            var merged = (existingStudios ?? Array.Empty<string>())
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                .Concat(malStudios)
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-
-            return merged.ToArray();
+            return malStudios.ToArray();
         }
 
-        public Series ToSeries(Series existing, SeriesInfo info)
+        public Series ToSeries(SeriesInfo info)
         {
-            existing.IndexNumber ??= info.IndexNumber;
-            existing.ParentIndexNumber ??= info.ParentIndexNumber;
-
-            existing.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
-
-            existing.Name ??= GetPreferredTitle(config.TitlePreference, "en");
-            existing.OriginalTitle ??= GetPreferredTitle(config.OriginalTitlePreference, "romaji");
-
-            existing.Overview ??= anime.Synopsis;
-
             var aired = GetAiredDate();
-            existing.ProductionYear ??= aired?.Year;
-            existing.PremiereDate ??= aired;
-            existing.EndDate ??= aired;
-
-            if (!existing.CommunityRating.HasValue && GetRating() > 0)
-                existing.CommunityRating = GetRating();
-
             var duration = GetDuration(anime.Duration);
-            if (existing.RunTimeTicks == null && duration > 0)
-                existing.RunTimeTicks = TimeSpan.FromMinutes(duration).Ticks;
-
-            existing.Genres = GetGenres(existing.Genres);
-            existing.Studios = GetStudioNames(existing.Studios);
-
-            existing.Status ??= anime.Status switch
+            Series series = new Series
             {
-                "Finished Airing" => SeriesStatus.Ended,
-                "Currently Airing" => SeriesStatus.Continuing,
-                "Not yet aired" => SeriesStatus.Unreleased,
-                _ => SeriesStatus.Unreleased
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
+                Overview = anime.Synopsis,
+                ProductionYear = aired?.Year,
+                PremiereDate = aired,
+                EndDate = GetAiredDate(false),
+                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
+                RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
+                Status = anime.Status switch
+                {
+                    "Finished Airing" => SeriesStatus.Ended,
+                    "Currently Airing" => SeriesStatus.Continuing,
+                    "Not yet aired" => SeriesStatus.Unreleased,
+                    _ => SeriesStatus.Unreleased
+                }
             };
 
-            return existing;
+            series.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
+
+            return series;
         }
 
-        public Movie ToMovie(Movie existing, MovieInfo info)
+        public Movie ToMovie(MovieInfo info)
         {
-            existing.IndexNumber ??= info.IndexNumber;
-            existing.ParentIndexNumber ??= info.ParentIndexNumber;
-
-            existing.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
-
-            existing.Name ??= GetPreferredTitle(config.TitlePreference, "en");
-            existing.OriginalTitle ??= GetPreferredTitle(config.OriginalTitlePreference, "romaji");
-
-            existing.Overview ??= anime.Synopsis;
-
             var aired = GetAiredDate();
-            existing.ProductionYear ??= aired?.Year;
-            existing.PremiereDate ??= aired;
-            existing.EndDate ??= aired;
+            Movie movie = new Movie
+            {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
+                Overview = anime.Synopsis,
+                ProductionYear = aired?.Year,
+                PremiereDate = aired,
+                EndDate = GetAiredDate(false),
+                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
+            };
 
-            if (!existing.CommunityRating.HasValue && GetRating() > 0)
-                existing.CommunityRating = GetRating();
+            movie.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
-            existing.Genres = GetGenres(existing.Genres);
-            existing.Studios = GetStudioNames(existing.Studios);
-
-            return existing;
+            return movie;
         }
 
-        public Season ToSeason(Season existing, SeasonInfo info)
+        public Season ToSeason(SeasonInfo info)
         {
-            existing.IndexNumber ??= info.IndexNumber;
-            existing.ParentIndexNumber ??= info.ParentIndexNumber;
-
-            existing.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
-
-            existing.Name ??= GetPreferredTitle(config.TitlePreference, "en");
-            existing.OriginalTitle ??= GetPreferredTitle(config.OriginalTitlePreference, "romaji");
-
-            existing.Overview ??= anime.Synopsis;
-
             var aired = GetAiredDate();
-            existing.ProductionYear ??= aired?.Year;
-            existing.PremiereDate ??= aired;
-            existing.EndDate ??= aired;
+            Season season = new Season
+            {
+                IndexNumber = info.IndexNumber,
+                ParentIndexNumber = info.ParentIndexNumber,
+                Name = GetPreferredTitle(config.TitlePreference, "en"),
+                OriginalTitle = GetPreferredTitle(config.OriginalTitlePreference, "romaji"),
+                Overview = anime.Synopsis,
+                ProductionYear = aired?.Year,
+                PremiereDate = aired,
+                EndDate = GetAiredDate(false),
+                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
+                Genres = GetGenres(),
+                Studios = GetStudioNames(),
+            };
 
-            if (!existing.CommunityRating.HasValue && GetRating() > 0)
-                existing.CommunityRating = GetRating();
+            season.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
-            var duration = GetDuration(anime.Duration);
-            if (existing.RunTimeTicks == null && duration > 0)
-                existing.RunTimeTicks = TimeSpan.FromMinutes(duration).Ticks;
-
-            existing.Genres = GetGenres(existing.Genres);
-            existing.Studios = GetStudioNames(existing.Studios);
-
-            return existing;
+            return season;
         }
     }
 }

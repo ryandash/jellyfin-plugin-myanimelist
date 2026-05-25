@@ -1,3 +1,10 @@
+using AnitomySharp;
+using Jellyfin.Plugin.MyAnimeList.Configuration;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Providers;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,13 +13,6 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AnitomySharp;
-using Jellyfin.Plugin.MyAnimeList.Configuration;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
-using MediaBrowser.Controller.Library;
-using MediaBrowser.Controller.Providers;
-using Microsoft.Extensions.Logging;
 using static AnitomySharp.AnitomySharp;
 using static Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.MyAnimeListApi;
 
@@ -22,7 +22,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
     {
         private readonly string[] _libraryRoots;
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly PluginConfiguration _config;
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration
+        {
+            EnableDebug = true,
+            EnableBestAttempt = true
+        };
 
         public MyAnimeListSearchHelper(ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
@@ -35,7 +39,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 .ToArray();
 
             _httpClientFactory = httpClientFactory;
-            _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         }
 
         private static readonly Regex MalIdRegex = new Regex(@"\[mal-(\d+)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -221,7 +224,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         private async Task<(long?, int)> GetBestAnimeID(ILogger _log, string searchTerm, bool isMovie, bool enableBestAttempt, CancellationToken cancellationToken)
         {
+            bool enableDebug = _config.EnableDebug;
             ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
+            if (enableDebug) _log.LogInformation($"Search title: {searchTitle}");
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
 
             var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, cancellationToken).ConfigureAwait(false);

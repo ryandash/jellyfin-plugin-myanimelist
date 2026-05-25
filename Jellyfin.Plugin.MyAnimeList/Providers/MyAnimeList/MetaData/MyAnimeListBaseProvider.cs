@@ -1,13 +1,13 @@
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
@@ -28,26 +28,26 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             _httpClientFactory = httpClientFactory;
         }
 
-        protected abstract TItem ConvertToItem(TItem existing, AnimeObject media, ItemLookupInfo info);
+        protected abstract TItem ConvertToItem(AnimeObject media, ItemLookupInfo info);
 
         public virtual async Task<MetadataResult<TItem>> GetMetadata(TInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<TItem>();
-            result.HasMetadata = true;
-            result.Item = new TItem
+            var result = new MetadataResult<TItem>
             {
-                IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
-                Name = info.Name,
-                OriginalTitle = info.OriginalTitle
+                QueriedById = true
             };
 
             if (info.Path is null || (info is SeasonInfo && info.IndexNumber == 0))
+            {
                 return result;
+            }
 
             var anime = await _searchHelper.GetAnimeAsync(_log, info, cancellationToken, false).ConfigureAwait(false);
             if (anime is null)
+            {
                 return result;
+            }
+
 
             var media = new AnimeObject
             {
@@ -60,12 +60,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _ = await JikanAPI.GetAnimeEpisodesAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false);
             }
 
-            result.Item = ConvertToItem(result.Item, media, info);
-            var existingPeople = result.People ?? new List<PersonInfo>();
-            result.People = media.GetPeopleInfo(existingPeople);
-            result.Provider = Name;
-
-            return result;
+            return new MetadataResult<TItem>
+            {
+                HasMetadata = true,
+                Item = ConvertToItem(media, info),
+                People = media.GetPeopleInfo(),
+                Provider = Name
+            };
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(TInfo info, CancellationToken cancellationToken)

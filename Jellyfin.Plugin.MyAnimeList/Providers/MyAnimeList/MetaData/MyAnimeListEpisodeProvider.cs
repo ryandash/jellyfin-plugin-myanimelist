@@ -1,8 +1,3 @@
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
@@ -11,6 +6,11 @@ using JikanDotNet.Exceptions;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using static Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.IdMappings;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using EpisodeInfo = MediaBrowser.Controller.Providers.EpisodeInfo;
@@ -20,28 +20,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     public class MyAnimeListEpisodeProvider : MyAnimeListBaseProvider<Episode, EpisodeInfo>
     {
         private readonly IdMappings _idMapping;
-        private static PluginConfiguration _config;
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public MyAnimeListEpisodeProvider(ILogger<MyAnimeListEpisodeProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
             _idMapping = new IdMappings(httpClientFactory);
-            _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
         }
         public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<Episode>();
-            result.HasMetadata = true;
-            result.Item = new Episode
+            var result = new MetadataResult<Episode>
             {
-                IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
-                IndexNumberEnd = info.IndexNumberEnd,
-                Name = info.Name,
-                OriginalTitle = info.OriginalTitle
+                QueriedById = true
             };
 
             if (info.Path is null || !info.IndexNumber.HasValue)
+            {
                 return result;
+            }
 
             var enableDebug = _config.EnableDebug;
 
@@ -84,7 +79,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (episodeData is null)
             {
                 if (_config.ExcludeSpecials && seasonnumber == 0)
+                {
                     return result;
+                }
 
                 anime = new AnimeObject
                 {
@@ -92,7 +89,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 };
 
                 if (anime?.anime is null || anime.anime?.MalId is null)
+                {
                     return result;
+                }
 
                 var (episodeNumber, updatedAnime) = await _searchHelper.GetSeasonEpisodeNumberAsync(
                     _log,
@@ -105,15 +104,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 anime.anime = updatedAnime;
 
                 if (anime.anime is null)
+                {
                     return result;
+                }
 
                 var malId = anime.anime.MalId.GetValueOrDefault();
 
                 try
                 {
-                    episodeData = ((anime.anime.Episodes ?? 0) > 1)
-                        ? await JikanAPI.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false)
-                        : anime.toEpisodeData();
+                    episodeData = (anime.anime.Episodes == 1)
+                        ? anime.toEpisodeData()
+                        : await JikanAPI.GetAnimeEpisodeAsync(malId, episodeNumber, cancellationToken).ConfigureAwait(false);
                 }
                 catch (JikanRequestException ex) when (ex.ApiError?.Status is not (HttpStatusCode.InternalServerError or HttpStatusCode.ServiceUnavailable))
                 {
@@ -142,13 +143,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             var episodeResult = new EpisodeSearchResult { episode = episodeData };
 
-            result.Item = episodeResult.ToEpisode(result.Item, info, anime!.anime?.Episodes?.ToString().Length ?? 4);
-            result.Provider = Name;
-
-            return result;
+            return new MetadataResult<Episode>
+            {
+                HasMetadata = true,
+                Item = episodeResult.ToEpisode(info, anime?.anime?.Episodes?.ToString().Length ?? 4),
+                Provider = Name
+            }; ;
         }
 
-        protected override Episode ConvertToItem(Episode existing, AnimeObject media, ItemLookupInfo info)
+        protected override Episode ConvertToItem(AnimeObject media, ItemLookupInfo info)
         {
             throw new NotImplementedException();
         }

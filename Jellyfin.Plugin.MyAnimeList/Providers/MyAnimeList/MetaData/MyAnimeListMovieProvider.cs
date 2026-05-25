@@ -1,8 +1,8 @@
-using System.Net.Http;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
         }
 
-        protected override Movie ConvertToItem(Movie existing, AnimeObject media, ItemLookupInfo info)
-            => media.ToMovie(existing, info as MovieInfo);
+        protected override Movie ConvertToItem(AnimeObject media, ItemLookupInfo info)
+            => media.ToMovie(info as MovieInfo);
     }
 }

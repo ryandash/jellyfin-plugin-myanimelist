@@ -1,7 +1,7 @@
+using JikanDotNet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JikanDotNet;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {

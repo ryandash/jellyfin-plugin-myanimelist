@@ -1,7 +1,7 @@
-using System.Net.Http;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 using Series = MediaBrowser.Controller.Entities.TV.Series;
 using SeriesInfo = MediaBrowser.Controller.Providers.SeriesInfo;
 
@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
         }
 
-        protected override Series ConvertToItem(Series existing, AnimeObject media, ItemLookupInfo info)
-            => media.ToSeries(existing, info as SeriesInfo);
+        protected override Series ConvertToItem(AnimeObject media, ItemLookupInfo info)
+            => media.ToSeries(info as SeriesInfo);
     }
 }

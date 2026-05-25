@@ -1,3 +1,10 @@
+using Jellyfin.Plugin.MyAnimeList.Configuration;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
+using JikanDotNet;
+using JikanDotNet.Config;
+using JikanDotNet.Exceptions;
+using LiteDB;
+using MediaBrowser.Common.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,13 +14,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Jellyfin.Plugin.MyAnimeList.Configuration;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
-using JikanDotNet;
-using JikanDotNet.Config;
-using JikanDotNet.Exceptions;
-using LiteDB;
-using MediaBrowser.Common.Configuration;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
@@ -54,6 +54,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static TimeSpan BackupExpiry;
         private static TimeSpan SearchExpiry;
 
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
+
         public static void Initialize(IApplicationPaths paths)
         {
             if (_initialized) return;
@@ -65,8 +67,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 var baseDir = Path.Combine(paths.CachePath, "myanimelist");
                 Directory.CreateDirectory(baseDir);
-
-                var _config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
                 BackupExpiry = TimeSpan.FromDays(_config.cacheBackupOtherTime);
                 SearchExpiry = TimeSpan.FromMinutes(_config.cacheSearchTime);
@@ -308,7 +308,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 return results.OrderBy(x => x.MalId).ToList();
             }
 
-            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(term, token));
+            AnimeSearchConfig searchConfig = new AnimeSearchConfig{
+                Query = term,
+                Page = 1
+            };
+            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
 
             var ids = search.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
 

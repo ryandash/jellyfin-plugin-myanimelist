@@ -1,5 +1,5 @@
-using System;
 using JikanDotNet;
+using System;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {

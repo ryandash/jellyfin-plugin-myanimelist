@@ -17,7 +17,7 @@ namespace UnitTestProject
 {
     public class MyAnimeListTests
     {
-        private readonly Mock<ILogger> _log;
+        private readonly ILogger _log;
         private readonly Mock<ILibraryManager> _libraryManagerMock;
         private readonly MyAnimeListSearchHelper _searchHelper;
         private readonly ITestOutputHelper _output;
@@ -25,7 +25,7 @@ namespace UnitTestProject
 
         public MyAnimeListTests(ITestOutputHelper output)
         {
-            _log = new Mock<ILogger>();
+            _log = new XUnitLogger(output);
             _libraryManagerMock = new Mock<ILibraryManager>();
             var mockFolder = new VirtualFolderInfo { Name = "Anime", CollectionType = CollectionTypeOptions.tvshows };
             mockFolder.Locations = [libraryLocation];
@@ -35,6 +35,11 @@ namespace UnitTestProject
             JikanAPI.Initialize(new FakeApplicationPaths());
 
             var services = new ServiceCollection();
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Debug);
+            });
 
             services.AddHttpClient(ProviderNames.MyAnimeList, client =>
             {
@@ -59,7 +64,7 @@ namespace UnitTestProject
                 IndexNumber = 1
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seriesInfo, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -77,7 +82,7 @@ namespace UnitTestProject
                 IndexNumber = 1
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seriesInfo2, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo2, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -95,7 +100,7 @@ namespace UnitTestProject
                 IndexNumber = 3
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -114,7 +119,7 @@ namespace UnitTestProject
                 IndexNumber = 6
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo2, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo2, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -132,7 +137,7 @@ namespace UnitTestProject
                 IndexNumber = 6
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo3, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo3, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -151,7 +156,7 @@ namespace UnitTestProject
                 IndexNumber = 5
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, seasonInfo4, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo4, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -170,7 +175,7 @@ namespace UnitTestProject
                 IndexNumber = 12
             };
 
-            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log.Object, episodeInfo, CancellationToken.None, false);
+            AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, episodeInfo, CancellationToken.None, false);
             Assert.NotNull(anime);
             Assert.NotNull(anime.MalId);
             _output.WriteLine(anime.MalId.Value.ToString());
@@ -178,7 +183,7 @@ namespace UnitTestProject
             Assert.Equal(47164, anime.MalId.Value);
 
             (int episodeNumber, AnimeFullCacheDto updatedAnime) = await _searchHelper.GetSeasonEpisodeNumberAsync(
-                    _log.Object,
+                    _log,
                     episodeInfo.IndexNumber.Value,
                     episodeInfo.ParentIndexNumber.Value,
                     anime,
