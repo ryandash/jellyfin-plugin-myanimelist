@@ -4,21 +4,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 {
     public class ImagesSetDto
     {
-        public ImageDto JPG { get; set; }
-
-        public static string GetImageUrl(ImageDto jpg)
-        {
-            return jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl;
-        }
+        public string Image { get; set; }
 
         public static ImagesSetDto From(ImagesSet source)
         {
-            if (source is null) return null;
+            var jpg = source?.JPG;
 
-            return new ImagesSetDto
-            {
-                JPG = ImageDto.From(source.JPG)
-            };
+            return jpg == null ? null : new ImagesSetDto { Image = jpg.MaximumImageUrl ?? jpg.LargeImageUrl ?? jpg.MediumImageUrl ?? jpg.ImageUrl ?? jpg.SmallImageUrl };
         }
     }
 }

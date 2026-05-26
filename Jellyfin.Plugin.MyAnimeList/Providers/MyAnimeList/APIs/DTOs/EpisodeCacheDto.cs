@@ -19,12 +19,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public string Url { get; set; }
 
-        public int? Duration { get; set; }
+        public long? RunTimeTicks { get; set; }
 
         public string Synopsis { get; set; }
 
         public bool HasFullDetails => !string.IsNullOrWhiteSpace(Synopsis)
-             && !string.IsNullOrWhiteSpace(Url) && Duration.HasValue;
+             && !string.IsNullOrWhiteSpace(Url) && RunTimeTicks.HasValue;
 
         public static EpisodeCacheDto From(AnimeEpisode source)
         {
@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 TitleRomanji = source.TitleRomanji,
                 Aired = source.Aired,
                 Score = source.Score ?? null,
-                Duration = source.Duration ?? null,
+                RunTimeTicks = source.Duration.HasValue ? TimeSpan.FromSeconds(source.Duration.Value).Ticks : null,
                 Synopsis = source.Synopsis ?? null,
             };
         }
@@ -69,7 +69,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             if (string.IsNullOrWhiteSpace(existing.Url))
                 existing.Url = detailed.Url;
 
-            existing.Duration = detailed.Duration;
+            existing.RunTimeTicks = detailed.RunTimeTicks;
             existing.Synopsis = detailed.Synopsis;
             return existing;
         }

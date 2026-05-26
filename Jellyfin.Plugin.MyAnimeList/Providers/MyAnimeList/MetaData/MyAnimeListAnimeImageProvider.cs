@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
@@ -49,12 +48,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (item is Person)
             {
                 var person = await JikanAPI.getPersonAsync(aid, cancellationToken).ConfigureAwait(false);
-                mainImageUrl = ImagesSetDto.GetImageUrl(person.Images.JPG);
+                mainImageUrl = person.Images.Image;
             }
             else
             {
                 var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
-                mainImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG);
+                mainImageUrl = anime.Images.Image;
             }
 
             if (string.IsNullOrEmpty(mainImageUrl))

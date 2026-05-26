@@ -5,36 +5,34 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
     public class CharacterCacheDto
     {
         public long MalId { get; set; }
-
-        public string Url { get; set; }
-
-        public ImagesSetDto Images { get; set; }
         public string Name { get; set; }
+        public string Url { get; set; }
+        public ImagesSetDto Images { get; set; }
+
+        public static CharacterCacheDto From(Character source)
+            => source is null ? null : Map(source.MalId, source.Name, source.Url, source.Images);
 
         public static CharacterCacheDto From(CharacterEntry source)
-        {
-            if (source is null) return null;
+            => source is null ? null : Map(source.MalId, source.Name, source.Url, source.Images);
 
+        private static CharacterCacheDto Map(long malId, string name, string url, ImagesSet images)
+        {
             return new CharacterCacheDto
             {
-                MalId = source.MalId,
-                Url = string.IsNullOrWhiteSpace(source.Url) ? null : source.Url,
-                Images = ImagesSetDto.From(source.Images),
-                Name = string.IsNullOrWhiteSpace(source.Name) ? null : source.Name
+                MalId = malId,
+                Name = string.IsNullOrWhiteSpace(name) ? null : SwapName(name),
+                Url = string.IsNullOrWhiteSpace(url) ? null : url,
+                Images = ImagesSetDto.From(images),
             };
         }
 
-        public static CharacterCacheDto From(Character source)
+        private static string SwapName(string input)
         {
-            if (source is null) return null;
-
-            return new CharacterCacheDto
-            {
-                MalId = source.MalId,
-                Url = string.IsNullOrWhiteSpace(source.Url) ? null : source.Url,
-                Images = ImagesSetDto.From(source.Images),
-                Name = string.IsNullOrWhiteSpace(source.Name) ? null : source.Name
-            };
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            var parts = input.Split(',');
+            return parts.Length == 2
+                ? $"{parts[1].Trim()} {parts[0].Trim()}"
+                : input.Trim();
         }
     }
 }

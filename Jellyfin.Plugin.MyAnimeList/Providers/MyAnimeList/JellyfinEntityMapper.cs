@@ -7,7 +7,6 @@ using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
@@ -52,7 +51,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProductionYear = aired?.Year,
                 PremiereDate = aired,
                 EndDate = aired,
-                RunTimeTicks = episode.Duration.HasValue ? TimeSpan.FromSeconds(episode.Duration.Value).Ticks : null,
+                RunTimeTicks = episode.RunTimeTicks,
                 CommunityRating = episode.Score > 0 ? (float?)episode.Score : null,
 
             };
@@ -88,16 +87,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public DateTime? GetAiredDate(bool isStartDate = true) => isStartDate ? anime.Aired.From : anime.Aired.To;
 
-        public float GetRating() => (float)(anime.Score ?? 0.0);
-
         public RemoteSearchResult ToSearchResult()
         {
+            var aired = GetAiredDate();
             return new RemoteSearchResult
             {
                 Name = GetPreferredTitle(config.TitlePreference, "en"),
-                ProductionYear = GetAiredDate().HasValue ? GetAiredDate().Value.Year : null,
-                PremiereDate = GetAiredDate(),
-                ImageUrl = ImagesSetDto.GetImageUrl(anime.Images.JPG),
+                ProductionYear = aired.HasValue ? aired.Value.Year : null,
+                PremiereDate = aired,
+                ImageUrl = anime.Images.Image,
                 SearchProviderName = ProviderNames.MyAnimeList,
                 ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, anime.MalId.ToString() } }
             };
@@ -114,48 +112,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             {
                 Url = anime.Url,
                 Title = GetPreferredTitle(config.TitlePreference, "en"),
-                Duration = GetDuration(anime.Duration),
+                RunTimeTicks = anime.Duration,
                 Aired = anime.Aired?.From,
                 Synopsis = anime.Synopsis
             };
-        }
-
-        private int GetDuration(string duration)
-        {
-            var parts = duration.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var totalMinutes = 0;
-
-            for (var i = 0; i < parts.Length; i++)
-            {
-                if (int.TryParse(parts[i], out var value))
-                {
-                    if (i + 1 < parts.Length)
-                    {
-                        totalMinutes += parts[i + 1] switch
-                        {
-                            var s when s.StartsWith("hr", StringComparison.OrdinalIgnoreCase) => value * 60,
-                            var s when s.StartsWith("min", StringComparison.OrdinalIgnoreCase) => value,
-                            _ => 0
-                        };
-
-                        if (parts[i + 1].StartsWith("hr", StringComparison.OrdinalIgnoreCase) ||
-                            parts[i + 1].StartsWith("min", StringComparison.OrdinalIgnoreCase))
-                        {
-                            i++; // Skip next part as it's already processed
-                        }
-                    }
-                }
-            }
-
-            return totalMinutes;
-        }
-        private static string SwapName(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return input;
-            var parts = input.Split(',');
-            return parts.Length == 2
-                ? $"{parts[1].Trim()} {parts[0].Trim()}"
-                : input.Trim();
         }
 
         private bool IsAllowedLanguage(string lang)
@@ -169,11 +129,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        private static string Normalize(string s)
-        {
-            return string.IsNullOrWhiteSpace(s) ? string.Empty : s.Trim().ToLowerInvariant();
-        }
-
         public List<PersonInfo> GetPeopleInfo()
         {
             var people = new List<PersonInfo>();
@@ -183,22 +138,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 if (edge.VoiceActors == null)
                     continue;
 
+                var role = edge.Character.Name;
+
                 foreach (var va in edge.VoiceActors)
                 {
                     if (!IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    var name = SwapName(va.Person.Name);
-                    var role = SwapName(edge.Character.Name);
-
-                    var key = (Normalize(name), Normalize(role));
-
                     var newPerson = new PersonInfo
                     {
-                        Name = name,
+                        Name = va.Person.Name,
                         Role = role,
                         Type = PersonKind.Actor,
-                        ImageUrl = ImagesSetDto.GetImageUrl(va.Person.Images.JPG),
+                        ImageUrl = va.Person.Images.Image,
                         ProviderIds = new Dictionary<string, string>
                         {
                             { ProviderNames.MyAnimeList, va.Person.MalId.ToString() }
@@ -214,33 +166,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return people.Take(limit).ToList();
         }
 
-        public string[] GetGenres()
-        {
-            var malGenres = anime?.Genres?
-                .Where(g => !string.IsNullOrWhiteSpace(g))
-                .Select(g => g.Trim())
-                ?? Enumerable.Empty<string>();
-
-            if (config.MaxGenres > 0)
-                malGenres = malGenres.Take(config.MaxGenres);
-
-            return malGenres.ToArray();
-        }
-
-        public string[] GetStudioNames()
-        {
-            var malStudios = anime?.Studios?
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                ?? Enumerable.Empty<string>();
-
-            return malStudios.ToArray();
-        }
-
         public Series ToSeries(SeriesInfo info)
         {
             var aired = GetAiredDate();
-            var duration = GetDuration(anime.Duration);
             Series series = new Series
             {
                 IndexNumber = info.IndexNumber,
@@ -251,10 +179,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProductionYear = aired?.Year,
                 PremiereDate = aired,
                 EndDate = GetAiredDate(false),
-                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
-                RunTimeTicks = duration > 0 ? TimeSpan.FromMinutes(duration).Ticks : null,
-                Genres = GetGenres(),
-                Studios = GetStudioNames(),
+                AirDays = anime.Broadcast.AirDays,
+                AirTime = anime.Broadcast.AirTime,
+                CommunityRating = anime.Score,
+                RunTimeTicks = anime.Duration,
+                Genres = anime.Genres.Take(config.MaxGenres).ToArray(),
+                Studios = anime.Studios,
                 Status = anime.Status switch
                 {
                     "Finished Airing" => SeriesStatus.Ended,
@@ -282,9 +212,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProductionYear = aired?.Year,
                 PremiereDate = aired,
                 EndDate = GetAiredDate(false),
-                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
-                Genres = GetGenres(),
-                Studios = GetStudioNames(),
+                CommunityRating = anime.Score,
+                RunTimeTicks = anime.Duration,
+                Genres = anime.Genres.Take(config.MaxGenres).ToArray(),
+                Studios = anime.Studios,
             };
 
             movie.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
@@ -305,9 +236,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 ProductionYear = aired?.Year,
                 PremiereDate = aired,
                 EndDate = GetAiredDate(false),
-                CommunityRating = GetRating() > 0 ? (float?)GetRating() : null,
-                Genres = GetGenres(),
-                Studios = GetStudioNames(),
+                CommunityRating = anime.Score,
+                RunTimeTicks = anime.Duration,
+                Genres = anime.Genres.Take(config.MaxGenres).ToArray(),
+                Studios = anime.Studios,
             };
 
             season.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
