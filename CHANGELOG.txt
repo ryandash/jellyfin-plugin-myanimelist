@@ -1,29 +1,21 @@
-58d054d Fix for NSFW content + Minor improvements
+a6f5cfc Jellyfin.Controller Version bump
 
-- Fix for NSFW content during Jikan search and backup search
+- Jellyfin.Controller version bump
 
-- Add option to enable NSFW content
+63030be Cleanup
 
-- Cleaner cache file version check
+- Cleanup config page a little
 
-- Add more debug log info
+- Cleanup integration tests a little
 
-733912c More debug info
+5132f08 Refactoring code
 
-- Add more debug log information
+- Version bump
 
-- Minor cleanup
+- Add broadcast information with correct time based on local timezone
 
-7a36283 Simplify results + improve tests
+- Cleanup DTOs and store some more precomputed data instead of all original data
 
-- Simplify returned results
+- Remove ImageDto storing only largest image string instead
 
-- Improve integration test logs
-
-- Auto cleaned imports
-
-- Fix Plugin Configuration saving. No longer requires a restart to apply
-
-- Fix for occasional bad cache results from main Jikan API search
-
-f473a13 Update manifest
+baece3d Update manifest
