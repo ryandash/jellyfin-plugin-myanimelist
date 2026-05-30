@@ -67,21 +67,29 @@
                             <input id="chkEnableBestAttempt" name="chkEnableBestAttempt" type="checkbox" is="emby-checkbox" />
                             <span>Enable fallback to the closest matching search result.</span>
                         </label>
+                        <div class="fieldDescription" style="margin-left: 40px; color: #999;">
+                            <p style="margin: 0 0 4px 0;">Only enable this if you are experiencing failed or missing matches.</p>
+                            <p style="margin: 0 0 4px 0;">For best results, ensure:</p>
+                            <ul style="margin: 0 0 0 18px; padding: 0;">
+                                <li>Library providers are ordered correctly (preferred source first)</li>
+                                <li>Anime and non-anime content are separated into different libraries</li>
+                            </ul>
+                        </div>
+                        <label class="emby-checkbox-label">
+                            <input id="chkEnableNSFW" name="chkEnableNSFW" type="checkbox" is="emby-checkbox" />
+                            <span>Enable NSFW Results.</span>
+                        </label>
                         <label class="emby-checkbox-label">
                             <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
                             <span>Exclude special episodes from regular searches. TVDB-to-MAL mapping can still be used.</span>
-                        </label>
-                        <label class="emby-checkbox-label">
-                            <input id="chkDisableLocalCache" name="chkDisableLocalCache" type="checkbox" is="emby-checkbox" />
-                            <span>Disable file-based caching. Data will still be cached in memory.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkUseExternalIDs" name="chkUseExternalIDs" type="checkbox" is="emby-checkbox" />
                             <span>Enable TVDB-to-MAL mapping for special episodes (season 0). This feature is in beta.</span>
                         </label>
                         <label class="emby-checkbox-label">
-                            <input id="chkEnableNSFW" name="chkEnableNSFW" type="checkbox" is="emby-checkbox" />
-                            <span>Enable NSFW Results.</span>
+                            <input id="chkDisableLocalCache" name="chkDisableLocalCache" type="checkbox" is="emby-checkbox" />
+                            <span>Disable file-based caching. Data will still be cached in memory.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
@@ -104,9 +112,11 @@
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+
                 document.getElementById('titleLanguage').value = config.TitlePreference;
                 document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
                 document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
+
                 document.getElementById('chkMaxPeople').value = config.MaxPeople;
                 document.getElementById('chkMaxGenres').value = config.MaxGenres;
                 document.getElementById('chkCacheBackupOtherTime').value = config.CacheBackupOtherTime;
@@ -115,6 +125,7 @@
                 document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
                 document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
                 document.getElementById('chkEnableBestAttempt').checked = config.EnableBestAttempt;
+
                 document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
                 document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
                 document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
@@ -129,9 +140,11 @@
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+
                 config.TitlePreference = document.getElementById('titleLanguage').value;
                 config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;
                 config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
+
                 config.MaxPeople = document.getElementById('chkMaxPeople').value;
                 config.MaxGenres = document.getElementById('chkMaxGenres').value;
                 config.CacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
@@ -140,6 +153,7 @@
                 config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
                 config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
                 config.EnableBestAttempt = document.getElementById('chkEnableBestAttempt').checked;
+
                 config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
                 config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
                 config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
@@ -150,7 +164,7 @@
                 Dashboard.processPluginConfigurationUpdateResult(result);
                 });
                 });
-                },
+                }
                 };
 
                 document.getElementById('MyAnimeListConfigurationPage').addEventListener('pageshow', function () {

@@ -27,10 +27,13 @@ namespace UnitTestProject
         {
             _log = new XUnitLogger(output);
             _libraryManagerMock = new Mock<ILibraryManager>();
-            var mockFolder = new VirtualFolderInfo { Name = "Anime", CollectionType = CollectionTypeOptions.tvshows };
-            mockFolder.Locations = [libraryLocation];
-            _libraryManagerMock.Setup(m => m.GetVirtualFolders())
-                .Returns(new List<VirtualFolderInfo> { mockFolder });
+            var mockFolder = new VirtualFolderInfo
+            {
+                Name = "Anime",
+                CollectionType = CollectionTypeOptions.tvshows,
+                Locations = [libraryLocation]
+            };
+            _libraryManagerMock.Setup(m => m.GetVirtualFolders()).Returns(new List<VirtualFolderInfo> { mockFolder });
 
             JikanAPI.Initialize(new FakeApplicationPaths());
 
@@ -47,8 +50,7 @@ namespace UnitTestProject
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("UnitTest");
             });
 
-            IHttpClientFactory httpClientFactory =
-    services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
+            IHttpClientFactory httpClientFactory = services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
 
             _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object, httpClientFactory);
             _output = output;
