@@ -1,21 +1,4 @@
-a6f5cfc Jellyfin.Controller Version bump
-
-- Jellyfin.Controller version bump
-
-63030be Cleanup
-
-- Cleanup config page a little
-
-- Cleanup integration tests a little
-
-5132f08 Refactoring code
-
-- Version bump
-
-- Add broadcast information with correct time based on local timezone
-
-- Cleanup DTOs and store some more precomputed data instead of all original data
-
-- Remove ImageDto storing only largest image string instead
-
-baece3d Update manifest
+36e6d79 Update manifest.json
+3690d65 Update Jellyfin.Plugin.MyAnimeList.csproj
+31a5522 Update build and publish.yaml
+457db4f Update manifest
