@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public List<TitleEntryDto> Titles { get; set; }
         public ImagesSetDto Images { get; set; }
         public TimePeriodDto Aired { get; set; }
-        public AnimeBroadcastDto Broadcast { get; set; }
+        public AnimeBroadcastDto? Broadcast { get; set; }
         public long? Duration { get; set; }
         public bool NSFW { get; set; }
         public float? Score { get; set; }
@@ -44,6 +44,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.Titles,
                 source.Images,
                 source.Aired,
+                source.Airing,
                 source.Broadcast,
                 source.Duration,
                 source.Score,
@@ -68,6 +69,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.Titles,
                 source.Images,
                 source.Aired,
+                source.Airing,
                 source.Broadcast,
                 source.Duration,
                 source.Score,
@@ -87,6 +89,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             ICollection<TitleEntry> titles,
             ImagesSet images,
             TimePeriod aired,
+            bool airing,
             AnimeBroadcast broadcast,
             string duration,
             double? score,
@@ -109,7 +112,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Titles = titles?.Select(TitleEntryDto.From).ToList(),
                 Images = ImagesSetDto.From(images),
                 Aired = TimePeriodDto.Convert(aired),
-                Broadcast = AnimeBroadcastDto.From(broadcast),
+                Broadcast = airing ? AnimeBroadcastDto.From(broadcast) : null,
                 Duration = GetTicks(Normalize(duration)),
                 Score = (float?)score,
                 Episodes = episodes,
