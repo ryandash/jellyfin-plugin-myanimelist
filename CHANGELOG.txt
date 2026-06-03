@@ -1,4 +1,16 @@
-36e6d79 Update manifest.json
-3690d65 Update Jellyfin.Plugin.MyAnimeList.csproj
-31a5522 Update build and publish.yaml
-457db4f Update manifest
+5ee1124 Update Jellyfin.Plugin.MyAnimeList.csproj
+
+- Version bump
+
+b58ae17 Adjustments
+
+- Version bump
+
+- Only show broadcast information if the anime is airing. Otherwise there is no need to show it.
+
+- Swap Primary and backup Jikan instances. Need to work on finding a better place to host my own Jikan instance.
+
+- Cleanup
+
+5f06b4d Update issue templates
+19ced99 Update manifest
