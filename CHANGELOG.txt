@@ -1,29 +1,4 @@
-58d054d Fix for NSFW content + Minor improvements
-
-- Fix for NSFW content during Jikan search and backup search
-
-- Add option to enable NSFW content
-
-- Cleaner cache file version check
-
-- Add more debug log info
-
-733912c More debug info
-
-- Add more debug log information
-
-- Minor cleanup
-
-7a36283 Simplify results + improve tests
-
-- Simplify returned results
-
-- Improve integration test logs
-
-- Auto cleaned imports
-
-- Fix Plugin Configuration saving. No longer requires a restart to apply
-
-- Fix for occasional bad cache results from main Jikan API search
-
-f473a13 Update manifest
+36e6d79 Update manifest.json
+3690d65 Update Jellyfin.Plugin.MyAnimeList.csproj
+31a5522 Update build and publish.yaml
+457db4f Update manifest

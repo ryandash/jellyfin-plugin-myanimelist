@@ -34,11 +34,8 @@ jobs:
         id: extract_version_abi
         run: |
           CSPROJ="main_repo/Jellyfin.Plugin.MyAnimeList/Jellyfin.Plugin.MyAnimeList.csproj"
-          
-          VERSION=$(dotnet msbuild "$CSPROJ" -nologo -v:q -getProperty:Version)
-          TARGET_ABI=$(dotnet msbuild "$CSPROJ" -nologo -v:q -getItem:PackageReference \
-            | grep "^PackageReference=Jellyfin.Controller " \
-            | sed -E 's/.*Version=([^ ]+).*/\1/')
+          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" $CSPROJ)
+          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" $CSPROJ)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
 
