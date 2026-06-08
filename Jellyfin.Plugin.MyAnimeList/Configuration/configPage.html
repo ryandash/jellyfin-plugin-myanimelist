@@ -10,6 +10,14 @@
             <div data-role="content">
                 <div class="content-primary">
                     <form id="MyAnimeListConfigurationForm">
+                        <div class="inputContainer">
+                            <label class="inputLabel">Primary Jikan URL</label>
+                            <input is="emby-input" id="primaryURL" placeholder="https://api.jikan.moe/v4/" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel">Backup Jikan URL</label>
+                            <input is="emby-input" id="backupURL" placeholder="https://jikanapi.freemyip.com/v4/" />
+                        </div>
                         <div class="selectContainer">
                             <label class="selectLabel" for="titleLanguage">Title Language</label>
                             <select is="emby-select" id="titleLanguage" name="titleLanguage" class="emby-select-withcolor emby-select">
@@ -89,7 +97,7 @@
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkDisableLocalCache" name="chkDisableLocalCache" type="checkbox" is="emby-checkbox" />
-                            <span>Disable file-based caching. Data will still be cached in memory.</span>
+                            <span>Disable file-based caching. Data will still be cached in memory. Restart after disabling file-based cache to clear memory cache.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
@@ -112,6 +120,9 @@
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+
+                document.getElementById('primaryURL').value = config.PrimaryJikanUrl;
+                document.getElementById('backupURL').value = config.BackupJikanUrl;
 
                 document.getElementById('titleLanguage').value = config.TitlePreference;
                 document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
@@ -140,6 +151,9 @@
                 Dashboard.showLoadingMsg();
 
                 ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+
+                config.PrimaryJikanUrl = document.getElementById('primaryURL').value;
+                config.BackupJikanUrl = document.getElementById('backupURL').value;
 
                 config.TitlePreference = document.getElementById('titleLanguage').value;
                 config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;

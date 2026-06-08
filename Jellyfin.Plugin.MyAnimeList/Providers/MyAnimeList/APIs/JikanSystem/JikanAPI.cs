@@ -22,39 +22,80 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static readonly object InitLock = new();
         private static bool _initialized;
 
+        private static ICacheStore Cache;
+
+        private static PluginConfiguration defaultConfig = new PluginConfiguration();
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? defaultConfig;
+
+        private static TimeSpan BackupExpiry => TimeSpan.FromDays(_config.CacheBackupOtherTime);
+        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(_config.CacheSearchTime);
+
         private static Jikan CreateClient(string baseUrl)
         {
             var http = new HttpClient(new JikanHeaderHandler(new HttpClientHandler()))
             {
-                BaseAddress = new Uri(baseUrl)
+                BaseAddress = new Uri(baseUrl),
+                Timeout = TimeSpan.FromMinutes(5)
             };
 
             return new Jikan(new JikanClientConfiguration(), http);
         }
 
-        private static readonly Lazy<Jikan> PrimaryJikan =
-            new(() => CreateClient("https://api.jikan.moe/v4/"));
+        private static Jikan _primaryClient;
+        private static Jikan _backupClient;
+        private static string _primaryUrl;
+        private static string _backupUrl;
 
-        private static readonly Lazy<Jikan> BackupJikan =
-            new(() => CreateClient("https://jikanapi.freemyip.com/v4/"));
-        private static async Task<T> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
+        private static void EnsureClients()
         {
-            try
+            var p = string.IsNullOrWhiteSpace(_config.PrimaryJikanUrl)
+                ? "https://api.jikan.moe/v4/"
+                : _config.PrimaryJikanUrl;
+            var b = string.IsNullOrWhiteSpace(_config.BackupJikanUrl)
+                ? "https://jikanapi.freemyip.com/v4/"
+                : _config.BackupJikanUrl;
+
+            if (_primaryClient == null || _backupClient == null ||
+                p != _primaryUrl || b != _backupUrl)
             {
-                return await action(PrimaryJikan.Value);
-            }
-            catch
-            {
-                return await action(BackupJikan.Value);
+                _primaryClient = CreateClient(p);
+                _backupClient = CreateClient(b);
+
+                _primaryUrl = p;
+                _backupUrl = b;
             }
         }
 
-        private static ICacheStore Cache;
+        private static async Task<T> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
+        {
+            EnsureClients();
 
-        private static TimeSpan BackupExpiry;
-        private static TimeSpan SearchExpiry;
+            async Task<T> Try(Jikan client)
+            {
+                var result = await action(client);
 
-        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
+                if (result == null)
+                    throw new Exception("Null response from Jikan");
+
+                return result;
+            }
+
+            try
+            {
+                return await Try(_primaryClient);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                return await Try(_backupClient);
+            }
+        }
+
+        private static bool DisableLocalCache => _config.DisableLocalCache;
+
 
         public static void Initialize(IApplicationPaths paths)
         {
@@ -65,13 +106,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 if (_initialized) return;
                 _initialized = true;
 
-                var baseDir = Path.Combine(paths.CachePath, "myanimelist");
-                Directory.CreateDirectory(baseDir);
+                var cachePath = Path.Combine(paths.CachePath, "myanimelist");
+                Directory.CreateDirectory(cachePath);
 
-                BackupExpiry = TimeSpan.FromDays(_config.CacheBackupOtherTime);
-                SearchExpiry = TimeSpan.FromMinutes(_config.CacheSearchTime);
-
-                Cache = new LiteDbCacheStore(baseDir, _config.DisableLocalCache);
+                Cache = new LiteDbCacheStore(cachePath, DisableLocalCache);
             }
         }
 

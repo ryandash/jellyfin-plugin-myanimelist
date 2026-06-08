@@ -38,6 +38,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             EnableDebug = false;
         }
 
+        public string PrimaryJikanUrl { get; set; } = "";
+        public string BackupJikanUrl { get; set; } = "";
+
         // === Title Settings ===
         public TitlePreferenceType TitlePreference { get; set; }
         public TitlePreferenceType OriginalTitlePreference { get; set; }
