@@ -36,7 +36,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             new(() => CreateClient("https://api.jikan.moe/v4/"));
 
         private static readonly Lazy<Jikan> BackupJikan =
-            new(() => CreateClient("http://jikanapi.freemyip.com:8080/v4/"));
+            new(() => CreateClient("https://jikanapi.freemyip.com/v4/"));
         private static async Task<T> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
         {
             try
