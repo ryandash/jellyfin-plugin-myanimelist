@@ -1,16 +1,19 @@
-5ee1124 Update Jellyfin.Plugin.MyAnimeList.csproj
+b8b6886 Adjustable Jikan API
 
-- Version bump
+- Allow the user to change the Jikan API URL for both primary and backup
 
-b58ae17 Adjustments
+- Use backup when there is null data from primary
 
-- Version bump
+- Make more settings apply dynamically so a restart is not required after saving plugin settings
 
-- Only show broadcast information if the anime is airing. Otherwise there is no need to show it.
+- Adjust Jikan timeout to 5 minutes
 
-- Swap Primary and backup Jikan instances. Need to work on finding a better place to host my own Jikan instance.
+2da0478 Updates
 
-- Cleanup
+- Version Bump
 
-5f06b4d Update issue templates
-19ced99 Update manifest
+- Update Backup server
+
+- Update jellyfin Controller
+
+eae8deb Update manifest
