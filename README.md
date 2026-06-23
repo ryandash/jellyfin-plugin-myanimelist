@@ -37,7 +37,7 @@ Anime
 
 #### Optional: MyAnimeList ID in Folder Name
 
-You can optionally include a MyAnimeList ID directly in the series folder name that will be used instead of searching.
+You can optionally include a MyAnimeList ID directly in the series folder name which will be used instead of searching.
 
 Format:
 Anime Name [mal-<mal_id>]
