@@ -64,26 +64,6 @@
                             <div class="fieldDescription">Fallback cache duration for non-search data. Used when the Jikan API does not provide an expiration time.</div>
                         </div>
                         <label class="emby-checkbox-label">
-                            <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore existing metadata when fetching new data. (still uses existing metadata for episodes)</span>
-                        </label>
-                        <label class="emby-checkbox-label" style="margin-left: 40px;">
-                            <input id="chkIgnoreEpisodeMetadata" name="chkIgnoreEpisodeMetadata" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore episode-specific metadata when fetching new data</span>
-                        </label>
-                        <label class="emby-checkbox-label">
-                            <input id="chkEnableBestAttempt" name="chkEnableBestAttempt" type="checkbox" is="emby-checkbox" />
-                            <span>Enable fallback to the closest matching search result.</span>
-                        </label>
-                        <div class="fieldDescription" style="margin-left: 40px; color: #999;">
-                            <p style="margin: 0 0 4px 0;">Only enable this if you are experiencing failed or missing matches.</p>
-                            <p style="margin: 0 0 4px 0;">For best results, ensure:</p>
-                            <ul style="margin: 0 0 0 18px; padding: 0;">
-                                <li>Library providers are ordered correctly (preferred source first)</li>
-                                <li>Anime and non-anime content are separated into different libraries</li>
-                            </ul>
-                        </div>
-                        <label class="emby-checkbox-label">
                             <input id="chkEnableNSFW" name="chkEnableNSFW" type="checkbox" is="emby-checkbox" />
                             <span>Enable NSFW Results.</span>
                         </label>
@@ -100,8 +80,28 @@
                             <span>Disable file-based caching. Data will still be cached in memory. Restart after disabling file-based cache to clear memory cache.</span>
                         </label>
                         <label class="emby-checkbox-label">
+                            <input id="chkEnableBestAttempt" name="chkEnableBestAttempt" type="checkbox" is="emby-checkbox" />
+                            <span>Enable fallback to the first search result from Jikan.</span>
+                        </label>
+                        <div class="fieldDescription" style="margin-left: 40px; color: #999;">
+                            <p style="margin: 0 0 4px 0;">Only enable this if you are experiencing failed or missing matches.</p>
+                            <p style="margin: 0 0 4px 0;">For best results, ensure:</p>
+                            <ul style="margin: 0 0 0 18px; padding: 0;">
+                                <li>Library providers are ordered correctly (preferred source first)</li>
+                                <li>Anime and non-anime content are separated into different libraries</li>
+                            </ul>
+                        </div>
+                        <label class="emby-checkbox-label">
                             <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
                             <span>Enable more debug information.</span>
+                        </label>
+                        <label class="emby-checkbox-label">
+                            <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
+                            <span>Ignore metadata MyAnimeList ID when refreshing data. Disable this after using it. (still uses existing metadata for episodes)</span>
+                        </label>
+                        <label class="emby-checkbox-label" style="margin-left: 40px;">
+                            <input id="chkIgnoreEpisodeMetadata" name="chkIgnoreEpisodeMetadata" type="checkbox" is="emby-checkbox" />
+                            <span>Ignore episode-specific metadata MyAnimeList ID when refreshing data. Disable this after using it.</span>
                         </label>
                         <div>
                             <button is="emby-button" type="submit" class="raised button-submit block emby-button">

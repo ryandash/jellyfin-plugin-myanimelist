@@ -331,7 +331,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
-        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, bool nsfw, CancellationToken token)
+        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, bool nsfw, bool isMovie, CancellationToken token)
         {
             var key = $"search:{term}:nsfw:{nsfw}";
 
@@ -342,14 +342,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     cached.Select(id => GetAnimeFullAsync(id, token, false))
                 );
 
-                return results.OrderBy(x => x.MalId).ToList();
+                return results.ToList();
             }
 
             AnimeSearchConfig searchConfig = new AnimeSearchConfig
             {
                 Query = term,
                 Page = 1,
-                Sfw = !nsfw
+                Sfw = !nsfw,
+                Type = isMovie ? AnimeType.Movie : AnimeType.EveryType,
             };
             var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
 
@@ -369,7 +370,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
 
-            return anime.OrderBy(a => a.MalId.Value).ToList();
+            return anime.ToList();
         }
 
         private static Task<List<AnimeCharacterIdCacheDto>> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)

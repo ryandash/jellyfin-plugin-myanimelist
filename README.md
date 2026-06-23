@@ -2,7 +2,7 @@
 
 ## About
 
-This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe/) and MyAnimeList's public API.
+This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe/).
 
 #### Please report any issues you find.
 

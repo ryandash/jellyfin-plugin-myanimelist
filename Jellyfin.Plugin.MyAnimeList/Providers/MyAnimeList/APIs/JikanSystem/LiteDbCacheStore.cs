@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
         private readonly bool disableLocalCache;
-        private const int CacheSchemaVersion = 8;
+        private const int CacheSchemaVersion = 9;
 
         private class CacheItem
         {

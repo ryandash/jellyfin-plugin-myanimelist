@@ -27,8 +27,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonLanguageFilterPreference = LanguageFilterType.All;
             MaxPeople = 0;
             MaxGenres = 5;
-            IgnoreMetadata = false;
-            IgnoreEpisodeMetadata = false;
             EnableBestAttempt = false;
             ExcludeSpecials = false;
             UseExternalIDs = false;
@@ -36,6 +34,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             CacheBackupOtherTime = 1;
             CacheSearchTime = 60;
             EnableDebug = false;
+            IgnoreMetadata = false;
+            IgnoreEpisodeMetadata = false;
         }
 
         public string PrimaryJikanUrl { get; set; } = "";
@@ -51,8 +51,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         // === Metadata Options ===
         public int MaxGenres { get; set; }
-        public bool IgnoreMetadata { get; set; }
-        public bool IgnoreEpisodeMetadata { get; set; }
         public bool EnableBestAttempt { get; set; }
         public bool ExcludeSpecials { get; set; }
         public bool DisableLocalCache { get; set; }
@@ -65,5 +63,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         // === Debugging ===
         public bool EnableDebug { get; set; }
+        public bool IgnoreMetadata { get; set; }
+        public bool IgnoreEpisodeMetadata { get; set; }
     }
 }
