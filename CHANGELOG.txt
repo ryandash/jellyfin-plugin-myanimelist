@@ -1,12 +1,11 @@
-654f7e5 Refactoring
+2e10c96 Remove and cleanup settings
 
-- Remove MyAnimeList API and only use Jikan
+- Version bump
 
-- Use Original Name when searching and fallback to parsed name instead of only using parsed name
+- Remove IgnoreMetadata settings and add ForceNewMetadata
 
-- Adjust similarity comparison to 90% but still use highest similarity
+- Create debug submenu in settings
 
-- Version Bump
+- Cleanup
 
-a0c1f0b Update README.md
-4dfae70 Update manifest
+f031524 Update manifest
