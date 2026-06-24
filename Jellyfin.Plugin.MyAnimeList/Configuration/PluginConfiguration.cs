@@ -34,19 +34,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             CacheBackupOtherTime = 1;
             CacheSearchTime = 60;
             EnableDebug = false;
-            IgnoreMetadata = false;
-            IgnoreEpisodeMetadata = false;
+            ForceNewMetadata = false;
         }
 
-        public string PrimaryJikanUrl { get; set; } = "";
-        public string BackupJikanUrl { get; set; } = "";
+        public string PrimaryJikanUrl { get; set; }
+        public string BackupJikanUrl { get; set; }
 
         // === Title Settings ===
         public TitlePreferenceType TitlePreference { get; set; }
         public TitlePreferenceType OriginalTitlePreference { get; set; }
 
         // === People & Language Filters ===
-        public LanguageFilterType PersonLanguageFilterPreference { get; set; } = LanguageFilterType.Japanese;
+        public LanguageFilterType PersonLanguageFilterPreference { get; set; }
         public int MaxPeople { get; set; }
 
         // === Metadata Options ===
@@ -63,7 +62,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         // === Debugging ===
         public bool EnableDebug { get; set; }
-        public bool IgnoreMetadata { get; set; }
-        public bool IgnoreEpisodeMetadata { get; set; }
+        public bool ForceNewMetadata { get; set; }
     }
 }

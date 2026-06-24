@@ -67,7 +67,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (!string.IsNullOrEmpty(malId))
             {
-                if (!_config.IgnoreMetadata || (info is EpisodeInfo && !_config.IgnoreEpisodeMetadata) || SearchResult)
+                if (!_config.ForceNewMetadata || SearchResult)
                 {
                     if (enableDebug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
                     return (await JikanAPI.GetAnimeFullAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
@@ -100,7 +100,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 malid = extractedMalId.Value;
                 similarityConfidence = 100;
             }
-            else if (!string.IsNullOrWhiteSpace(info.Name))
+            else if (!string.IsNullOrWhiteSpace(info.Name) && !_config.ForceNewMetadata)
             {
                 _log.LogInformation("Search using Original name: {name}", info.Name);
                 (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, info.Name, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
@@ -302,7 +302,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     }
 
                     int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanTitle, string.Empty).Trim(), normalizedSearch);
-                    if (enableDebug) _log.LogInformation($"Similarity {similarity} Clean title: {cleanTitle}");
                     if (similarity == 100)
                         return (anime.MalId, similarity);
 

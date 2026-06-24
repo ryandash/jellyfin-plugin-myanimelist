@@ -91,18 +91,24 @@
                                 <li>Anime and non-anime content are separated into different libraries</li>
                             </ul>
                         </div>
-                        <label class="emby-checkbox-label">
-                            <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
-                            <span>Enable more debug information.</span>
-                        </label>
-                        <label class="emby-checkbox-label">
-                            <input id="chkIgnoreMetadata" name="chkIgnoreMetadata" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore metadata MyAnimeList ID when refreshing data. Disable this after using it. (still uses existing metadata for episodes)</span>
-                        </label>
-                        <label class="emby-checkbox-label" style="margin-left: 40px;">
-                            <input id="chkIgnoreEpisodeMetadata" name="chkIgnoreEpisodeMetadata" type="checkbox" is="emby-checkbox" />
-                            <span>Ignore episode-specific metadata MyAnimeList ID when refreshing data. Disable this after using it.</span>
-                        </label>
+                        <details style="margin-top: 1em;">
+                            <summary style="cursor: pointer; font-weight: bold;">
+                                Advanced / Debug Options
+                            </summary>
+
+                            <div style="margin-left: 20px; margin-top: 10px;">
+
+                                <label class="emby-checkbox-label">
+                                    <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
+                                    <span>Enable additional debug logging.</span>
+                                </label>
+
+                                <label class="emby-checkbox-label">
+                                    <input id="chkForceNewMetadata" name="chkForceNewMetadata" type="checkbox" is="emby-checkbox" />
+                                    <span>Force refreshes and identify to ignore current metadata and only use new metadata. Used mainly during development. Disable after use.</span>
+                                </label>
+                            </div>
+                        </details>
                         <div>
                             <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                                 <span>Save</span>
@@ -133,8 +139,7 @@
                 document.getElementById('chkCacheBackupOtherTime').value = config.CacheBackupOtherTime;
                 document.getElementById('chkCacheSearchTime').value = config.CacheSearchTime;
 
-                document.getElementById('chkIgnoreMetadata').checked = config.IgnoreMetadata;
-                document.getElementById('chkIgnoreEpisodeMetadata').checked = config.IgnoreEpisodeMetadata;
+                document.getElementById('chkForceNewMetadata').checked = config.ForceNewMetadata;
                 document.getElementById('chkEnableBestAttempt').checked = config.EnableBestAttempt;
 
                 document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
@@ -164,8 +169,7 @@
                 config.CacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
                 config.CacheSearchTime = document.getElementById('chkCacheSearchTime').value;
 
-                config.IgnoreMetadata = document.getElementById('chkIgnoreMetadata').checked;
-                config.IgnoreEpisodeMetadata = document.getElementById('chkIgnoreEpisodeMetadata').checked;
+                config.ForceNewMetadata = document.getElementById('chkForceNewMetadata').checked;
                 config.EnableBestAttempt = document.getElementById('chkEnableBestAttempt').checked;
 
                 config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
