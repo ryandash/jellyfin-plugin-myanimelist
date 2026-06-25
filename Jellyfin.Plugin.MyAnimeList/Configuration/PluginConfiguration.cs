@@ -22,6 +22,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
     {
         public PluginConfiguration()
         {
+            PrimaryJikanUrl = "";
+            BackupJikanUrl = "";
             TitlePreference = TitlePreferenceType.Localized;
             OriginalTitlePreference = TitlePreferenceType.JapaneseRomaji;
             PersonLanguageFilterPreference = LanguageFilterType.All;

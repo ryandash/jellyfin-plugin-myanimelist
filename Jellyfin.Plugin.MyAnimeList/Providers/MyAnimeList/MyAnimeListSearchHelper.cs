@@ -42,6 +42,111 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         private static readonly Regex MalIdRegex = new Regex(@"\[mal-(\d+)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        public async Task<AnimeFullCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
+        {
+
+            bool debug = _config.EnableDebug;
+            bool forceNew = _config.ForceNewMetadata;
+
+            long? malId = TryGetDirectMalId(info);
+
+            if (malId.HasValue && (!forceNew || SearchResult))
+            {
+                if (debug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
+                return (await JikanAPI.GetAnimeFullAsync(malId.Value, cancellationToken).ConfigureAwait(false));
+            }
+
+            if (debug)
+            {
+                _log.LogInformation("Original path: {path}", info.Path);
+                _log.LogInformation("Original name: {name}", info.Name);
+            }
+
+            string searchTerm = GetSearchName(info, _log, debug);
+
+            int? confidence = null;
+
+            malId ??= TryGetSeriesOrEpisodeMalId(info, out confidence);
+
+            if (!malId.HasValue && !string.IsNullOrWhiteSpace(searchTerm))
+            {
+                malId = ExtractMalIdFromSearchName(searchTerm);
+                if (malId.HasValue)
+                {
+                    confidence = 100;
+                    if (debug) _log.LogInformation("Extracted MAL ID {MalId} from name", malId);
+                }
+            }
+
+            string searchName = (!string.IsNullOrWhiteSpace(info.Name) && !forceNew) ? info.Name : (!malId.HasValue ? searchTerm : null);
+
+            if (!malId.HasValue && !string.IsNullOrWhiteSpace(searchName))
+            {
+                if (debug) _log.LogInformation("Search using name: {name}", searchName);
+                (malId, int similarity) = await GetBestAnimeID(_log, searchName, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
+                if (malId.HasValue)
+                {
+                    confidence = similarity;
+                }
+                else if (debug) _log.LogError("Could not find MalID using Name: {name}", searchName);
+            }
+
+            if (!malId.HasValue)
+            {
+                if (debug) _log.LogError("Failed to Find MAL ID");
+                return null;
+            }
+
+            if (debug) _log.LogInformation("Found MalID: {MalId}", malId);
+
+            int seasonNumber = info switch
+            {
+                EpisodeInfo e => e.ParentIndexNumber ?? 1,
+                _ => info.IndexNumber ?? 1
+            };
+
+            if (info is MovieInfo)
+            {
+                return await JikanAPI.GetAnimeFullAsync(malId.Value, cancellationToken).ConfigureAwait(false);
+            }
+
+            int conf = confidence ?? 100;
+
+            return await GetCurrentAnimeSeasonAsync(_log, malId.Value, conf, seasonNumber, cancellationToken).ConfigureAwait(false);
+        }
+
+        private static long? TryGetDirectMalId(ItemLookupInfo info)
+        {
+            string id = info switch
+            {
+                EpisodeInfo e => e.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeList),
+                _ => info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList)
+            };
+
+            return long.TryParse(id, out var value) ? value : null;
+        }
+
+        private static long? TryGetSeriesOrEpisodeMalId(ItemLookupInfo info, out int? confidence)
+        {
+            confidence = null;
+
+            if (info is SeasonInfo season &&
+                long.TryParse(season.SeriesProviderIds.GetOrDefault(ProviderNames.MyAnimeList), out var seasonId))
+            {
+                confidence = 100;
+                return seasonId;
+            }
+
+            if (info is EpisodeInfo episode &&
+                long.TryParse(episode.SeriesProviderIds.GetOrDefault(ProviderNames.MyAnimeList), out var epId))
+            {
+                confidence = 100;
+                return epId;
+            }
+
+            return null;
+        }
+
         private static long? ExtractMalIdFromSearchName(string searchName)
         {
             var match = MalIdRegex.Match(searchName);
@@ -52,118 +157,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 return malId;
 
             return null;
-        }
-
-        public async Task<AnimeFullCacheDto> GetAnimeAsync(ILogger _log, ItemLookupInfo info, CancellationToken cancellationToken, bool SearchResult)
-        {
-
-            bool enableDebug = _config.EnableDebug;
-
-            string malId = info switch
-            {
-                EpisodeInfo episodeInfo => episodeInfo.SeasonProviderIds.GetOrDefault(ProviderNames.MyAnimeList),
-                _ => info.ProviderIds.GetOrDefault(ProviderNames.MyAnimeList)
-            };
-
-            if (!string.IsNullOrEmpty(malId))
-            {
-                if (!_config.ForceNewMetadata || SearchResult)
-                {
-                    if (enableDebug) _log.LogInformation("Returned malID: {malID} for type {type}", malId, info.GetType().ToString());
-                    return (await JikanAPI.GetAnimeFullAsync(long.Parse(malId), cancellationToken).ConfigureAwait(false));
-                }
-                else
-                {
-                    if (enableDebug) _log.LogInformation("Ignored malID: {malID}", malId);
-                }
-            }
-
-            if (enableDebug)
-            {
-                _log.LogInformation("Original path: {path}", info.Path);
-                _log.LogInformation("Original name: {name}", info.Name);
-            }
-
-            string searchTerm = GetSearchName(info, _log, enableDebug);
-
-            long? malid = null;
-            int? similarityConfidence = null;
-            long? extractedMalId = null;
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                extractedMalId = ExtractMalIdFromSearchName(searchTerm);
-            }
-
-            if (extractedMalId.HasValue)
-            {
-                if (enableDebug) _log.LogInformation("Extracted MAL ID from name: {malId}", extractedMalId.Value);
-                malid = extractedMalId.Value;
-                similarityConfidence = 100;
-            }
-            else if (!string.IsNullOrWhiteSpace(info.Name) && !_config.ForceNewMetadata)
-            {
-                _log.LogInformation("Search using Original name: {name}", info.Name);
-                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, info.Name, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
-                if (malIdFromName.HasValue)
-                {
-                    malid = malIdFromName.Value;
-                    similarityConfidence = similarity;
-                }
-                else
-                {
-                    if (enableDebug) _log.LogError("Could not find MalID using Original Name: {name}", info.Name);
-                }
-            }
-            else if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                _log.LogInformation("Search using parsed searchTerm: {searchTerm}", searchTerm);
-                (long? malIdFromName, int similarity) = await GetBestAnimeID(_log, searchTerm, info is MovieInfo, _config.EnableBestAttempt, cancellationToken).ConfigureAwait(false);
-                if (malIdFromName.HasValue)
-                {
-                    malid = malIdFromName.Value;
-                    similarityConfidence = similarity;
-                }
-                else
-                {
-                    if (enableDebug) _log.LogError("Could not find MalID using: {searchTerm}", searchTerm);
-                    return null;
-                }
-            }
-
-            if (malid is null)
-            {
-                if (enableDebug) _log.LogError("Could not search for malid");
-                return null;
-            }
-
-            if (enableDebug) _log.LogInformation($"Found MalID: {malid}", malid);
-            return info switch
-            {
-                MovieInfo => (await JikanAPI.GetAnimeFullAsync(malid.Value, cancellationToken).ConfigureAwait(false)),
-                EpisodeInfo => await GetCurrentAnimeSeasonAsync(_log, malid.Value, similarityConfidence.Value, info.ParentIndexNumber ?? 1, cancellationToken).ConfigureAwait(false),
-                _ => await GetCurrentAnimeSeasonAsync(_log, malid.Value, similarityConfidence.Value, info.IndexNumber ?? 1, cancellationToken).ConfigureAwait(false)
-            };
-        }
-        private string StripLibraryPath(string itemPath, ILogger log, bool enableDebug)
-        {
-            if (string.IsNullOrEmpty(itemPath))
-                return itemPath;
-
-            foreach (var root in _libraryRoots)
-            {
-                if (itemPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (enableDebug) log.LogInformation("Removed library root '{Root}' from '{Path}'", root, itemPath);
-
-                    int start = root.Length;
-                    if (start < itemPath.Length && itemPath[start] == Path.DirectorySeparatorChar)
-                        start++;
-
-                    return itemPath[start..];
-                }
-            }
-
-            return itemPath;
         }
 
         private static readonly char[] separator = ['-', '_'];
@@ -222,6 +215,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     return info.Name;
             }
         }
+        private string StripLibraryPath(string itemPath, ILogger log, bool enableDebug)
+        {
+            if (string.IsNullOrEmpty(itemPath))
+                return itemPath;
+
+            foreach (var root in _libraryRoots)
+            {
+                if (itemPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (enableDebug) log.LogInformation("Removed library root '{Root}' from '{Path}'", root, itemPath);
+
+                    int start = root.Length;
+                    if (start < itemPath.Length && itemPath[start] == Path.DirectorySeparatorChar)
+                        start++;
+
+                    return itemPath[start..];
+                }
+            }
+
+            return itemPath;
+        }
 
         private static readonly Regex NormalizeRegex = new Regex("[:.!]", RegexOptions.Compiled);
 
@@ -253,62 +267,60 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         {
             bool enableDebug = _config.EnableDebug;
             bool enableNSFW = _config.EnableNSFW;
-            ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
-            if (enableDebug) _log.LogInformation($"Search title: {searchTitle}");
-            bool hasParsedYear = int.TryParse(year, out int parsedYear);
-            if (enableDebug && hasParsedYear)
-            {
-                _log.LogInformation($"Parsed year: {parsedYear}");
-            }
 
-            var searchResults = await JikanAPI.SearchAnimeAsync(searchTitle, enableNSFW, isMovie, cancellationToken).ConfigureAwait(false);
-            if (enableDebug) _log.LogInformation($"Found {searchResults.Count()} search results");
-            string normalizedSearch = NormalizeRegex.Replace(searchTitle, string.Empty).ToLowerInvariant();
-            if (enableDebug) _log.LogInformation($"Normalized title: {normalizedSearch}");
+            ExtractTitleAndYear(searchTerm, out string searchTitle, out string year);
+
+            bool hasParsedYear = int.TryParse(year, out int parsedYear);
+
+            var searchResults = (await JikanAPI.SearchAnimeAsync(searchTitle, enableNSFW, isMovie, cancellationToken).ConfigureAwait(false)).ToList();
+
+            if (enableDebug) _log.LogInformation($"Found {searchResults.Count} search results");
+
+            string Normalize(string input) => NormalizeRegex.Replace(input, string.Empty).Trim().ToLowerInvariant();
+
+            string normalizedSearch = Normalize(searchTitle);
 
             long? bestMalId = null;
             int bestSimilarity = -1;
 
-            List<AnimeFullCacheDto> orderedSearchResults = searchResults.OrderBy(m => m.MalId).ToList();
+            var orderedSearchResults = searchResults.OrderBy(m => m.MalId).ToList();
 
             foreach (var anime in orderedSearchResults)
             {
-                if (hasParsedYear)
-                {
-                    int? animeYear = anime.Aired?.From?.Year;
+                int? animeYear = anime.Aired?.From?.Year;
 
-                    bool isInYearRange = !animeYear.HasValue || Math.Abs(animeYear.Value - parsedYear) <= 1;
-                    if (!isInYearRange)
-                        continue;
-                }
+                if (hasParsedYear && animeYear.HasValue &&
+                    Math.Abs(animeYear.Value - parsedYear) > 1)
+                    continue;
+
+                var malId = anime.MalId;
 
                 foreach (var titleObj in anime.Titles)
                 {
-                    string rawTitle = titleObj.Title;
+                    var rawTitle = titleObj.Title;
                     if (string.IsNullOrWhiteSpace(rawTitle))
                         continue;
-                    rawTitle = rawTitle.ToLowerInvariant();
 
                     string cleanTitle;
-                    if (rawTitle.Contains('('))
-                    {
+                    if (rawTitle.Contains('(')) {
                         ExtractTitleAndYear(rawTitle, out cleanTitle, out _);
-                        if (string.IsNullOrWhiteSpace(cleanTitle))
-                            continue;
+
+                        if (string.IsNullOrWhiteSpace(cleanTitle)) continue;
                     }
                     else
                     {
                         cleanTitle = rawTitle;
                     }
 
-                    int similarity = FuzzierSharp.Fuzz.Ratio(NormalizeRegex.Replace(cleanTitle, string.Empty).Trim(), normalizedSearch);
+                    int similarity = FuzzierSharp.Fuzz.Ratio(Normalize(cleanTitle), normalizedSearch);
+
                     if (similarity == 100)
-                        return (anime.MalId, similarity);
+                        return (malId, similarity);
 
                     if (similarity >= 90 && similarity > bestSimilarity)
                     {
                         bestSimilarity = similarity;
-                        bestMalId = anime.MalId;
+                        bestMalId = malId;
                     }
                 }
             }
@@ -316,11 +328,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (bestMalId.HasValue)
                 return (bestMalId, bestSimilarity);
 
-            if (enableDebug) _log.LogInformation($"Found no good matches without best attempt");
+            if (!enableBestAttempt) return (null, 0);
 
-            return enableBestAttempt
-                ? (searchResults.FirstOrDefault().MalId, 50)
-                : (null, 0);
+            if (!isMovie) {
+                var firstFallback = orderedSearchResults.FirstOrDefault(a => a.Titles.Any(t => t.Title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)));
+
+                if (firstFallback != null) return (firstFallback.MalId, 50);
+            }
+
+            return searchResults.Count > 0 ? (searchResults[0].MalId, 50): (null, 0);
         }
 
         public async Task<AnimeFullCacheDto> GetCurrentAnimeSeasonAsync(ILogger _log, long malId, int similarityConfidence, int seasonNumber, CancellationToken cancellationToken)
