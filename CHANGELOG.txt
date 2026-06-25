@@ -1,11 +1,11 @@
-2e10c96 Remove and cleanup settings
+784933b Version bump
 
-- Version bump
+39c655d Improve speed and accuracy + bug fix
 
-- Remove IgnoreMetadata settings and add ForceNewMetadata
+- Make season and episode searches faster by using more stored metadata reducing API calls
 
-- Create debug submenu in settings
+- Make fallback use ordered results first if it is not a movie and the ordered results contain the search title otherwise use first result from Jikan
 
-- Cleanup
+- Fix for initial settings configuration creation not initializing API URL string
 
-f031524 Update manifest
+c0f64a8 Update manifest
