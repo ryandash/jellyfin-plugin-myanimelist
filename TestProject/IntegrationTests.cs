@@ -2,6 +2,7 @@ using Jellyfin.Plugin.MyAnimeList.Providers;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -19,7 +20,7 @@ namespace UnitTestProject
     {
         private readonly ILogger _log;
         private readonly Mock<ILibraryManager> _libraryManagerMock;
-        private readonly MyAnimeListSearchHelper _searchHelper;
+        private readonly SearchHelper _searchHelper;
         private readonly ITestOutputHelper _output;
         private readonly string libraryLocation = "D:\\Anime\\";
 
@@ -50,9 +51,7 @@ namespace UnitTestProject
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("UnitTest");
             });
 
-            IHttpClientFactory httpClientFactory = services.BuildServiceProvider().GetRequiredService<IHttpClientFactory>();
-
-            _searchHelper = new MyAnimeListSearchHelper(_libraryManagerMock.Object, httpClientFactory);
+            _searchHelper = new SearchHelper(_libraryManagerMock.Object);
             _output = output;
         }
 
@@ -184,7 +183,7 @@ namespace UnitTestProject
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka IV: Shin Shou - Meikyuu-hen
             Assert.Equal(47164, anime.MalId.Value);
 
-            (int episodeNumber, AnimeFullCacheDto updatedAnime) = await _searchHelper.GetSeasonEpisodeNumberAsync(
+            (int episodeNumber, AnimeFullCacheDto updatedAnime) = await RelationsResolver.GetSeasonEpisodeNumberAsync(
                     _log,
                     episodeInfo.IndexNumber.Value,
                     episodeInfo.ParentIndexNumber.Value,

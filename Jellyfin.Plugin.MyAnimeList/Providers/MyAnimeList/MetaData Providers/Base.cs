@@ -11,20 +11,20 @@ using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public abstract class MyAnimeListBaseProvider<TItem, TInfo> : IRemoteMetadataProvider<TItem, TInfo>
+    public abstract class Base<TItem, TInfo> : IRemoteMetadataProvider<TItem, TInfo>
         where TItem : BaseItem, IHasLookupInfo<TInfo>, new()
         where TInfo : ItemLookupInfo, new()
     {
         protected readonly ILogger _log;
-        protected readonly MyAnimeListSearchHelper _searchHelper;
+        protected readonly SearchHelper _searchHelper;
         private readonly IHttpClientFactory _httpClientFactory;
 
         public string Name => ProviderNames.MyAnimeList;
 
-        protected MyAnimeListBaseProvider(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
+        protected Base(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
             _log = logger;
-            _searchHelper = new MyAnimeListSearchHelper(libraryManager, httpClientFactory);
+            _searchHelper = new SearchHelper(libraryManager);
             _httpClientFactory = httpClientFactory;
         }
 

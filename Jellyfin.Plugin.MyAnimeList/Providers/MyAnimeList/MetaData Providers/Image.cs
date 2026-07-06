@@ -1,7 +1,5 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
@@ -10,19 +8,18 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Season = MediaBrowser.Controller.Entities.TV.Season;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class MyAnimeListAnimeImageProvider : IRemoteImageProvider
+    public class Image : IRemoteImageProvider
     {
         private readonly IHttpClientFactory _httpClientFactory;
 
         public string Name => ProviderNames.MyAnimeList;
 
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Person;
+        public bool Supports(BaseItem item) => item is MediaBrowser.Controller.Entities.TV.Series || item is MediaBrowser.Controller.Entities.TV.Season || item is MediaBrowser.Controller.Entities.Movies.Movie || item is Person;
 
-        public MyAnimeListAnimeImageProvider(IHttpClientFactory httpClientFactory)
+        public Image(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
         }

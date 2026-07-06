@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
 {
-    public class MyAnimeListExternalUrlProvider : IExternalUrlProvider
+    public class ExternalUrlProvider : IExternalUrlProvider
     {
         public string Name => "MyAnimeList";
 

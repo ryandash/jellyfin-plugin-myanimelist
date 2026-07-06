@@ -5,7 +5,7 @@ using MediaBrowser.Model.Providers;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
-    public class MyAnimeListAnimeEpisodeExternalId : IExternalId
+    public class AnimeEpisodeExternalId : IExternalId
     {
         public bool Supports(IHasProviderIds item) =>
             item is Episode;
