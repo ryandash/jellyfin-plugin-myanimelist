@@ -192,8 +192,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
                 return (episodeNumber, anime);
             }
 
-            _log.LogInformation($"It should have returned if it was special");
-
             var relations = anime.Relations ?? (await JikanAPI.GetAnimeFullAsync(anime.MalId.Value, cancellationToken, true).ConfigureAwait(false))
                                                  ?.Relations ?? new List<RelatedEntryDto>();
 
@@ -260,8 +258,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
                         }
                     }
                 }
-
-                _log.LogInformation($"This should never happen");
 
                 return (0, null);
             }
