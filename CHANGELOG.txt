@@ -1,11 +1,15 @@
-784933b Version bump
+816e395 Update RelationsResolver.cs
 
-39c655d Improve speed and accuracy + bug fix
+- Remove log info
 
-- Make season and episode searches faster by using more stored metadata reducing API calls
+b8f303f Refactoring + Improve Special handling
 
-- Make fallback use ordered results first if it is not a movie and the ordered results contain the search title otherwise use first result from Jikan
+- Version Bump
 
-- Fix for initial settings configuration creation not initializing API URL string
+- Renaming classes and break apart helper into multiple classes for easier management
 
-c0f64a8 Update manifest
+- Minor cleanup
+
+- Adjust special handling for episodes. Now allows renaming special episode name in metadata + refresh to get correct special. Now uses more filename formats when search for specials.
+
+80b8671 Update manifest
