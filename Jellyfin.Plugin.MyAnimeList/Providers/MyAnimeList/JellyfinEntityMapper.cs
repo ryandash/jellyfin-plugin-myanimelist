@@ -52,8 +52,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 PremiereDate = aired,
                 EndDate = aired,
                 RunTimeTicks = episode.RunTimeTicks,
-                CommunityRating = episode.Score > 0 ? (float?)episode.Score : null,
-
+                CommunityRating = episode.Score.HasValue ? (float?)(episode.Score.Value * 2) : null
             };
 
             episodeObject.SetProviderId(ProviderNames.MyAnimeList, episode.Url);
