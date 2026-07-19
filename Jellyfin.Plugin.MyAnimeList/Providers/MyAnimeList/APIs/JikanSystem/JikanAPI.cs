@@ -49,7 +49,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static void EnsureClients()
         {
             var p = string.IsNullOrWhiteSpace(_config.PrimaryJikanUrl)
-                ? "https://api.jikan.moe/v4/"
+                ? "https://api.tenrai.org/v1/"
                 : _config.PrimaryJikanUrl;
             var b = string.IsNullOrWhiteSpace(_config.BackupJikanUrl)
                 ? "https://jikanapi.freemyip.com/v4/"
