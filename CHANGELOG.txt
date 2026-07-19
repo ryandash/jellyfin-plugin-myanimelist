@@ -1,15 +1,11 @@
-816e395 Update RelationsResolver.cs
+b6e4db8 Change main API URL
 
-- Remove log info
+- Change to using Tenrai as the URL instead of Jikan due to Jikan's unreliability and reported end of life
 
-b8f303f Refactoring + Improve Special handling
+- Change Version to follow Jellyfin's new Versioning in preparation for Jellyfin Server 12
 
-- Version Bump
+0b67de6 Adjust episode rating
 
-- Renaming classes and break apart helper into multiple classes for easier management
+- Adjust episode score, MAL does episode rating out of 5 so I double it to make it out of 10.
 
-- Minor cleanup
-
-- Adjust special handling for episodes. Now allows renaming special episode name in metadata + refresh to get correct special. Now uses more filename formats when search for specials.
-
-80b8671 Update manifest
+c69f57c Update manifest
