@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
@@ -10,6 +11,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
     public class ExternalUrlProvider : IExternalUrlProvider
     {
         public string Name => "MyAnimeList";
+        public static PluginConfiguration _config => Plugin.Instance.Configuration;
 
         public IEnumerable<string> GetExternalUrls(BaseItem item)
         {
@@ -23,7 +25,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                         yield return $"https://myanimelist.net/anime/{externalId}/";
                         break;
                     case Person:
-                        yield return $"https://myanimelist.net/people/{externalId}/";
+                        if (_config.SwapVoiceActorsAndCharacters)
+                        {
+                            yield return $"https://myanimelist.net/character/{externalId}/";
+
+                        }
+                        else
+                        {
+                            yield return $"https://myanimelist.net/people/{externalId}/";
+                        }
                         break;
                     case Episode:
                         yield return externalId;

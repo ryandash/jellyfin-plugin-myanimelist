@@ -1,4 +1,3 @@
-using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
@@ -13,22 +12,20 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using static Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.IdMappings;
-using EpisodeInfo = MediaBrowser.Controller.Providers.EpisodeInfo;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class Episode : Base<MediaBrowser.Controller.Entities.TV.Episode, EpisodeInfo>
+    public class EpisodeProvider : BaseProvider<Episode, EpisodeInfo>
     {
         private readonly IdMappings _idMapping;
-        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
-
-        public Episode(ILogger<Episode> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
+        public EpisodeProvider(ILogger<EpisodeProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
             _idMapping = new IdMappings(httpClientFactory);
         }
-        public override async Task<MetadataResult<MediaBrowser.Controller.Entities.TV.Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
+        public override async Task<MetadataResult<Episode>> GetMetadata(EpisodeInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<MediaBrowser.Controller.Entities.TV.Episode>
+            var result = new MetadataResult<Episode>
             {
                 QueriedById = true
             };
@@ -59,10 +56,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                         episodeData = await JikanAPI.GetAnimeEpisodeAsync(malId, epResult.Episode.Value, cancellationToken).ConfigureAwait(false);
                         if (episodeData?.Url is null)
                         {
-                            _log.LogError("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}. Episode data: {EpisodeData}",
-                                malId,
-                                epResult.Episode.Value,
-                                episodeData == null ? "null" : $"Episode={episodeData.EpisodeNumber}, Title={episodeData.Title}, Url={episodeData.Url}, HasFullDetails={episodeData.HasFullDetails}");
+                            _log.LogInformation("Episode data null for MAL ID {MalId}, episode {EpisodeNumber}", malId, epResult.Episode.Value);
                         }
                     }
                     else
@@ -141,7 +135,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
             var episodeResult = new EpisodeSearchResult { episode = episodeData };
 
-            return new MetadataResult<MediaBrowser.Controller.Entities.TV.Episode>
+            return new MetadataResult<Episode>
             {
                 HasMetadata = true,
                 Item = episodeResult.ToEpisode(info, anime?.anime?.Episodes?.ToString().Length ?? 4),
@@ -149,7 +143,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             }; ;
         }
 
-        protected override MediaBrowser.Controller.Entities.TV.Episode ConvertToItem(AnimeObject media, ItemLookupInfo info)
+        protected override Episode ConvertToItem(AnimeObject media, ItemLookupInfo info)
         {
             throw new NotImplementedException();
         }

@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
@@ -11,17 +12,18 @@ using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public abstract class Base<TItem, TInfo> : IRemoteMetadataProvider<TItem, TInfo>
+    public abstract class BaseProvider<TItem, TInfo> : IRemoteMetadataProvider<TItem, TInfo>
         where TItem : BaseItem, IHasLookupInfo<TInfo>, new()
         where TInfo : ItemLookupInfo, new()
     {
         protected readonly ILogger _log;
         protected readonly SearchHelper _searchHelper;
         private readonly IHttpClientFactory _httpClientFactory;
+        public static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public string Name => ProviderNames.MyAnimeList;
 
-        protected Base(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
+        protected BaseProvider(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
             _log = logger;
             _searchHelper = new SearchHelper(libraryManager);

@@ -68,6 +68,10 @@
                             <span>Enable NSFW Results.</span>
                         </label>
                         <label class="emby-checkbox-label">
+                            <input id="chkSwapVoiceActorsAndCharacters" name="chkSwapVoiceActorsAndCharacters" type="checkbox" is="emby-checkbox" />
+                            <span>Swap Voice Actors and Characters in Cast & Crew section (Requires refreshing metadata).</span>
+                        </label>
+                        <label class="emby-checkbox-label">
                             <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
                             <span>Exclude special episodes from regular searches. TVDB-to-MAL mapping can still be used.</span>
                         </label>
@@ -146,6 +150,7 @@
                 document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
                 document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
                 document.getElementById('chkEnableNSFW').checked = config.EnableNSFW;
+                document.getElementById('chkSwapVoiceActorsAndCharacters').checked = config.SwapVoiceActorsAndCharacters;
                 document.getElementById('chkEnableDebug').checked = config.EnableDebug;
 
                 Dashboard.hideLoadingMsg();
@@ -176,6 +181,7 @@
                 config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
                 config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
                 config.EnableNSFW = document.getElementById('chkEnableNSFW').checked;
+                config.SwapVoiceActorsAndCharacters = document.getElementById('chkSwapVoiceActorsAndCharacters').checked;
                 config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
                 ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {

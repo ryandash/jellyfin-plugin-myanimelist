@@ -6,9 +6,9 @@ using SeriesInfo = MediaBrowser.Controller.Providers.SeriesInfo;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class Series : Base<MediaBrowser.Controller.Entities.TV.Series, SeriesInfo>
+    public class SeriesProvider : BaseProvider<MediaBrowser.Controller.Entities.TV.Series, SeriesInfo>
     {
-        public Series(ILogger<Series> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
+        public SeriesProvider(ILogger<SeriesProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
         }
 

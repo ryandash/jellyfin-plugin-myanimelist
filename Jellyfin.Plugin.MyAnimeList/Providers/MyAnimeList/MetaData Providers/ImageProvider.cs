@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
@@ -11,15 +12,16 @@ using System.Threading.Tasks;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class Image : IRemoteImageProvider
+    public class ImageProvider : IRemoteImageProvider
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        public static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public string Name => ProviderNames.MyAnimeList;
 
         public bool Supports(BaseItem item) => item is MediaBrowser.Controller.Entities.TV.Series || item is MediaBrowser.Controller.Entities.TV.Season || item is MediaBrowser.Controller.Entities.Movies.Movie || item is Person;
 
-        public Image(IHttpClientFactory httpClientFactory)
+        public ImageProvider(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
         }
@@ -44,8 +46,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             string mainImageUrl;
             if (item is Person)
             {
-                var person = await JikanAPI.getPersonAsync(aid, cancellationToken).ConfigureAwait(false);
-                mainImageUrl = person.Images.Image;
+                if (_config.SwapVoiceActorsAndCharacters)
+                {
+                    var character = await JikanAPI.GetCharacterAsync(aid, cancellationToken).ConfigureAwait(false);
+                    mainImageUrl = character.Images.Image;
+                }
+                else
+                {
+                    var person = await JikanAPI.GetPersonAsync(aid, cancellationToken).ConfigureAwait(false);
+                    mainImageUrl = person.Images.Image;
+                }
             }
             else
             {

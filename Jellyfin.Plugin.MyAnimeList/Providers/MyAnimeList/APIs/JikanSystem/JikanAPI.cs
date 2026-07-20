@@ -19,16 +19,25 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 {
     public static class JikanAPI
     {
-        private static readonly object InitLock = new();
         private static bool _initialized;
-
+        private static readonly object InitLock = new();
         private static ICacheStore Cache;
 
-        private static PluginConfiguration defaultConfig = new PluginConfiguration();
-        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? defaultConfig;
+        public static void Initialize(IApplicationPaths paths)
+        {
+            if (_initialized) return;
 
-        private static TimeSpan BackupExpiry => TimeSpan.FromDays(_config.CacheBackupOtherTime);
-        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(_config.CacheSearchTime);
+            lock (InitLock)
+            {
+                if (_initialized) return;
+                _initialized = true;
+
+                var cachePath = Path.Combine(paths.CachePath, "myanimelist");
+                Directory.CreateDirectory(cachePath);
+
+                Cache = new LiteDbCacheStore(cachePath);
+            }
+        }
 
         private static Jikan CreateClient(string baseUrl)
         {
@@ -45,6 +54,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static Jikan _backupClient;
         private static string _primaryUrl;
         private static string _backupUrl;
+        private static readonly PluginConfiguration DefaultConfig = new();
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
 
         private static void EnsureClients()
         {
@@ -94,27 +105,21 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
-        private static bool DisableLocalCache => _config.DisableLocalCache;
+        // HELPERS
 
-
-        public static void Initialize(IApplicationPaths paths)
-        {
-            if (_initialized) return;
-
-            lock (InitLock)
-            {
-                if (_initialized) return;
-                _initialized = true;
-
-                var cachePath = Path.Combine(paths.CachePath, "myanimelist");
-                Directory.CreateDirectory(cachePath);
-
-                Cache = new LiteDbCacheStore(cachePath, DisableLocalCache);
-            }
-        }
+        private static TimeSpan BackupExpiry => TimeSpan.FromDays(_config.CacheBackupOtherTime);
+        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(_config.CacheSearchTime);
 
         private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
 
+        private static DateTime GetExpiry(string url)
+        {
+            return JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
+                ? exp
+                : DateTime.UtcNow.Add(BackupExpiry);
+        }
+
+        // Handles fetching data with caching and in-flight request deduplication
         private static async Task<TCache> GetOrFetchAsync<TApi, TCache>(string key, string url, Func<Task<TApi>> fetch, Func<TApi, TCache> normalize, bool ignoreCache = false) where TCache : class
         {
 
@@ -158,11 +163,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                             if (normalized is not null)
                             {
-                                var expiry = JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
-                                    ? exp
-                                    : DateTime.UtcNow.Add(BackupExpiry);
-
-                                Cache.Put(key, normalized, expiry);
+                                Cache.Put(key, normalized, GetExpiry(url));
 
                                 return normalized;
                             }
@@ -192,16 +193,37 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
-        private static string AnimeFullUrl(long id) => $"anime/{id}/full";
-        private static string AnimeSpecificEpisodesUrl(long id, int ep) => $"anime/{id}/episodes/{ep}";
-        private static string AnimeEpisodesUrl(long id) => $"anime/{id}/episodes";
-        private static string AnimeCharactersUrl(long id) => $"anime/{id}/characters";
-        private static string CharacterUrl(long id) => $"characters/{id}";
-        private static string PeopleUrl(long id) => $"people/{id}";
+        // Handles fetching new data to merge with incomplete if cached data is not complete
+        private static async Task<T> GetMergedAsync<T>(string key, string url, Func<Task<T>> fetch, Func<T, T, T> merge, Func<T, bool> isComplete) where T : class
+        {
+            var cached = Cache.Get<T>(key);
 
+            if (cached != null && isComplete(cached))
+                return cached;
+
+            var detailed = await GetOrFetchAsync(
+                key,
+                url,
+                fetch,
+                x => x,
+                ignoreCache: true);
+
+            var merged = merge(cached, detailed);
+
+            if (merged != null)
+            {
+                Cache.Put(key, merged, GetExpiry(url));
+            }
+
+            return merged;
+        }
+
+        // API METHODS START
+
+        // BASIC GET METHODS
         public static async Task<AnimeFullCacheDto> GetAnimeFullAsync(long malId, CancellationToken token, bool needRelations = false)
         {
-            var key = $"anime:{malId}";
+            var key = Keys.AnimeFull(malId);
 
             var cached = Cache.Get<AnimeFullCacheDto>(key);
 
@@ -212,7 +234,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
             return await GetOrFetchAsync(
                 key,
-                AnimeFullUrl(malId),
+                URLs.AnimeFull(malId),
 
                 fetch: () => TryPrimaryThenBackup(j => j.GetAnimeFullDataAsync(malId, token)),
 
@@ -222,52 +244,169 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
-        public static async Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
+        public static Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
         {
-            var key = $"episode:{malId}:{episodeNumber}";
+            return GetMergedAsync(
+                Keys.AnimeEpisode(malId, episodeNumber),
+                URLs.AnimeSpecificEpisodes(malId, episodeNumber),
 
-            var cached = Cache.Get<EpisodeCacheDto>(key);
+                fetch: async () => EpisodeCacheDto.From((await TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token))).Data),
 
-            if (cached is not null && cached.HasFullDetails)
-            {
-                return cached;
-            }
+                merge: EpisodeCacheDto.MergeEpisodeDetails,
 
-            var detailed = await GetOrFetchAsync(
-                key,
-                AnimeSpecificEpisodesUrl(malId, episodeNumber),
-
-                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token)),
-
-                normalize: res => EpisodeCacheDto.From(res.Data),
-
-                ignoreCache: true
+                isComplete: e => e.HasFullDetails
             );
-
-            // Merge cached and detailed data. If either is null, the merge will return the non-null one
-            var merged = EpisodeCacheDto.MergeEpisodeDetails(cached, detailed);
-
-            if (merged is not null)
-            {
-                var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeSpecificEpisodesUrl(malId, episodeNumber), out var exp)
-                    ? exp
-                    : DateTime.UtcNow.Add(BackupExpiry);
-
-                Cache.Put(key, merged, expiry);
-
-                return merged;
-            }
-
-            return null;
         }
 
+        public static Task<PersonDto> GetPersonAsync(long malId, CancellationToken token)
+        {
+            return GetMergedAsync(
+                Keys.Person(malId),
+                URLs.People(malId),
+
+                fetch: async () => PersonDto.From((await TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token))).Data),
+
+                merge: PersonDto.MergePersonDetails,
+
+                isComplete: p => p.HasFullDetails
+            );
+        }
+
+        public static Task<CharacterCacheDto> GetCharacterAsync(long malId, CancellationToken token)
+        {
+            return GetMergedAsync(
+                Keys.Character(malId),
+                URLs.Character(malId),
+
+                fetch: async () =>
+                    CharacterCacheDto.From(
+                        (await TryPrimaryThenBackup(j =>
+                            j.GetCharacterAsync(malId, token))).Data),
+
+                merge: CharacterCacheDto.MergeCharacterDetails,
+
+                isComplete: c => c.HasFullDetails);
+        }
+
+        // SEARCH METHODS
+        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string query, bool nsfw, bool isMovie, CancellationToken token)
+        {
+            var key = Keys.SearchAnime(query, nsfw);
+
+            var cached = Cache.Get<List<long>>(key);
+            if (cached is not null)
+            {
+                var results = await Task.WhenAll(
+                    cached.Select(id => GetAnimeFullAsync(id, token, false))
+                );
+
+                return results.ToList();
+            }
+
+            AnimeSearchConfig searchConfig = new AnimeSearchConfig
+            {
+                Query = query,
+                Page = 1,
+                Sfw = !nsfw,
+                Type = isMovie ? AnimeType.Movie : AnimeType.EveryType,
+            };
+            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
+            var ids = search.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
+            var anime = await Task.WhenAll(ids.Select(a =>
+                    GetOrFetchAsync(
+                        Keys.AnimeFull(a.id),
+                        URLs.AnimeFull(a.id),
+
+                        fetch: () => Task.FromResult(a.anime),
+
+                        normalize: AnimeFullCacheDto.From
+                    )
+                )
+            );
+
+            Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
+
+            return anime.ToList();
+        }
+
+        public static async Task<List<CharacterCacheDto>> SearchCharacterAsync(string term, CancellationToken token)
+        {
+            var key = Keys.SearchCharacter(term);
+
+            var cached = Cache.Get<List<long>>(key);
+            if (cached is not null)
+            {
+                var results = await Task.WhenAll(
+                    cached.Select(id => GetCharacterAsync(id, token))
+                );
+
+                return results.ToList();
+            }
+
+            CharacterSearchConfig searchConfig = new CharacterSearchConfig
+            {
+                Query = term,
+                Page = 1
+            };
+            var search = await TryPrimaryThenBackup(j => j.SearchCharacterAsync(searchConfig, token));
+            var ids = search.Data.Select(a => (character: a, id: a.MalId)).ToList();
+            var characters = await Task.WhenAll(ids.Select(a =>
+                    GetOrFetchAsync(
+                        Keys.Character(a.id),
+                        URLs.Character(a.id),
+
+                        fetch: () => Task.FromResult(a.character),
+
+                        normalize: CharacterCacheDto.From
+                    )
+                )
+            );
+
+            Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
+
+            return characters.ToList();
+        }
+
+        public static async Task<List<PersonDto>> SearchPersonAsync(string term, CancellationToken token)
+        {
+            var key = Keys.SearchPerson(term);
+            var cached = Cache.Get<List<long>>(key);
+            if (cached is not null)
+            {
+                var results = await Task.WhenAll(
+                    cached.Select(id => GetPersonAsync(id, token))
+                );
+                return results.ToList();
+            }
+            PersonSearchConfig searchConfig = new PersonSearchConfig
+            {
+                Query = term,
+                Page = 1
+            };
+            var search = await TryPrimaryThenBackup(j => j.SearchPersonAsync(searchConfig, token));
+            var ids = search.Data.Select(a => (person: a, id: a.MalId)).ToList();
+            var people = await Task.WhenAll(ids.Select(a =>
+                    GetOrFetchAsync(
+                        Keys.Person(a.id),
+                        URLs.People(a.id),
+                        fetch: () => Task.FromResult(a.person),
+                        normalize: PersonDto.From
+                    )
+                )
+            );
+            Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
+
+            return people.ToList();
+        }
+
+        // MORE ADVANCED GET METHODS
         public static Task<List<EpisodeCacheDto>> GetAnimeEpisodesAsync(long malId, CancellationToken token)
         {
-            var key = $"episodes:{malId}";
+            var key = Keys.AnimeEpisodes(malId);
 
             return GetOrFetchAsync(
                 key,
-                AnimeEpisodesUrl(malId),
+                URLs.AnimeEpisodes(malId),
 
                 fetch: async () =>
                 {
@@ -302,14 +441,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     foreach (var ep in episodes)
                     {
-                        var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeSpecificEpisodesUrl(malId, ep.EpisodeNumber), out var exp)
-                            ? exp
-                            : DateTime.UtcNow.Add(BackupExpiry);
+                        var expiry = GetExpiry(URLs.AnimeSpecificEpisodes(malId, ep.EpisodeNumber));
 
-                        Cache.Put(
-                            $"episode:{malId}:{ep.EpisodeNumber}",
-                            ep,
-                            expiry);
+                        Cache.Put(Keys.AnimeEpisode(malId, ep.EpisodeNumber), ep, expiry);
                     }
 
                     return episodes;
@@ -317,77 +451,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
-        public static Task<PersonDto> getPersonAsync(long malId, CancellationToken token)
-        {
-            var key = $"person:{malId}";
-
-            return GetOrFetchAsync(
-                key,
-                PeopleUrl(malId),
-
-                fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token)),
-
-                normalize: res => PersonDto.From(res.Data)
-            );
-        }
-
-        public static async Task<List<AnimeFullCacheDto>> SearchAnimeAsync(string term, bool nsfw, bool isMovie, CancellationToken token)
-        {
-            var key = $"search:{term}:nsfw:{nsfw}";
-
-            var cached = Cache.Get<List<long>>(key);
-            if (cached is not null)
-            {
-                var results = await Task.WhenAll(
-                    cached.Select(id => GetAnimeFullAsync(id, token, false))
-                );
-
-                return results.ToList();
-            }
-
-            AnimeSearchConfig searchConfig = new AnimeSearchConfig
-            {
-                Query = term,
-                Page = 1,
-                Sfw = !nsfw,
-                Type = isMovie ? AnimeType.Movie : AnimeType.EveryType,
-            };
-            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
-
-            var ids = search.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
-
-            var anime = await Task.WhenAll(ids.Select(a =>
-                    GetOrFetchAsync(
-                        $"anime:{a.id}",
-                        AnimeFullUrl(a.id),
-
-                        fetch: () => Task.FromResult(a.anime),
-
-                        normalize: AnimeFullCacheDto.From
-                    )
-                )
-            );
-
-            Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
-
-            return anime.ToList();
-        }
-
         private static Task<List<AnimeCharacterIdCacheDto>> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)
         {
-            var key = $"characters:{malId}";
+            var key = Keys.Characters(malId);
 
             return GetOrFetchAsync(
                 key,
-                AnimeCharactersUrl(malId),
+                URLs.AnimeCharacters(malId),
 
                 fetch: () => TryPrimaryThenBackup(j => j.GetAnimeCharactersAsync(malId, token)),
 
                 normalize: res =>
                 {
-                    var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
-                        ? exp
-                        : DateTime.UtcNow.Add(BackupExpiry);
+                    var expiry = GetExpiry(URLs.AnimeCharacters(malId));
 
                     if (res?.Data is null) return null;
 
@@ -400,11 +476,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                             if (characterCache is not null)
                             {
-                                Cache.Put(
-                                    $"character:{character.MalId}",
-                                    characterCache,
-                                    expiry);
-
+                                Cache.Put(Keys.Character(character.MalId), characterCache, expiry);
                             }
                         }
 
@@ -417,10 +489,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                                 if (personCache is not null)
                                 {
-                                    Cache.Put(
-                                        $"person:{person.MalId}",
-                                        personCache,
-                                        expiry);
+                                    Cache.Put(Keys.Person(person.MalId), personCache, expiry);
                                 }
                             }
                         }
@@ -436,42 +505,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 var charID = r.CharacterId;
                 var character = await GetOrFetchAsync(
-                    $"character:{charID}",
-                    CharacterUrl(charID),
+                    Keys.Character(charID),
+                    URLs.Character(charID),
 
                     fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(charID, token)),
 
                     normalize: res => CharacterCacheDto.From(res.Data)
                 );
 
-                var voiceActors = new List<VoiceActorEntryDto>();
-                foreach (var va in r.VoiceActors)
-                {
-                    var personId = va.Person.MalId;
-                    var person = await GetOrFetchAsync(
-                        $"person:{personId}",
-                        PeopleUrl(personId),
-
-                        fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(personId, token)),
-
-                        normalize: res => PersonDto.From(res.Data)
-                    );
-
-                    if (person is not null)
+                var voiceActors = await Task.WhenAll(
+                    r.VoiceActors.Select(async va =>
                     {
-                        voiceActors.Add(new VoiceActorEntryDto
-                        {
-                            Language = va.Language,
-                            Person = person
-                        });
-                    }
-                }
+                        var person = await GetPersonAsync(
+                            va.Person.MalId,
+                            token);
+
+                        return person == null
+                            ? null
+                            : new VoiceActorEntryDto
+                            {
+                                Language = va.Language,
+                                Person = person
+                            };
+                    }));
 
                 return new AnimeCharacterDto
                 {
                     Character = character,
                     Role = r.Role,
-                    VoiceActors = voiceActors
+                    VoiceActors = voiceActors.Where(x => x != null).ToList()
                 };
             });
 
@@ -480,7 +542,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         public static async Task<List<AnimeCharacterDto>> GetAnimeCharactersAsync(long malId, CancellationToken token)
         {
-            var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>($"characters:{malId}");
+            var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>(Keys.Characters(malId));
 
             if (cached is not null)
             {
@@ -492,14 +554,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             if (index is null)
                 return new List<AnimeCharacterDto>();
 
-            var expiry = JikanHttpMetadataStore.TryGetExpiry(AnimeCharactersUrl(malId), out var exp)
-                ? exp
-                : DateTime.UtcNow.Add(BackupExpiry);
+            var expiry = GetExpiry(URLs.AnimeCharacters(malId));
 
-            Cache.Put(
-                $"characters:{malId}",
-                index,
-                expiry);
+            Cache.Put(Keys.Characters(malId), index, expiry);
 
             return await HydrateCharactersAsync(index, token);
         }

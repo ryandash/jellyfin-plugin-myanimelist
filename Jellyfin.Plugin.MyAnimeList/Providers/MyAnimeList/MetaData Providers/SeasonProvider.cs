@@ -6,9 +6,9 @@ using SeasonInfo = MediaBrowser.Controller.Providers.SeasonInfo;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class Season : Base<MediaBrowser.Controller.Entities.TV.Season, SeasonInfo>
+    public class SeasonProvider : BaseProvider<MediaBrowser.Controller.Entities.TV.Season, SeasonInfo>
     {
-        public Season(ILogger<Season> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
+        public SeasonProvider(ILogger<SeasonProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
         }
 

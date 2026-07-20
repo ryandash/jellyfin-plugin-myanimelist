@@ -33,6 +33,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             ExcludeSpecials = false;
             UseExternalIDs = false;
             EnableNSFW = false;
+            SwapVoiceActorsAndCharacters = false;
             CacheBackupOtherTime = 1;
             CacheSearchTime = 60;
             EnableDebug = false;
@@ -57,6 +58,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool DisableLocalCache { get; set; }
         public bool UseExternalIDs { get; set; }
         public bool EnableNSFW { get; set; }
+        public bool SwapVoiceActorsAndCharacters { get; set; }
 
         // === Cache time ===
         public int CacheBackupOtherTime { get; set; }

@@ -5,9 +5,9 @@ using System.Net.Http;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
-    public class Movie : Base<MediaBrowser.Controller.Entities.Movies.Movie, MovieInfo>
+    public class MovieProvider : BaseProvider<MediaBrowser.Controller.Entities.Movies.Movie, MovieInfo>
     {
-        public Movie(ILogger<Movie> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
+        public MovieProvider(ILogger<MovieProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory) : base(logger, libraryManager, httpClientFactory)
         {
         }
 

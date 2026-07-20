@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.MyAnimeList.Configuration;
 using LiteDB;
 using System;
 using System.Collections.Concurrent;
@@ -21,8 +22,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly ConcurrentDictionary<string, ILiteCollection<CacheRecord>> _collections = new();
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
-        private readonly bool disableLocalCache;
-        private const int CacheSchemaVersion = 9;
+        private const int CacheSchemaVersion = 10;
+        private static readonly PluginConfiguration DefaultConfig = new();
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
+        private static bool DisableLocalCache => _config.DisableLocalCache;
 
         private class CacheItem
         {
@@ -48,13 +51,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             public long ExpiryTicks;
         }
 
-        public LiteDbCacheStore(string path, bool disableLocalCache)
+        public LiteDbCacheStore(string path)
         {
-            this.disableLocalCache = disableLocalCache;
-
             _expiryScheduler = new CacheExpiryScheduler(CleanupMemory);
 
-            if (disableLocalCache) return;
+            if (DisableLocalCache) return;
 
             foreach (var file in Directory.GetFiles(path))
             {
@@ -86,7 +87,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         private async Task ProcessQueue()
         {
-            if (disableLocalCache || _db is null) return;
+            if (DisableLocalCache || _db is null) return;
 
             try
             {
@@ -180,7 +181,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 _memory.TryRemove(key, out _);
             }
 
-            if (disableLocalCache || _db is null)
+            if (DisableLocalCache || _db is null)
             {
                 return default;
             }
@@ -242,7 +243,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             };
             _expiryScheduler.Schedule(expiryTicks);
 
-            if (disableLocalCache || _db is null)
+            if (DisableLocalCache || _db is null)
             {
                 return;
             }
@@ -262,7 +263,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         private void FlushRemaining()
         {
-            if (disableLocalCache || _db is null) return;
+            if (DisableLocalCache || _db is null) return;
 
             var batchMap = new Dictionary<(string type, string id), WriteItem>();
             while (_writeQueue.TryDequeue(out var item))
