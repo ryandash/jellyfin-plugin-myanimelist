@@ -18,46 +18,54 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public bool HasFullDetails => !string.IsNullOrWhiteSpace(Description);
 
-        public static PersonDto From(MalImageSubItem source)
-        {
-            if (source is null) return null;
-
-            return Map(
+        public static PersonDto From(MalImageSubItem source, bool legacyJikan)
+            => source is null ? null :
+            Map(
                 source.MalId,
                 source.Name,
                 source.Title,
                 source.Url,
                 source.Images,
-                null
+                null,
+                legacyJikan
             );
-        }
 
-        public static PersonDto From(Person source)
-        {
-            if (source is null) return null;
 
-            return Map(
+        public static PersonDto From(Person source, bool legacyJikan)
+            => source is null ? null :
+            Map(
                 source.MalId,
                 source.Name,
                 null,
                 source.Url,
                 source.Images,
-                source.About
+                source.About,
+                legacyJikan
             );
+
+        private static string SwapName(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return input;
+            var parts = input.Split(',');
+            return parts.Length == 2
+                ? $"{parts[1].Trim()} {parts[0].Trim()}"
+                : input.Trim();
         }
 
-        private static PersonDto Map(long malId, string name, string title, string url, ImagesSet images, string description)
-        {
-            return new PersonDto
+        private static PersonDto Map(long malId, string name, string title, string url, ImagesSet images, string description, bool legacyJikan)
+            => new PersonDto
             {
                 MalId = malId,
-                Name = string.IsNullOrWhiteSpace(name) ? null : name.Replace(",", ""),
+                Name = string.IsNullOrWhiteSpace(name)
+                    ? null
+                    : legacyJikan
+                        ? SwapName(name)
+                        : name.Replace(",", ""),
                 Title = string.IsNullOrWhiteSpace(title) ? null : title,
                 Url = string.IsNullOrWhiteSpace(url) ? null : url,
                 Images = ImagesSetDto.From(images),
                 Description = string.IsNullOrWhiteSpace(description) ? null : description
             };
-        }
 
         public static PersonDto MergePersonDetails(PersonDto existing, PersonDto detailed)
         {

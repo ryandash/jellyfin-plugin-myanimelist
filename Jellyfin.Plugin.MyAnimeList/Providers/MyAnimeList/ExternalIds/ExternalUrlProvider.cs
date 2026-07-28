@@ -4,6 +4,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
+using System;
 using System.Collections.Generic;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
@@ -25,21 +26,51 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                         yield return $"https://myanimelist.net/anime/{externalId}/";
                         break;
                     case Person:
-                        if (_config.SwapVoiceActorsAndCharacters)
-                        {
-                            yield return $"https://myanimelist.net/character/{externalId}/";
-
-                        }
-                        else
-                        {
-                            yield return $"https://myanimelist.net/people/{externalId}/";
-                        }
-                        break;
                     case Episode:
                         yield return externalId;
                         break;
                 }
             }
+        }
+
+        public static bool TryExtractPersonId(string value, out long id)
+        {
+            id = 0;
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (long.TryParse(value.Trim(), out id) && id > 0)
+            {
+                return true;
+            }
+
+            var prefix = _config.SwapVoiceActorsAndCharacters
+                ? "https://myanimelist.net/character/"
+                : "https://myanimelist.net/people/";
+
+            if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var remaining = value.AsSpan(prefix.Length);
+
+            // Find the end of the numeric ID
+            var length = 0;
+            while (length < remaining.Length && char.IsDigit(remaining[length]))
+            {
+                length++;
+            }
+
+            if (length == 0)
+            {
+                return false;
+            }
+
+            return long.TryParse(remaining[..length], out id);
         }
     }
 }

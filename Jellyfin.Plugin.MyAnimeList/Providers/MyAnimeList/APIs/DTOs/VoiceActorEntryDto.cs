@@ -8,14 +8,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public PersonDto Person { get; set; }
 
-        public static VoiceActorEntryDto From(VoiceActorEntry source)
+        public static VoiceActorEntryDto From(VoiceActorEntry source, bool legacyJikan)
         {
             if (source is null) return null;
 
             return new VoiceActorEntryDto
             {
                 Language = string.IsNullOrWhiteSpace(source.Language) ? null : source.Language,
-                Person = PersonDto.From(source.Person)
+                Person = PersonDto.From(source.Person, legacyJikan)
             };
         }
     }

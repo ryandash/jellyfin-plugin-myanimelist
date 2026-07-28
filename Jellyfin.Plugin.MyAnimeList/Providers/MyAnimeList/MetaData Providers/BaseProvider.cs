@@ -36,7 +36,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
         {
             var result = new MetadataResult<TItem>
             {
-                QueriedById = true
+                HasMetadata = false
             };
 
             if (info.Path is null || (info is SeasonInfo && info.IndexNumber == 0))

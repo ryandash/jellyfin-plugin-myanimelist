@@ -31,7 +31,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     Overview = character.Description,
                     ProviderIds =
                     {
-                        { ProviderNames.MyAnimeList, character.MalId.ToString() }
+                        { ProviderNames.MyAnimeList, character.Url }
                     }
                 };
             }
@@ -42,7 +42,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 Overview = person.Description,
                 ProviderIds =
                 {
-                    { ProviderNames.MyAnimeList, person.MalId.ToString() }
+                    { ProviderNames.MyAnimeList, person.Url }
                 }
             };
         }
@@ -180,7 +180,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     if (_config.SwapVoiceActorsAndCharacters)
                     {
                         var characterImageUrl = edge.Character.Images?.Image;
-                        var charaterMalId = edge.Character.MalId.ToString();
+                        var charaterMalUrl = edge.Character.Url;
                         PersonInfo newCharacter = new PersonInfo
                         {
                             Name = role,
@@ -188,9 +188,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             Type = PersonKind.Actor,
                             ImageUrl = characterImageUrl,
                             ProviderIds = new Dictionary<string, string>
-                        {
-                            { ProviderNames.MyAnimeList, charaterMalId }
-                        }
+                            {
+                                { ProviderNames.MyAnimeList, charaterMalUrl }
+                            }
                         };
                         people.Add(newCharacter);
                         break; // Only add the first allowed voice actor for this character
@@ -204,9 +204,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             Type = PersonKind.Actor,
                             ImageUrl = va.Person.Images.Image,
                             ProviderIds = new Dictionary<string, string>
-                        {
-                            { ProviderNames.MyAnimeList, va.Person.MalId.ToString() }
-                        }
+                            {
+                                { ProviderNames.MyAnimeList, va.Person.Url }
+                            }
                         };
                         people.Add(newPerson);
                     }

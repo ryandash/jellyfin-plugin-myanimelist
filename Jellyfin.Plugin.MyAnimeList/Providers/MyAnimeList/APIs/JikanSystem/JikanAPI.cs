@@ -22,6 +22,32 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private static bool _initialized;
         private static readonly object InitLock = new();
         private static ICacheStore Cache;
+        private static Jikan _primaryClient;
+        private static Jikan _backupClient;
+        private static string _primaryUrl;
+        private static string _backupUrl;
+        private static readonly PluginConfiguration DefaultConfig = new();
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
+        private static readonly string defaultPrimaryBaseUrl = "api.tenrai.org";
+        private static readonly string defaultPrimary = $"https://{defaultPrimaryBaseUrl}/v1/";
+        private static readonly string defaultBackup = "https://jikanapi.freemyip.com/v4/";
+        private static TimeSpan BackupExpiry => TimeSpan.FromDays(_config.CacheBackupOtherTime);
+        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(_config.CacheSearchTime);
+
+        private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
+
+        private static DateTime GetExpiry(string url)
+        {
+            return JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
+                ? exp
+                : DateTime.UtcNow.Add(BackupExpiry);
+        }
+
+        private sealed class JikanResult<T>
+        {
+            public T Data { get; init; }
+            public bool LegacyJikan { get; init; }
+        }
 
         public static void Initialize(IApplicationPaths paths)
         {
@@ -50,20 +76,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             return new Jikan(new JikanClientConfiguration(), http);
         }
 
-        private static Jikan _primaryClient;
-        private static Jikan _backupClient;
-        private static string _primaryUrl;
-        private static string _backupUrl;
-        private static readonly PluginConfiguration DefaultConfig = new();
-        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
-
         private static void EnsureClients()
         {
             var p = string.IsNullOrWhiteSpace(_config.PrimaryJikanUrl)
-                ? "https://api.tenrai.org/v1/"
+                ? defaultPrimary
                 : _config.PrimaryJikanUrl;
             var b = string.IsNullOrWhiteSpace(_config.BackupJikanUrl)
-                ? "https://jikanapi.freemyip.com/v4/"
+                ? defaultBackup
                 : _config.BackupJikanUrl;
 
             if (_primaryClient == null || _backupClient == null ||
@@ -77,23 +96,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
-        private static async Task<T> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
+        private static bool IsLegacyJikan(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                return true;
+
+            return !string.Equals(
+                uri.Host,
+                defaultPrimaryBaseUrl,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static async Task<JikanResult<T>> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
         {
             EnsureClients();
 
-            async Task<T> Try(Jikan client)
-            {
-                var result = await action(client);
-
-                if (result == null)
-                    throw new Exception("Null response from Jikan");
-
-                return result;
-            }
-
             try
             {
-                return await Try(_primaryClient);
+                return new JikanResult<T>
+                {
+                    Data = await action(_primaryClient),
+                    LegacyJikan = IsLegacyJikan(_primaryUrl)
+                };
             }
             catch (OperationCanceledException)
             {
@@ -101,22 +125,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
             catch
             {
-                return await Try(_backupClient);
+                return new JikanResult<T>
+                {
+                    Data = await action(_backupClient),
+                    LegacyJikan = IsLegacyJikan(_backupUrl)
+                };
             }
-        }
-
-        // HELPERS
-
-        private static TimeSpan BackupExpiry => TimeSpan.FromDays(_config.CacheBackupOtherTime);
-        private static TimeSpan SearchExpiry => TimeSpan.FromMinutes(_config.CacheSearchTime);
-
-        private static readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlight = new();
-
-        private static DateTime GetExpiry(string url)
-        {
-            return JikanHttpMetadataStore.TryGetExpiry(url, out var exp)
-                ? exp
-                : DateTime.UtcNow.Add(BackupExpiry);
         }
 
         // Handles fetching data with caching and in-flight request deduplication
@@ -194,9 +208,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         }
 
         // Handles fetching new data to merge with incomplete if cached data is not complete
-        private static async Task<T> GetMergedAsync<T>(string key, string url, Func<Task<T>> fetch, Func<T, T, T> merge, Func<T, bool> isComplete) where T : class
+        private static async Task<TCache> GetMergedAsync<TApi, TCache>(string key, string url, Func<Task<TApi>> fetch, Func<TApi, TCache> normalize, Func<TCache, TCache, TCache> merge, Func<TCache, bool> isComplete) where TCache : class
         {
-            var cached = Cache.Get<T>(key);
+            var cached = Cache.Get<TCache>(key);
 
             if (cached != null && isComplete(cached))
                 return cached;
@@ -205,7 +219,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 url,
                 fetch,
-                x => x,
+                normalize,
                 ignoreCache: true);
 
             var merged = merge(cached, detailed);
@@ -238,7 +252,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                 fetch: () => TryPrimaryThenBackup(j => j.GetAnimeFullDataAsync(malId, token)),
 
-                normalize: res => AnimeFullCacheDto.From(res.Data),
+                normalize: a => AnimeFullCacheDto.From(a.Data.Data),
 
                 ignoreCache: cached is not null
             );
@@ -250,7 +264,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.AnimeEpisode(malId, episodeNumber),
                 URLs.AnimeSpecificEpisodes(malId, episodeNumber),
 
-                fetch: async () => EpisodeCacheDto.From((await TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token))).Data),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token)),
+
+                normalize: e => EpisodeCacheDto.From(e.Data.Data),
 
                 merge: EpisodeCacheDto.MergeEpisodeDetails,
 
@@ -264,7 +280,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.Person(malId),
                 URLs.People(malId),
 
-                fetch: async () => PersonDto.From((await TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token))).Data),
+                fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token)),
+
+                normalize: p => PersonDto.From(p.Data.Data, p.LegacyJikan),
 
                 merge: PersonDto.MergePersonDetails,
 
@@ -278,10 +296,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.Character(malId),
                 URLs.Character(malId),
 
-                fetch: async () =>
-                    CharacterCacheDto.From(
-                        (await TryPrimaryThenBackup(j =>
-                            j.GetCharacterAsync(malId, token))).Data),
+                fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(malId, token)),
+
+                normalize: c => CharacterCacheDto.From(c.Data.Data, c.LegacyJikan),
 
                 merge: CharacterCacheDto.MergeCharacterDetails,
 
@@ -311,7 +328,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Type = isMovie ? AnimeType.Movie : AnimeType.EveryType,
             };
             var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
-            var ids = search.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
+            var ids = search.Data.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
             var anime = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
                         Keys.AnimeFull(a.id),
@@ -349,7 +366,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Page = 1
             };
             var search = await TryPrimaryThenBackup(j => j.SearchCharacterAsync(searchConfig, token));
-            var ids = search.Data.Select(a => (character: a, id: a.MalId)).ToList();
+            var ids = search.Data.Data.Select(a => (character: a, id: a.MalId)).ToList();
             var characters = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
                         Keys.Character(a.id),
@@ -357,7 +374,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                         fetch: () => Task.FromResult(a.character),
 
-                        normalize: CharacterCacheDto.From
+                        normalize: c => CharacterCacheDto.From(c, search.LegacyJikan)
                     )
                 )
             );
@@ -384,13 +401,13 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Page = 1
             };
             var search = await TryPrimaryThenBackup(j => j.SearchPersonAsync(searchConfig, token));
-            var ids = search.Data.Select(a => (person: a, id: a.MalId)).ToList();
+            var ids = search.Data.Data.Select(a => (person: a, id: a.MalId)).ToList();
             var people = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
                         Keys.Person(a.id),
                         URLs.People(a.id),
                         fetch: () => Task.FromResult(a.person),
-                        normalize: PersonDto.From
+                        normalize: p => PersonDto.From(p, search.LegacyJikan)
                     )
                 )
             );
@@ -416,7 +433,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     while (true)
                     {
-                        var res = await TryPrimaryThenBackup(j => j.GetAnimeEpisodesAsync(malId, page, token));
+                        var res = (await TryPrimaryThenBackup(j => j.GetAnimeEpisodesAsync(malId, page, token))).Data;
 
                         if (res?.Data is null || res.Data.Count == 0)
                             break;
@@ -465,14 +482,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 {
                     var expiry = GetExpiry(URLs.AnimeCharacters(malId));
 
-                    if (res?.Data is null) return null;
+                    if (res?.Data.Data is null) return null;
 
-                    foreach (var cha in res.Data)
+                    foreach (var cha in res.Data.Data)
                     {
                         CharacterEntry character = cha.Character;
                         if (character.MalId > 0)
                         {
-                            var characterCache = CharacterCacheDto.From(character);
+                            var characterCache = CharacterCacheDto.From(character, res.LegacyJikan);
 
                             if (characterCache is not null)
                             {
@@ -485,7 +502,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                             MalImageSubItem person = va.Person;
                             if (person.MalId > 0)
                             {
-                                var personCache = PersonDto.From(va.Person);
+                                var personCache = PersonDto.From(va.Person, res.LegacyJikan);
 
                                 if (personCache is not null)
                                 {
@@ -495,7 +512,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         }
                     }
 
-                    return res.Data.Select(AnimeCharacterIdCacheDto.From).Where(x => x is not null).OrderBy(x => x.CharacterId).ToList();
+                    return res.Data.Data.Select(c => AnimeCharacterIdCacheDto.From(c, res.LegacyJikan)).Where(x => x is not null).OrderBy(x => x.CharacterId).ToList();
                 });
         }
 
@@ -510,7 +527,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(charID, token)),
 
-                    normalize: res => CharacterCacheDto.From(res.Data)
+                    normalize: res => CharacterCacheDto.From(res.Data.Data, res.LegacyJikan)
                 );
 
                 var voiceActors = await Task.WhenAll(

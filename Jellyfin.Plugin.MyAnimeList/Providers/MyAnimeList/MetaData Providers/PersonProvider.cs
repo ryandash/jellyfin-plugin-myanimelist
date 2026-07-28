@@ -1,6 +1,6 @@
 using Jellyfin.Plugin.MyAnimeList.Configuration;
-using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
+using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -15,11 +15,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 {
     public class PersonProvider : IRemoteMetadataProvider<Person, PersonLookupInfo>
     {
-
         private readonly ILogger _log;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
+        private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public string Name => ProviderNames.MyAnimeList;
 
@@ -31,96 +30,141 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 
         public async Task<MetadataResult<Person>> GetMetadata(PersonLookupInfo info, CancellationToken cancellationToken)
         {
-            var result = new MetadataResult<Person>();
-            if (!info.TryGetProviderId(ProviderNames.MyAnimeList, out var id) || !long.TryParse(id, out var malId))
+            var result = new MetadataResult<Person>
             {
-                _log.LogWarning("Metadata Invalid MAL ID {malId} for person with type {type}", id, info.GetType().Name);
+                HasMetadata = false
+            };
+
+            var enableDebug = _config.EnableDebug;
+
+            if (!info.TryGetProviderId(ProviderNames.MyAnimeList, out var id))
+            {
+                if (enableDebug) _log.LogWarning("Missing MAL ID for person with type {type}", info.GetType().Name);
                 return result;
             }
 
-            PersonSearchResult person = new PersonSearchResult();
+            if (!ExternalUrlProvider.TryExtractPersonId(id, out var malId))
+            {
+                if (enableDebug) _log.LogWarning("Invalid MAL ID {malId} for person with type {type}", id, info.GetType().Name);
+                return result;
+            }
 
             if (_config.SwapVoiceActorsAndCharacters)
             {
-                person.character = await JikanAPI.GetCharacterAsync(malId, cancellationToken).ConfigureAwait(false);
-                if (person.character is null)
-                {
-                    return result;
-                }
+                var character = await JikanAPI.GetCharacterAsync(malId, cancellationToken).ConfigureAwait(false);
 
-                result.Item = person.ToPerson();
+                if (character is null)
+                    return result;
+
+                result.Item = new PersonSearchResult { character = character }.ToPerson();
             }
             else
             {
-                person.person = await JikanAPI.GetPersonAsync(malId, cancellationToken).ConfigureAwait(false);
-                if (person.person is null)
-                {
-                    return result;
-                }
+                var person = await JikanAPI.GetPersonAsync(malId, cancellationToken).ConfigureAwait(false);
 
-                result.Item = person.ToPerson();
+                if (person is null)
+                    return result;
+
+                result.Item = new PersonSearchResult { person = person }.ToPerson();
             }
 
-            _log.LogInformation("Metadata Successfully retrieved metadata for person with MAL ID {malId} and type {type}", malId, info.GetType().Name);
-
             result.HasMetadata = true;
+
+            if (enableDebug) _log.LogInformation(
+                "Successfully retrieved metadata for MAL ID {malId} and type {type}",
+                malId,
+                info.GetType().Name);
 
             return result;
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(PersonLookupInfo searchInfo, CancellationToken cancellationToken)
         {
-            var results = new List<RemoteSearchResult>();
-
-            if (!searchInfo.TryGetProviderId(ProviderNames.MyAnimeList, out var id) || !long.TryParse(id, out var malId))
+            if (searchInfo.TryGetProviderId(ProviderNames.MyAnimeList, out var id) &&
+                ExternalUrlProvider.TryExtractPersonId(id, out var malId))
             {
-                _log.LogWarning("SearchResults Invalid MAL ID {malId} for person with type {type}", id, searchInfo.GetType().Name);
-                return results;
+                var result = await GetById(malId, cancellationToken).ConfigureAwait(false);
+
+                return result is null
+                    ? []
+                    : [result];
             }
 
+            return _config.SwapVoiceActorsAndCharacters
+                ? await SearchCharacters(searchInfo.Name, cancellationToken).ConfigureAwait(false)
+                : await SearchPeople(searchInfo.Name, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task<RemoteSearchResult> GetById(long malId, CancellationToken cancellationToken)
+        {
             if (_config.SwapVoiceActorsAndCharacters)
             {
+                var character = await JikanAPI.GetCharacterAsync(malId, cancellationToken).ConfigureAwait(false);
 
-                List<CharacterCacheDto> characters = await JikanAPI.SearchCharacterAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false);
-                if (characters is null)
-                {
-                    return results;
-                }
-
-                foreach (var character in characters)
-                {
-                    results.Add(new RemoteSearchResult()
-                    {
-                        SearchProviderName = ProviderNames.MyAnimeList,
-                        Name = character.Name,
-                        ImageUrl = character.Images.Image,
-                        ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, character.MalId.ToString() } }
-                    });
-                }
+                return character is null
+                    ? null
+                    : CreateResult(character.Name, character.Images?.Image, character.Url);
             }
-            else
+
+            var person = await JikanAPI.GetPersonAsync(malId, cancellationToken).ConfigureAwait(false);
+
+            return person is null
+                ? null
+                : CreateResult(person.Name, person.Images?.Image, person.Url);
+        }
+
+        private async Task<IEnumerable<RemoteSearchResult>> SearchCharacters(string name, CancellationToken cancellationToken)
+        {
+            var results = new List<RemoteSearchResult>();
+
+            var characters = await JikanAPI.SearchCharacterAsync(name, cancellationToken).ConfigureAwait(false);
+
+            if (characters is null)
+                return results;
+
+            foreach (var character in characters)
             {
-                List<PersonDto> people = await JikanAPI.SearchPersonAsync(searchInfo.Name, cancellationToken).ConfigureAwait(false);
-                if (people is null)
-                {
-                    return results;
-                }
-
-                foreach (var person in people)
-                {
-                    results.Add(new RemoteSearchResult()
-                    {
-                        SearchProviderName = ProviderNames.MyAnimeList,
-                        Name = person.Name,
-                        ImageUrl = person.Images.Image,
-                        ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, person.MalId.ToString() } }
-                    });
-                }
+                results.Add(CreateResult(
+                    character.Name,
+                    character.Images?.Image,
+                    character.MalId.ToString()));
             }
-
-            _log.LogInformation("Search Results Successfully retrieved metadata for person with MAL ID {malId} and type {type}", malId, searchInfo.GetType().Name);
 
             return results;
+        }
+
+        private async Task<IEnumerable<RemoteSearchResult>> SearchPeople(string name, CancellationToken cancellationToken)
+        {
+            var results = new List<RemoteSearchResult>();
+
+            var people = await JikanAPI.SearchPersonAsync(name, cancellationToken).ConfigureAwait(false);
+
+            if (people is null)
+                return results;
+
+            foreach (var person in people)
+            {
+                results.Add(CreateResult(
+                    person.Name,
+                    person.Images?.Image,
+                    person.MalId.ToString()));
+            }
+
+            return results;
+        }
+
+        private static RemoteSearchResult CreateResult(string name, string imageUrl, string malUrl)
+        {
+            return new RemoteSearchResult
+            {
+                SearchProviderName = ProviderNames.MyAnimeList,
+                Name = name,
+                ImageUrl = imageUrl,
+                ProviderIds = new Dictionary<string, string>
+                {
+                    { ProviderNames.MyAnimeList, malUrl }
+                }
+            };
         }
 
         public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)

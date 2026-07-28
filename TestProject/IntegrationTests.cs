@@ -171,7 +171,7 @@ namespace UnitTestProject
             // season with parts
             EpisodeInfo episodeInfo = new EpisodeInfo
             {
-                Path = Path.Combine(libraryLocation, "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka"),
+                Name = "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka",
                 ParentIndexNumber = 4,
                 IndexNumber = 12
             };
