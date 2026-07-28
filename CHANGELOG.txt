@@ -1,3 +1,30 @@
+297d74c Update configPage.html
+
+- Adjust description for clarity
+
+70b535a Fixes for Jikan swapped names and some bugs
+
+- Fix broken test case
+
+- Fix for person and characters names being swapped if using Jikan instead of Tenrai
+
+- Adjusted Person and Character providerIds to use whole URL. Fixes malid extraction bug if swapping between character and person.
+
+- Some cleanup
+
+6191166 Add more information
+
+- Version bump
+
+- Refactoring and reorganizing  JikanAPI to make it a little easier to read
+
+- Add the ability to swap Voice Actors and Characters in Cast & Crew section
+
+- Remove swapping first and last name for character and person names. Tenrai's version does the swap. (Jikan version will have issues)
+
+f853178 Update manifest.json
+495c20a Update manifest
+
 b6e4db8 Change main API URL
 
 - Change to using Tenrai as the URL instead of Jikan due to Jikan's unreliability and reported end of life
