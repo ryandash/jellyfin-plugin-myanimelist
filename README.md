@@ -64,7 +64,8 @@ Anime
 4. Restart **Jellyfin Server**
 5. Go to **Settings** → **Dashboard** → **Plugins** → **Available**
 6. Find **MyAnimeList**, select it, and click **Install** (latest version)
-7. Return to **Plugins** (**Settings** → **Dashboard** → **Plugins**) to confirm it appears in your installed plugins list
+7. Restart **Jellyfin Server**
+8. Navigate to **Settings** → **Dashboard** → **Plugins** to verify the plugin is installed and Active
 
 ---
 
@@ -77,7 +78,7 @@ Anime
 3. Copy all extracted `.dll` files into: `plugins/myanimelist`
     > Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
 4. Restart **Jellyfin Server**
-5. Navigate to **Settings** → **Dashboard** → **Plugins** to verify the plugin is installed
+5. Navigate to **Settings** → **Dashboard** → **Plugins** to verify the plugin is installed and Active
 
 ---
 
@@ -94,7 +95,7 @@ git clone https://github.com/ryandash/jellyfin-plugin-myanimelist.git
     - Default output path for building was set in the project file as: `C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList`
     - If the plugin is not output to the correct plugin location check the log for the output directory or change the default debug build location
 7. Restart **Jellyfin Server**
-8. Go to **Settings** → **Dashboard** → **Plugins** to confirm the plugin is installed
+8. Go to **Settings** → **Dashboard** → **Plugins** to confirm the plugin is installed and Active
 
 ## Licence
 
