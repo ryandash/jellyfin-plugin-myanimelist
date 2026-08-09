@@ -1,38 +1,17 @@
-297d74c Update configPage.html
+b853c77 Add User Adjustable Metadata
 
-- Adjust description for clarity
+- Allow users to select which metadata fields they would like updated for Series, Seasons, Episodes, and Movies.
 
-70b535a Fixes for Jikan swapped names and some bugs
+- Fix character names being incorrectly swapped (hopefully for the last time).
 
-- Fix broken test case
+- Bump cache Version
 
-- Fix for person and characters names being swapped if using Jikan instead of Tenrai
+- General cleanup
 
-- Adjusted Person and Character providerIds to use whole URL. Fixes malid extraction bug if swapping between character and person.
+6393b1c Clarify plugin installation verification steps
 
-- Some cleanup
+Updated installation instructions to clarify that the plugin should be verified as installed and active.
+37b0faf Enhance README with Tenrai metadata source
 
-6191166 Add more information
-
-- Version bump
-
-- Refactoring and reorganizing  JikanAPI to make it a little easier to read
-
-- Add the ability to swap Voice Actors and Characters in Cast & Crew section
-
-- Remove swapping first and last name for character and person names. Tenrai's version does the swap. (Jikan version will have issues)
-
-f853178 Update manifest.json
-495c20a Update manifest
-
-b6e4db8 Change main API URL
-
-- Change to using Tenrai as the URL instead of Jikan due to Jikan's unreliability and reported end of life
-
-- Change Version to follow Jellyfin's new Versioning in preparation for Jellyfin Server 12
-
-0b67de6 Adjust episode rating
-
-- Adjust episode score, MAL does episode rating out of 5 so I double it to make it out of 10.
-
-c69f57c Update manifest
+Updated the description to include Tenrai as an additional source.
+86a9e38 Update manifest
