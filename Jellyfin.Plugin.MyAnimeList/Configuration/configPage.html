@@ -95,6 +95,59 @@
                                 <li>Anime and non-anime content are separated into different libraries</li>
                             </ul>
                         </div>
+                        <details open style="margin-top: 1em;">
+                            <summary style="cursor: pointer; font-weight: bold;">
+                                Metadata Field Selection
+                            </summary>
+
+                            <div style="margin-left: 20px; margin-top: 10px;">
+
+                                <details>
+                                    <summary>
+                                        Series Metadata
+                                        <label class="emby-checkbox-label metadataSelectAll">
+                                            <input id="seriesMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                            <span>Select All</span>
+                                        </label>
+                                    </summary>
+                                    <div id="seriesMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
+                                </details>
+
+                                <details>
+                                    <summary>
+                                        Season Metadata
+                                        <label class="emby-checkbox-label metadataSelectAll">
+                                            <input id="seasonMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                            <span>Select All</span>
+                                        </label>
+                                    </summary>
+                                    <div id="seasonMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
+                                </details>
+
+                                <details>
+                                    <summary>
+                                        Episode Metadata
+                                        <label class="emby-checkbox-label metadataSelectAll">
+                                            <input id="episodeMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                            <span>Select All</span>
+                                        </label>
+                                    </summary>
+                                    <div id="episodeMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
+                                </details>
+
+                                <details>
+                                    <summary>
+                                        Movie Metadata
+                                        <label class="emby-checkbox-label metadataSelectAll">
+                                            <input id="movieMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                            <span>Select All</span>
+                                        </label>
+                                    </summary>
+                                    <div id="movieMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
+                                </details>
+
+                            </div>
+                        </details>
                         <details style="margin-top: 1em;">
                             <summary style="cursor: pointer; font-weight: bold;">
                                 Advanced / Debug Options
@@ -123,6 +176,131 @@
             </div>
 
             <script type="text/javascript">
+                const commonMetadataFields = [
+                    { key: "Name", label: "Name" },
+                    { key: "OriginalTitle", label: "Original Title" },
+                    { key: "Overview", label: "Overview" },
+                    { key: "ProductionYear", label: "Production Year" },
+                    { key: "PremiereDate", label: "Premiere Date" },
+                    { key: "EndDate", label: "End Date" },
+                    { key: "CommunityRating", label: "Community Rating" },
+                    { key: "RunTime", label: "Runtime" }
+                ];
+
+                const metadataFields = {
+                    Series: [
+                        ...commonMetadataFields,
+                        { key: "Genres", label: "Genres" },
+                        { key: "Studios", label: "Studios" },
+                        { key: "Status", label: "Status" },
+                        { key: "AirDays", label: "Air Days" },
+                        { key: "AirTime", label: "Air Time" },
+                        { key: "People", label: "People" }
+                    ],
+
+                    Season: [
+                        ...commonMetadataFields,
+                        { key: "Genres", label: "Genres" },
+                        { key: "Studios", label: "Studios" }
+                    ],
+
+                    Episode: [
+                        ...commonMetadataFields
+                    ],
+
+                    Movie: [
+                        ...commonMetadataFields,
+                        { key: "Genres", label: "Genres" },
+                        { key: "Studios", label: "Studios" }
+                    ]
+                };
+
+                function createMetadataCheckboxes(type, config) {
+                    const container = document.getElementById(
+                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields"
+                    );
+
+                    const selectAll = document.getElementById(
+                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataSelectAll"
+                    );
+
+                    container.innerHTML = "";
+
+                    config = config || {};
+
+                    // Metadata checkboxes
+                    metadataFields[type].forEach(function (field) {
+                        const label = document.createElement("label");
+                        label.className = "emby-checkbox-label";
+
+                        const checkbox = document.createElement("input");
+                        checkbox.type = "checkbox";
+                        checkbox.setAttribute("is", "emby-checkbox");
+                        checkbox.dataset.metadataType = type;
+                        checkbox.dataset.metadataField = field.key;
+
+                        // Default to enabled if the property doesn't exist.
+                        checkbox.checked = config[field.key] !== false;
+
+                        const span = document.createElement("span");
+                        span.textContent = field.label;
+
+                        label.appendChild(checkbox);
+                        label.appendChild(span);
+
+                        container.appendChild(label);
+                    });
+
+                    const fieldCheckboxes = container.querySelectorAll(
+                        "input[data-metadata-field]"
+                    );
+
+                    function updateSelectAllState() {
+                        const checkedCount = Array.from(fieldCheckboxes)
+                            .filter(function (checkbox) {
+                                return checkbox.checked;
+                            }).length;
+
+                        selectAll.checked = checkedCount === fieldCheckboxes.length;
+
+                        selectAll.indeterminate =
+                            checkedCount > 0 &&
+                            checkedCount < fieldCheckboxes.length;
+                    }
+
+                    selectAll.addEventListener("change", function () {
+                        const enable = selectAll.checked;
+
+                        fieldCheckboxes.forEach(function (checkbox) {
+                            checkbox.checked = enable;
+                        });
+
+                        selectAll.indeterminate = false;
+                    });
+
+                    fieldCheckboxes.forEach(function (checkbox) {
+                        checkbox.addEventListener("change", updateSelectAllState);
+                    });
+
+                    updateSelectAllState();
+                }
+
+                function saveMetadataConfiguration(type, config) {
+                    const containerId =
+                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields";
+
+                    const container = document.getElementById(containerId);
+
+                    config = config || {};
+
+                    container.querySelectorAll("input[type=checkbox]").forEach(function (checkbox) {
+                        const field = checkbox.dataset.metadataField;
+                        config[field] = checkbox.checked;
+                    });
+
+                    return config;
+                }
+
                 var MyAnimeListConfigurationPage = {
                 pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
 
@@ -152,6 +330,11 @@
                 document.getElementById('chkEnableNSFW').checked = config.EnableNSFW;
                 document.getElementById('chkSwapVoiceActorsAndCharacters').checked = config.SwapVoiceActorsAndCharacters;
                 document.getElementById('chkEnableDebug').checked = config.EnableDebug;
+
+                createMetadataCheckboxes("Series", config.SeriesMetadata);
+                createMetadataCheckboxes("Season", config.SeasonMetadata);
+                createMetadataCheckboxes("Episode", config.EpisodeMetadata);
+                createMetadataCheckboxes("Movie", config.MovieMetadata);
 
                 Dashboard.hideLoadingMsg();
                 });
@@ -184,8 +367,14 @@
                 config.SwapVoiceActorsAndCharacters = document.getElementById('chkSwapVoiceActorsAndCharacters').checked;
                 config.EnableDebug = document.getElementById('chkEnableDebug').checked;
 
+                config.SeriesMetadata = saveMetadataConfiguration("Series", config.SeriesMetadata);
+                config.SeasonMetadata = saveMetadataConfiguration("Season", config.SeasonMetadata);
+                config.EpisodeMetadata = saveMetadataConfiguration("Episode", config.EpisodeMetadata);
+                config.MovieMetadata = saveMetadataConfiguration("Movie", config.MovieMetadata);
+
                 ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
                 Dashboard.processPluginConfigurationUpdateResult(result);
+                
                 });
                 });
                 }

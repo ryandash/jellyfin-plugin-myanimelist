@@ -38,6 +38,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             CacheSearchTime = 60;
             EnableDebug = false;
             ForceNewMetadata = false;
+
+            SeriesMetadata = new SeriesMetadataConfiguration();
+            SeasonMetadata = new SeasonMetadataConfiguration();
+            EpisodeMetadata = new EpisodeMetadataConfiguration();
+            MovieMetadata = new MovieMetadataConfiguration();
         }
 
         public string PrimaryJikanUrl { get; set; }
@@ -67,5 +72,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         // === Debugging ===
         public bool EnableDebug { get; set; }
         public bool ForceNewMetadata { get; set; }
+
+        // === Metadata Field Selection ===
+        public SeriesMetadataConfiguration SeriesMetadata { get; set; }
+        public SeasonMetadataConfiguration SeasonMetadata { get; set; }
+        public EpisodeMetadataConfiguration EpisodeMetadata { get; set; }
+        public MovieMetadataConfiguration MovieMetadata { get; set; }
     }
 }

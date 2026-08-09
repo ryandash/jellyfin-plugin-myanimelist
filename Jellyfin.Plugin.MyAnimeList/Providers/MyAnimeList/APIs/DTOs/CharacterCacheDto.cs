@@ -12,46 +12,41 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public bool HasFullDetails => !string.IsNullOrWhiteSpace(Description);
 
-        public static CharacterCacheDto From(Character source, bool legacyJikan)
+        public static CharacterCacheDto From(Character source)
             => source is null ? null :
             Map(
                 source.MalId,
                 source.Name,
                 source.Url,
                 source.Images,
-                source.About,
-                legacyJikan
+                source.About
             );
 
-        public static CharacterCacheDto From(CharacterEntry source, bool legacyJikan)
+        public static CharacterCacheDto From(CharacterEntry source)
             => source is null ? null :
             Map(
                 source.MalId,
                 source.Name,
                 source.Url,
                 source.Images,
-                null,
-                legacyJikan
+                null
             );
 
         private static string SwapName(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return input;
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            if (!input.Contains(',')) return input;
             var parts = input.Split(',');
             return parts.Length == 2
                 ? $"{parts[1].Trim()} {parts[0].Trim()}"
                 : input.Trim();
         }
 
-        private static CharacterCacheDto Map(long malId, string name, string url, ImagesSet images, string description, bool legacyJikan)
+        private static CharacterCacheDto Map(long malId, string name, string url, ImagesSet images, string description)
             => new CharacterCacheDto
             {
                 MalId = malId,
-                Name = string.IsNullOrWhiteSpace(name)
-                    ? null
-                    : legacyJikan
-                        ? SwapName(name)
-                        : name.Replace(",", ""),
+                Name = SwapName(name),
                 Url = string.IsNullOrWhiteSpace(url) ? null : url,
                 Images = ImagesSetDto.From(images),
                 Description = description

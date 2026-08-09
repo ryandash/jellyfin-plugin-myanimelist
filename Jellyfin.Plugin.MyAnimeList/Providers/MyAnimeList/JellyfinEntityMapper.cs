@@ -73,22 +73,43 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         internal Episode ToEpisode(EpisodeInfo info, int totalDigits)
         {
             var aired = episode.Aired;
+            var metadata = _config.EpisodeMetadata;
+
             Episode episodeObject = new Episode
             {
                 IndexNumber = info.IndexNumber,
                 ParentIndexNumber = info.ParentIndexNumber,
-                IndexNumberEnd = info.IndexNumberEnd,
-                Name = GetPreferredTitle(_config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji"),
-                Overview = episode.Synopsis,
-                ProductionYear = aired?.Year,
-                PremiereDate = aired,
-                EndDate = aired,
-                RunTimeTicks = episode.RunTimeTicks,
-                CommunityRating = episode.Score.HasValue ? (float?)(episode.Score.Value * 2) : null
+                IndexNumberEnd = info.IndexNumberEnd
             };
 
+            if (metadata.Name)
+                episodeObject.Name = GetPreferredTitle(_config.TitlePreference, "en");
+
+            if (metadata.OriginalTitle)
+                episodeObject.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+
+            if (metadata.Overview)
+                episodeObject.Overview = episode.Synopsis;
+
+            if (metadata.ProductionYear)
+                episodeObject.ProductionYear = aired?.Year;
+
+            if (metadata.PremiereDate)
+                episodeObject.PremiereDate = aired;
+
+            if (metadata.EndDate)
+                episodeObject.EndDate = aired;
+
+            if (metadata.RunTime)
+                episodeObject.RunTimeTicks = episode.RunTimeTicks;
+
+            if (metadata.CommunityRating)
+            {
+                episodeObject.CommunityRating = episode.Score.HasValue ? (float?)(episode.Score.Value * 2) : null;
+            }
+
             episodeObject.SetProviderId(ProviderNames.MyAnimeList, episode.Url);
+
             return episodeObject;
         }
     }
@@ -221,35 +242,69 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public Series ToSeries(SeriesInfo info)
         {
             var aired = GetAiredDate();
+            var metadata = _config.SeriesMetadata;
+
             Series series = new Series
             {
                 IndexNumber = info.IndexNumber,
                 ParentIndexNumber = info.ParentIndexNumber,
-                Name = GetPreferredTitle(_config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji"),
-                Overview = anime.Synopsis,
-                ProductionYear = aired?.Year,
-                PremiereDate = aired,
-                EndDate = GetAiredDate(false),
-                CommunityRating = anime.Score,
-                RunTimeTicks = anime.Duration,
-                Genres = anime.Genres.Take(_config.MaxGenres).ToArray(),
-                Studios = anime.Studios,
-                Status = anime.Status switch
+            };
+
+            if (metadata.Name)
+                series.Name = GetPreferredTitle(_config.TitlePreference, "en");
+
+            if (metadata.OriginalTitle)
+                series.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+
+            if (metadata.Overview)
+                series.Overview = anime.Synopsis;
+
+            if (metadata.ProductionYear)
+                series.ProductionYear = aired?.Year;
+
+            if (metadata.PremiereDate)
+                series.PremiereDate = aired;
+
+            if (metadata.EndDate)
+                series.EndDate = GetAiredDate(false);
+
+            if (metadata.CommunityRating)
+                series.CommunityRating = anime.Score;
+
+            if (metadata.RunTime)
+                series.RunTimeTicks = anime.Duration;
+
+            if (metadata.Genres)
+                series.Genres = anime.Genres?
+                    .Take(_config.MaxGenres)
+                    .ToArray();
+
+            if (metadata.Studios)
+                series.Studios = anime.Studios;
+
+            if (metadata.Status)
+            {
+                series.Status = anime.Status switch
                 {
                     "Finished Airing" => SeriesStatus.Ended,
                     "Currently Airing" => SeriesStatus.Continuing,
                     "Not yet aired" => SeriesStatus.Unreleased,
                     _ => SeriesStatus.Unreleased
-                }
-            };
+                };
+            }
 
-            var broadcast = anime.Broadcast;
-
-            if (broadcast is not null)
+            if (metadata.AirDays || metadata.AirTime)
             {
-                series.AirDays = broadcast.AirDays;
-                series.AirTime = broadcast.AirTime;
+                var broadcast = anime.Broadcast;
+
+                if (broadcast is not null)
+                {
+                    if (metadata.AirDays)
+                        series.AirDays = broadcast.AirDays;
+
+                    if (metadata.AirTime)
+                        series.AirTime = broadcast.AirTime;
+                }
             }
 
             series.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
@@ -260,21 +315,45 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public Season ToSeason(SeasonInfo info)
         {
             var aired = GetAiredDate();
+            var metadata = _config.SeasonMetadata;
+
             Season season = new Season
             {
                 IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
-                Name = GetPreferredTitle(_config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji"),
-                Overview = anime.Synopsis,
-                ProductionYear = aired?.Year,
-                PremiereDate = aired,
-                EndDate = GetAiredDate(false),
-                CommunityRating = anime.Score,
-                RunTimeTicks = anime.Duration,
-                Genres = anime.Genres.Take(_config.MaxGenres).ToArray(),
-                Studios = anime.Studios,
+                ParentIndexNumber = info.ParentIndexNumber
             };
+
+            if (metadata.Name)
+                season.Name = GetPreferredTitle(_config.TitlePreference, "en");
+
+            if (metadata.OriginalTitle)
+                season.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+
+            if (metadata.Overview)
+                season.Overview = anime.Synopsis;
+
+            if (metadata.ProductionYear)
+                season.ProductionYear = aired?.Year;
+
+            if (metadata.PremiereDate)
+                season.PremiereDate = aired;
+
+            if (metadata.EndDate)
+                season.EndDate = GetAiredDate(false);
+
+            if (metadata.CommunityRating)
+                season.CommunityRating = anime.Score;
+
+            if (metadata.RunTime)
+                season.RunTimeTicks = anime.Duration;
+
+            if (metadata.Genres)
+                season.Genres = anime.Genres?
+                    .Take(_config.MaxGenres)
+                    .ToArray();
+
+            if (metadata.Studios)
+                season.Studios = anime.Studios;
 
             season.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
@@ -284,21 +363,45 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public Movie ToMovie(MovieInfo info)
         {
             var aired = GetAiredDate();
+            var metadata = _config.MovieMetadata;
+
             Movie movie = new Movie
             {
                 IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
-                Name = GetPreferredTitle(_config.TitlePreference, "en"),
-                OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji"),
-                Overview = anime.Synopsis,
-                ProductionYear = aired?.Year,
-                PremiereDate = aired,
-                EndDate = GetAiredDate(false),
-                CommunityRating = anime.Score,
-                RunTimeTicks = anime.Duration,
-                Genres = anime.Genres.Take(_config.MaxGenres).ToArray(),
-                Studios = anime.Studios,
+                ParentIndexNumber = info.ParentIndexNumber
             };
+
+            if (metadata.Name)
+                movie.Name = GetPreferredTitle(_config.TitlePreference, "en");
+
+            if (metadata.OriginalTitle)
+                movie.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+
+            if (metadata.Overview)
+                movie.Overview = anime.Synopsis;
+
+            if (metadata.ProductionYear)
+                movie.ProductionYear = aired?.Year;
+
+            if (metadata.PremiereDate)
+                movie.PremiereDate = aired;
+
+            if (metadata.EndDate)
+                movie.EndDate = GetAiredDate(false);
+
+            if (metadata.CommunityRating)
+                movie.CommunityRating = anime.Score;
+
+            if (metadata.RunTime)
+                movie.RunTimeTicks = anime.Duration;
+
+            if (metadata.Genres)
+                movie.Genres = anime.Genres?
+                    .Take(_config.MaxGenres)
+                    .ToArray();
+
+            if (metadata.Studios)
+                movie.Studios = anime.Studios;
 
             movie.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 

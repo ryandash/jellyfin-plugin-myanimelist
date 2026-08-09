@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
         public bool HasFullDetails => !string.IsNullOrWhiteSpace(Description);
 
-        public static PersonDto From(MalImageSubItem source, bool legacyJikan)
+        public static PersonDto From(MalImageSubItem source)
             => source is null ? null :
             Map(
                 source.MalId,
@@ -26,12 +26,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.Title,
                 source.Url,
                 source.Images,
-                null,
-                legacyJikan
+                null
             );
 
 
-        public static PersonDto From(Person source, bool legacyJikan)
+        public static PersonDto From(Person source)
             => source is null ? null :
             Map(
                 source.MalId,
@@ -39,28 +38,24 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 null,
                 source.Url,
                 source.Images,
-                source.About,
-                legacyJikan
+                source.About
             );
 
         private static string SwapName(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return input;
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            if (!input.Contains(',')) return input;
             var parts = input.Split(',');
             return parts.Length == 2
                 ? $"{parts[1].Trim()} {parts[0].Trim()}"
                 : input.Trim();
         }
 
-        private static PersonDto Map(long malId, string name, string title, string url, ImagesSet images, string description, bool legacyJikan)
+        private static PersonDto Map(long malId, string name, string title, string url, ImagesSet images, string description)
             => new PersonDto
             {
                 MalId = malId,
-                Name = string.IsNullOrWhiteSpace(name)
-                    ? null
-                    : legacyJikan
-                        ? SwapName(name)
-                        : name.Replace(",", ""),
+                Name = SwapName(name),
                 Title = string.IsNullOrWhiteSpace(title) ? null : title,
                 Url = string.IsNullOrWhiteSpace(url) ? null : url,
                 Images = ImagesSetDto.From(images),

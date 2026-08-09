@@ -10,7 +10,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public string Role { get; set; }
         public List<VoiceActorEntryDto> VoiceActors { get; set; }
 
-        public static AnimeCharacterIdCacheDto From(AnimeCharacter source, bool legacyJikan)
+        public static AnimeCharacterIdCacheDto From(AnimeCharacter source)
         {
             if (source is null) return null;
 
@@ -18,7 +18,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             {
                 CharacterId = source.Character.MalId,
                 Role = string.IsNullOrWhiteSpace(source.Role) ? null : source.Role,
-                VoiceActors = source.VoiceActors?.Select(v => VoiceActorEntryDto.From(v, legacyJikan)).ToList()
+                VoiceActors = source.VoiceActors?.Select(v => VoiceActorEntryDto.From(v)).ToList()
             };
         }
     }
