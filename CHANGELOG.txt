@@ -1,17 +1,9 @@
-b853c77 Add User Adjustable Metadata
+caebd9e Adjust Metadata Fields + general cleanup
 
-- Allow users to select which metadata fields they would like updated for Series, Seasons, Episodes, and Movies.
+- Use Columns for Metadata field selection (looks a little better and easier to configure)
 
-- Fix character names being incorrectly swapped (hopefully for the last time).
-
-- Bump cache Version
+- Add some missing "People" metadata field selections for Season and Movie
 
 - General cleanup
 
-6393b1c Clarify plugin installation verification steps
-
-Updated installation instructions to clarify that the plugin should be verified as installed and active.
-37b0faf Enhance README with Tenrai metadata source
-
-Updated the description to include Tenrai as an additional source.
-86a9e38 Update manifest
+927164d Update manifest
