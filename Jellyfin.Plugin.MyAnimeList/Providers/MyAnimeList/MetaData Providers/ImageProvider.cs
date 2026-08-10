@@ -1,6 +1,8 @@
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
@@ -15,11 +17,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
     public class ImageProvider : IRemoteImageProvider
     {
         private readonly IHttpClientFactory _httpClientFactory;
+
         public static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public string Name => ProviderNames.MyAnimeList;
 
-        public bool Supports(BaseItem item) => item is MediaBrowser.Controller.Entities.TV.Series || item is MediaBrowser.Controller.Entities.TV.Season || item is MediaBrowser.Controller.Entities.Movies.Movie || item is Person;
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Person;
 
         public ImageProvider(IHttpClientFactory httpClientFactory)
         {
@@ -38,29 +41,36 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             if (string.IsNullOrEmpty(malId))
                 return Array.Empty<RemoteImageInfo>();
 
-
-            if (!long.TryParse(malId, out long aid))
-                return Array.Empty<RemoteImageInfo>();
-
-            var images = new List<RemoteImageInfo>();
             string mainImageUrl;
+
             if (item is Person)
             {
-                if (_config.SwapVoiceActorsAndCharacters)
+                if (!ExternalIds.ExternalUrlProvider.TryExtractPersonId(malId, out var aid, out var personType))
+                {
+                    return Array.Empty<RemoteImageInfo>();
+                }
+
+                if (personType == PersonCreditType.Characters)
                 {
                     var character = await JikanAPI.GetCharacterAsync(aid, cancellationToken).ConfigureAwait(false);
-                    mainImageUrl = character.Images.Image;
+
+                    mainImageUrl = character?.Images?.Image;
                 }
                 else
                 {
                     var person = await JikanAPI.GetPersonAsync(aid, cancellationToken).ConfigureAwait(false);
-                    mainImageUrl = person.Images.Image;
+
+                    mainImageUrl = person?.Images?.Image;
                 }
             }
             else
             {
+                if (!long.TryParse(malId, out var aid))
+                    return Array.Empty<RemoteImageInfo>();
+
                 var anime = await JikanAPI.GetAnimeFullAsync(aid, cancellationToken).ConfigureAwait(false);
-                mainImageUrl = anime.Images.Image;
+
+                mainImageUrl = anime?.Images?.Image;
             }
 
             if (string.IsNullOrEmpty(mainImageUrl))

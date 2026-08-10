@@ -40,23 +40,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
             if (!info.TryGetProviderId(ProviderNames.MyAnimeList, out var id))
             {
                 if (enableDebug) _log.LogWarning("Missing MAL ID for person with type {type}", info.GetType().Name);
+
                 return result;
             }
 
-            if (!ExternalUrlProvider.TryExtractPersonId(id, out var malId))
+            if (!ExternalUrlProvider.TryExtractPersonId(id, out var malId, out var personType))
             {
                 if (enableDebug) _log.LogWarning("Invalid MAL ID {malId} for person with type {type}", id, info.GetType().Name);
+
                 return result;
             }
 
-            if (_config.SwapVoiceActorsAndCharacters)
+            if (personType == PersonCreditType.Characters)
             {
                 var character = await JikanAPI.GetCharacterAsync(malId, cancellationToken).ConfigureAwait(false);
 
                 if (character is null)
                     return result;
 
-                result.Item = new PersonSearchResult { character = character }.ToPerson();
+                result.Item = new PersonSearchResult
+                {
+                    character = character
+                }.ToPerson(PersonCreditType.Characters);
             }
             else
             {
@@ -65,52 +70,70 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
                 if (person is null)
                     return result;
 
-                result.Item = new PersonSearchResult { person = person }.ToPerson();
+                result.Item = new PersonSearchResult
+                {
+                    person = person
+                }.ToPerson(PersonCreditType.VoiceActors);
             }
+
+            if (result.Item is null)
+                return result;
 
             result.HasMetadata = true;
 
-            if (enableDebug) _log.LogInformation(
-                "Successfully retrieved metadata for MAL ID {malId} and type {type}",
-                malId,
-                info.GetType().Name);
+            if (enableDebug) _log.LogInformation("Successfully retrieved metadata for MAL ID {malId} as {personType} for type {type}", malId, personType, info.GetType().Name);
 
             return result;
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(PersonLookupInfo searchInfo, CancellationToken cancellationToken)
         {
-            if (searchInfo.TryGetProviderId(ProviderNames.MyAnimeList, out var id) &&
-                ExternalUrlProvider.TryExtractPersonId(id, out var malId))
+            if (searchInfo.TryGetProviderId(ProviderNames.MyAnimeList, out var id) && ExternalUrlProvider.TryExtractPersonId(id, out var malId, out var personType))
             {
-                var result = await GetById(malId, cancellationToken).ConfigureAwait(false);
+                var result = await GetById(malId, personType, cancellationToken).ConfigureAwait(false);
 
-                return result is null
-                    ? []
-                    : [result];
+                return result is null ? [] : [result];
             }
 
-            return _config.SwapVoiceActorsAndCharacters
-                ? await SearchCharacters(searchInfo.Name, cancellationToken).ConfigureAwait(false)
-                : await SearchPeople(searchInfo.Name, cancellationToken).ConfigureAwait(false);
+            return _config.PersonCreditPreference switch
+            {
+                PersonCreditType.Characters => await SearchCharacters(searchInfo.Name, cancellationToken).ConfigureAwait(false),
+
+                PersonCreditType.VoiceActors => await SearchPeople(searchInfo.Name, cancellationToken).ConfigureAwait(false),
+
+                PersonCreditType.Both => await SearchBoth(searchInfo.Name, cancellationToken).ConfigureAwait(false),
+
+                _ => []
+            };
         }
 
-        private async Task<RemoteSearchResult> GetById(long malId, CancellationToken cancellationToken)
+        private async Task<IEnumerable<RemoteSearchResult>> SearchBoth(string name, CancellationToken cancellationToken)
         {
-            if (_config.SwapVoiceActorsAndCharacters)
+            var charactersTask = SearchCharacters(name, cancellationToken);
+            var peopleTask = SearchPeople(name, cancellationToken);
+
+            await Task.WhenAll(charactersTask, peopleTask).ConfigureAwait(false);
+
+            var results = new List<RemoteSearchResult>();
+
+            results.AddRange(await charactersTask.ConfigureAwait(false));
+            results.AddRange(await peopleTask.ConfigureAwait(false));
+
+            return results;
+        }
+
+        private async Task<RemoteSearchResult> GetById(long malId, PersonCreditType personType, CancellationToken cancellationToken)
+        {
+            if (personType == PersonCreditType.Characters)
             {
                 var character = await JikanAPI.GetCharacterAsync(malId, cancellationToken).ConfigureAwait(false);
 
-                return character is null
-                    ? null
-                    : CreateResult(character.Name, character.Images?.Image, character.Url);
+                return character is null ? null : CreateResult(character.Name, character.Images?.Image, character.Url);
             }
 
             var person = await JikanAPI.GetPersonAsync(malId, cancellationToken).ConfigureAwait(false);
 
-            return person is null
-                ? null
-                : CreateResult(person.Name, person.Images?.Image, person.Url);
+            return person is null ? null : CreateResult(person.Name, person.Images?.Image, person.Url);
         }
 
         private async Task<IEnumerable<RemoteSearchResult>> SearchCharacters(string name, CancellationToken cancellationToken)
@@ -144,10 +167,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 
             foreach (var person in people)
             {
-                results.Add(CreateResult(
-                    person.Name,
-                    person.Images?.Image,
-                    person.MalId.ToString()));
+                results.Add(CreateResult(person.Name, person.Images?.Image, person.MalId.ToString()));
             }
 
             return results;

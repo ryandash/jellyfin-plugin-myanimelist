@@ -21,11 +21,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public CharacterCacheDto character { get; set; }
         public PersonDto person { get; set; }
 
-        internal Person ToPerson()
+        internal Person ToPerson(PersonCreditType type)
         {
-            if (_config.SwapVoiceActorsAndCharacters)
+            return type switch
             {
-                return new Person
+                PersonCreditType.Characters when character != null => new Person
                 {
                     Name = character.Name,
                     Overview = character.Description,
@@ -33,17 +33,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     {
                         { ProviderNames.MyAnimeList, character.Url }
                     }
-                };
-            }
-
-            return new Person
-            {
-                Name = person.Name,
-                Overview = person.Description,
-                ProviderIds =
+                },
+                PersonCreditType.VoiceActors when person != null => new Person
                 {
-                    { ProviderNames.MyAnimeList, person.Url }
-                }
+                    Name = person.Name,
+                    Overview = person.Description,
+                    ProviderIds =
+                    {
+                        { ProviderNames.MyAnimeList, person.Url }
+                    }
+                },
+                _ => null
             };
         }
     }
@@ -53,19 +53,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public static PluginConfiguration _config => Plugin.Instance.Configuration;
         public EpisodeCacheDto episode { get; set; }
 
-        public string GetPreferredTitle(TitlePreferenceType preference, string language)
+        public string GetPreferredTitle(TitlePreferenceType preference)
         {
+            if (episode == null) return null;
+
             return preference switch
             {
-                TitlePreferenceType.Localized => language switch
-                {
-                    "en" => episode.Title,
-                    "jap" => episode.TitleJapanese,
-                    "romaji" => episode.TitleRomanji,
-                    _ => episode.Title
-                },
-                TitlePreferenceType.Japanese => episode.TitleJapanese ?? episode.Title,
-                TitlePreferenceType.JapaneseRomaji => episode.TitleRomanji ?? episode.Title,
+                TitlePreferenceType.Localized => !string.IsNullOrWhiteSpace(episode.Title) ? episode.Title : episode.TitleJapanese ?? episode.TitleRomanji,
+                TitlePreferenceType.Japanese => !string.IsNullOrWhiteSpace(episode.TitleJapanese) ? episode.TitleJapanese : episode.Title ?? episode.TitleRomanji,
+                TitlePreferenceType.JapaneseRomaji => !string.IsNullOrWhiteSpace(episode.TitleRomanji) ? episode.TitleRomanji : episode.Title ?? episode.TitleJapanese,
                 _ => episode.Title
             };
         }
@@ -83,10 +79,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             if (metadata.Name)
-                episodeObject.Name = GetPreferredTitle(_config.TitlePreference, "en");
+                episodeObject.Name = GetPreferredTitle(_config.TitlePreference);
 
             if (metadata.OriginalTitle)
-                episodeObject.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+                episodeObject.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference);
 
             if (metadata.Overview)
                 episodeObject.Overview = episode.Synopsis;
@@ -119,23 +115,36 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public static PluginConfiguration _config => Plugin.Instance.Configuration;
         public AnimeFullCacheDto anime;
 
-        public string GetPreferredTitle(TitlePreferenceType preference, string language)
+        public string GetPreferredTitle(TitlePreferenceType preference)
         {
-            var titleType = preference switch
+            if (anime?.Titles == null || anime.Titles.Count == 0)
+                return null;
+
+            string preferredType = preference switch
             {
-                TitlePreferenceType.Localized => language switch
-                {
-                    "en" => "English",
-                    "jap" => "Japanese",
-                    _ => "Default"
-                },
+                TitlePreferenceType.Localized => "English",
                 TitlePreferenceType.Japanese => "Japanese",
+                TitlePreferenceType.JapaneseRomaji => "Default",
                 _ => "Default"
             };
 
+            var title = anime.Titles
+                .FirstOrDefault(t =>
+                    t?.Type != null &&
+                    t.Type.Equals(preferredType, StringComparison.OrdinalIgnoreCase))
+                ?.Title;
+
+            if (!string.IsNullOrWhiteSpace(title))
+                return title;
+
+            // English/Japanese may not exist for every entry,
+            // so always fall back to Jikan's Default/Romaji title.
             return anime.Titles
-                .FirstOrDefault(t => t.Type.Equals(titleType, StringComparison.OrdinalIgnoreCase))?.Title
-                ?? anime.Titles.FirstOrDefault(t => t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))?.Title;
+                .FirstOrDefault(t =>
+                    t?.Type != null &&
+                    t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))
+                ?.Title
+                ?? anime.Titles.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t?.Title))?.Title;
         }
 
         public DateTime? GetAiredDate(bool isStartDate = true) => isStartDate ? anime.Aired.From : anime.Aired.To;
@@ -145,7 +154,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             var aired = GetAiredDate();
             return new RemoteSearchResult
             {
-                Name = GetPreferredTitle(_config.TitlePreference, "en"),
+                Name = GetPreferredTitle(_config.TitlePreference),
                 ProductionYear = aired.HasValue ? aired.Value.Year : null,
                 PremiereDate = aired,
                 ImageUrl = anime.Images.Image,
@@ -164,7 +173,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return new EpisodeCacheDto
             {
                 Url = anime.Url,
-                Title = GetPreferredTitle(_config.TitlePreference, "en"),
+                Title = GetPreferredTitle(_config.TitlePreference),
                 RunTimeTicks = anime.Duration,
                 Aired = anime.Aired?.From,
                 Synopsis = anime.Synopsis
@@ -198,10 +207,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     if (!IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    if (_config.SwapVoiceActorsAndCharacters)
+                    if (_config.PersonCreditPreference == PersonCreditType.Characters || _config.PersonCreditPreference == PersonCreditType.Both)
                     {
                         var characterImageUrl = edge.Character.Images?.Image;
-                        var charaterMalUrl = edge.Character.Url;
+                        var characterMalUrl = edge.Character.Url;
+
                         PersonInfo newCharacter = new PersonInfo
                         {
                             Name = role,
@@ -209,26 +219,28 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             Type = PersonKind.Actor,
                             ImageUrl = characterImageUrl,
                             ProviderIds = new Dictionary<string, string>
-                            {
-                                { ProviderNames.MyAnimeList, charaterMalUrl }
-                            }
+                        {
+                            { ProviderNames.MyAnimeList, characterMalUrl }
+                        }
                         };
+
                         people.Add(newCharacter);
-                        break; // Only add the first allowed voice actor for this character
                     }
-                    else
+
+                    if (_config.PersonCreditPreference == PersonCreditType.VoiceActors || _config.PersonCreditPreference == PersonCreditType.Both)
                     {
                         PersonInfo newPerson = new PersonInfo
                         {
                             Name = va.Person.Name,
                             Role = role,
                             Type = PersonKind.Actor,
-                            ImageUrl = va.Person.Images.Image,
+                            ImageUrl = va.Person.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
-                            {
-                                { ProviderNames.MyAnimeList, va.Person.Url }
-                            }
+                        {
+                            { ProviderNames.MyAnimeList, va.Person.Url }
+                        }
                         };
+
                         people.Add(newPerson);
                     }
                 }
@@ -251,10 +263,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             if (metadata.Name)
-                series.Name = GetPreferredTitle(_config.TitlePreference, "en");
+                series.Name = GetPreferredTitle(_config.TitlePreference);
 
             if (metadata.OriginalTitle)
-                series.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+                series.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference);
 
             if (metadata.Overview)
                 series.Overview = anime.Synopsis;
@@ -270,6 +282,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (metadata.CommunityRating)
                 series.CommunityRating = anime.Score;
+
+            if (metadata.ParentalRating)
+                series.OfficialRating = anime.Rating;
 
             if (metadata.RunTime)
                 series.RunTimeTicks = anime.Duration;
@@ -324,10 +339,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             if (metadata.Name)
-                season.Name = GetPreferredTitle(_config.TitlePreference, "en");
+                season.Name = GetPreferredTitle(_config.TitlePreference);
 
             if (metadata.OriginalTitle)
-                season.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+                season.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference);
 
             if (metadata.Overview)
                 season.Overview = anime.Synopsis;
@@ -372,10 +387,10 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             if (metadata.Name)
-                movie.Name = GetPreferredTitle(_config.TitlePreference, "en");
+                movie.Name = GetPreferredTitle(_config.TitlePreference);
 
             if (metadata.OriginalTitle)
-                movie.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference, "romaji");
+                movie.OriginalTitle = GetPreferredTitle(_config.OriginalTitlePreference);
 
             if (metadata.Overview)
                 movie.Overview = anime.Synopsis;

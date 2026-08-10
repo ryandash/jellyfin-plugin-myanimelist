@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly ConcurrentDictionary<string, ILiteCollection<CacheRecord>> _collections = new();
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
-        private const int CacheSchemaVersion = 11;
+        private const int CacheSchemaVersion = 12;
         private static readonly PluginConfiguration DefaultConfig = new();
         private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
         private static bool DisableLocalCache => _config.DisableLocalCache;

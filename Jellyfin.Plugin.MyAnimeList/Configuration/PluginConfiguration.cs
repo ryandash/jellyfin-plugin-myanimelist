@@ -18,6 +18,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         Localized, Japanese, All
     }
 
+    /// <summary>
+    /// Determines which people should be added to anime metadata.
+    /// </summary>
+    public enum PersonCreditType
+    {
+        VoiceActors,
+        Characters,
+        Both
+    }
+
     public class PluginConfiguration : BasePluginConfiguration
     {
         public PluginConfiguration()
@@ -27,13 +37,15 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             TitlePreference = TitlePreferenceType.Localized;
             OriginalTitlePreference = TitlePreferenceType.JapaneseRomaji;
             PersonLanguageFilterPreference = LanguageFilterType.All;
+            PersonCreditPreference = PersonCreditType.VoiceActors;
+
             MaxPeople = 0;
             MaxGenres = 5;
             EnableBestAttempt = false;
             ExcludeSpecials = false;
             UseExternalIDs = false;
             EnableNSFW = false;
-            SwapVoiceActorsAndCharacters = false;
+
             CacheBackupOtherTime = 1;
             CacheSearchTime = 60;
             EnableDebug = false;
@@ -54,8 +66,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
         // === People & Language Filters ===
         public LanguageFilterType PersonLanguageFilterPreference { get; set; }
+        public PersonCreditType PersonCreditPreference { get; set; }
         public int MaxPeople { get; set; }
-
         // === Metadata Options ===
         public int MaxGenres { get; set; }
         public bool EnableBestAttempt { get; set; }
@@ -63,7 +75,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool DisableLocalCache { get; set; }
         public bool UseExternalIDs { get; set; }
         public bool EnableNSFW { get; set; }
-        public bool SwapVoiceActorsAndCharacters { get; set; }
 
         // === Cache time ===
         public int CacheBackupOtherTime { get; set; }

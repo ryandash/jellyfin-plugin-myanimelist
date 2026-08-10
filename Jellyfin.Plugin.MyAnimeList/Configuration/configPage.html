@@ -43,6 +43,17 @@
                             </select>
                             <div class="fieldDescription">Only include people matching the selected language. Choosing “Localized” will include all except Japanese voice actors.</div>
                         </div>
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="personCreditPreference">People in Cast & Crew</label>
+                            <select is="emby-select" id="personCreditPreference" name="personCreditPreference" class="emby-select-withcolor emby-select">
+                                <option value="VoiceActors">Voice Actors</option>
+                                <option value="Characters">Characters</option>
+                                <option value="Both">Both</option>
+                            </select>
+                            <div class="fieldDescription">
+                                Choose whether to add voice actors, characters, or both to the Cast & Crew section. Users must refresh the metadata for the changes to take effect.
+                            </div>
+                        </div>
                         <div class="inputContainer">
                             <label class="inputLabel inputLabelUnfocused" for="chkMaxPeople">Max People</label>
                             <input id="chkMaxPeople" name="chkMaxPeople" type="number" is="emby-input" min="0" />
@@ -66,10 +77,6 @@
                         <label class="emby-checkbox-label">
                             <input id="chkEnableNSFW" name="chkEnableNSFW" type="checkbox" is="emby-checkbox" />
                             <span>Enable NSFW Results.</span>
-                        </label>
-                        <label class="emby-checkbox-label">
-                            <input id="chkSwapVoiceActorsAndCharacters" name="chkSwapVoiceActorsAndCharacters" type="checkbox" is="emby-checkbox" />
-                            <span>Swap Voice Actors and Characters in the Cast & Crew section. Users must refresh the metadata for the changes to take effect.</span>
                         </label>
                         <label class="emby-checkbox-label">
                             <input id="chkExcludeSpecials" name="chkExcludeSpecials" type="checkbox" is="emby-checkbox" />
@@ -190,6 +197,7 @@
                     { key: "PremiereDate", label: "Premiere Date" },
                     { key: "EndDate", label: "End Date" },
                     { key: "CommunityRating", label: "Community Rating" },
+                    { key: "ParentalRating", label: "Parental Rating" },
                     { key: "RunTime", label: "Runtime" },
                 ];
 
@@ -300,6 +308,7 @@
                             document.getElementById("titleLanguage").value = config.TitlePreference || "Localized";
                             document.getElementById("originalTitleLanguage").value = config.OriginalTitlePreference || "Localized";
                             document.getElementById("filterPeopleByLanguage").value = config.PersonLanguageFilterPreference || "Localized";
+                            document.getElementById("personCreditPreference").value = config.PersonCreditPreference || "VoiceActors";
 
                             document.getElementById("chkMaxPeople").value = config.MaxPeople ?? 0;
                             document.getElementById("chkMaxGenres").value = config.MaxGenres ?? 0;
@@ -312,7 +321,6 @@
                             document.getElementById("chkDisableLocalCache").checked = !!config.DisableLocalCache;
                             document.getElementById("chkUseExternalIDs").checked = !!config.UseExternalIDs;
                             document.getElementById("chkEnableNSFW").checked = !!config.EnableNSFW;
-                            document.getElementById("chkSwapVoiceActorsAndCharacters").checked = !!config.SwapVoiceActorsAndCharacters;
                             document.getElementById("chkEnableDebug").checked = !!config.EnableDebug;
 
                             createMetadataCheckboxes("Series", config.SeriesMetadata);
@@ -334,6 +342,7 @@
                             config.TitlePreference = document.getElementById("titleLanguage").value;
                             config.OriginalTitlePreference = document.getElementById("originalTitleLanguage").value;
                             config.PersonLanguageFilterPreference = document.getElementById("filterPeopleByLanguage").value;
+                            config.PersonCreditPreference = document.getElementById("personCreditPreference").value;  
 
                             config.MaxPeople = document.getElementById("chkMaxPeople").value;
                             config.MaxGenres = document.getElementById("chkMaxGenres").value;
@@ -346,7 +355,6 @@
                             config.DisableLocalCache = document.getElementById("chkDisableLocalCache").checked;
                             config.UseExternalIDs = document.getElementById("chkUseExternalIDs").checked;
                             config.EnableNSFW = document.getElementById("chkEnableNSFW").checked;
-                            config.SwapVoiceActorsAndCharacters = document.getElementById("chkSwapVoiceActorsAndCharacters").checked;
 
                             config.EnableDebug = document.getElementById("chkEnableDebug").checked;
 

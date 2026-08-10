@@ -9,20 +9,21 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
     {
         public long? MalId { get; set; }
         public string Url { get; set; }
-        public List<TitleEntryDto> Titles { get; set; }
         public ImagesSetDto Images { get; set; }
-        public TimePeriodDto Aired { get; set; }
-        public AnimeBroadcastDto? Broadcast { get; set; }
-        public long? Duration { get; set; }
-        public bool NSFW { get; set; }
-        public float? Score { get; set; }
-        public int? Episodes { get; set; }
+        public List<TitleEntryDto> Titles { get; set; }
         public string Type { get; set; }
+        public int? Episodes { get; set; }
         public string Status { get; set; }
+        public TimePeriodDto Aired { get; set; }
+        public long? Duration { get; set; }
+        public string Rating { get; set; }
+        public float? Score { get; set; }
+        public string Synopsis { get; set; }
+        public AnimeBroadcastDto Broadcast { get; set; }
         public string[] Studios { get; set; }
         public string[] Genres { get; set; }
-        public string Synopsis { get; set; }
         public List<RelatedEntryDto> Relations { get; set; }
+        public bool NSFW { get; set; }
 
         private static string Normalize(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
@@ -33,6 +34,23 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             "Hentai"
         };
 
+        private static string MapParentalRating(string malRating)
+        {
+            if (string.IsNullOrWhiteSpace(malRating))
+                return null;
+
+            return malRating switch
+            {
+                "G - All Ages" => "G",
+                "PG - Children" => "PG",
+                "PG-13 - Teens 13 or older" => "13",
+                "R - 17+ (violence & profanity)" => "16+",
+                "R+ - Mild Nudity" => "TV-14",
+                "Rx - Hentai" => "18+",
+                _ => null
+            };
+        }
+
         public static AnimeFullCacheDto From(AnimeFull source)
         {
             if (source is null || !source.MalId.HasValue)
@@ -41,19 +59,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             return MapBase(
                 source.MalId,
                 source.Url,
-                source.Titles,
                 source.Images,
-                source.Aired,
-                source.Airing,
-                source.Broadcast,
-                source.Duration,
-                source.Score,
-                source.Episodes,
+                source.Titles,
                 source.Type,
+                source.Episodes,
                 source.Status,
+                source.Airing,
+                source.Aired,
+                source.Duration,
+                source.Rating,
+                source.Score,
+                source.Synopsis,
+                source.Broadcast,
                 source.Studios,
                 source.Genres,
-                source.Synopsis,
                 RelatedEntryDto.FilterRelations(source.Relations)
             );
         }
@@ -66,19 +85,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             return MapBase(
                 source.MalId,
                 source.Url,
-                source.Titles,
                 source.Images,
-                source.Aired,
-                source.Airing,
-                source.Broadcast,
-                source.Duration,
-                source.Score,
-                source.Episodes,
+                source.Titles,
                 source.Type,
+                source.Episodes,
                 source.Status,
+                source.Airing,
+                source.Aired,
+                source.Duration,
+                source.Rating,
+                source.Score,
+                source.Synopsis,
+                source.Broadcast,
                 source.Studios,
                 source.Genres,
-                source.Synopsis,
                 null
             );
         }
@@ -86,43 +106,45 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         private static AnimeFullCacheDto MapBase(
             long? malId,
             string url,
-            ICollection<TitleEntry> titles,
             ImagesSet images,
-            TimePeriod aired,
-            bool airing,
-            AnimeBroadcast broadcast,
-            string duration,
-            double? score,
-            int? episodes,
+            ICollection<TitleEntry> titles,
             string type,
+            int? episodes,
             string status,
+            bool airing,
+            TimePeriod aired,
+            string duration,
+            string rating,
+            double? score,
+            string synopsis,
+            AnimeBroadcast broadcast,
             ICollection<MalUrl> studios,
             ICollection<MalUrl> genres,
-            string synopsis,
             List<RelatedEntryDto> relations)
         {
             var genreNames = genres?.Select(g => Normalize(g?.Name)).ToArray() ?? Array.Empty<string>();
 
             var studioNames = studios?.Select(s => Normalize(s?.Name)).ToArray() ?? Array.Empty<string>();
 
-            return new AnimeFullCacheDto
+            return new AnimeFullCacheDto()
             {
                 MalId = malId,
                 Url = Normalize(url),
-                Titles = titles?.Select(TitleEntryDto.From).ToList(),
                 Images = ImagesSetDto.From(images),
-                Aired = TimePeriodDto.Convert(aired),
-                Broadcast = airing ? AnimeBroadcastDto.From(broadcast) : null,
-                Duration = GetTicks(Normalize(duration)),
-                Score = (float?)score,
-                Episodes = episodes,
+                Titles = titles?.Select(TitleEntryDto.From).ToList(),
                 Type = Normalize(type),
+                Episodes = episodes,
                 Status = Normalize(status),
+                Aired = TimePeriodDto.Convert(aired),
+                Duration = GetTicks(Normalize(duration)),
+                Rating = MapParentalRating(rating),
+                Score = (float?)score,
+                Synopsis = Normalize(synopsis),
+                Broadcast = airing ? AnimeBroadcastDto.From(broadcast) : null,
                 Studios = studioNames,
                 Genres = genreNames,
-                NSFW = genreNames.Any(n => NSFWGenres.Contains(n)),
-                Synopsis = Normalize(synopsis),
-                Relations = relations
+                Relations = relations,
+                NSFW = genreNames.Any(n => NSFWGenres.Contains(n))
             };
         }
 

@@ -33,33 +33,56 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
             }
         }
 
-        public static bool TryExtractPersonId(string value, out long id)
+        public static bool TryExtractPersonId(string value, out long id, out PersonCreditType type)
         {
             id = 0;
+            type = PersonCreditType.VoiceActors;
 
             if (string.IsNullOrWhiteSpace(value))
             {
                 return false;
             }
 
-            if (long.TryParse(value.Trim(), out id) && id > 0)
+            value = value.Trim();
+
+            // Provider IDs may already be stored as a numeric MAL ID.
+            // There is no way to determine whether a numeric-only ID is
+            // a person or character, so use the configured preference.
+            if (long.TryParse(value, out id) && id > 0)
             {
+                type = _config.PersonCreditPreference switch
+                {
+                    PersonCreditType.Characters => PersonCreditType.Characters,
+                    _ => PersonCreditType.VoiceActors
+                };
+
                 return true;
             }
 
-            var prefix = _config.SwapVoiceActorsAndCharacters
-                ? "https://myanimelist.net/character/"
-                : "https://myanimelist.net/people/";
+            const string peoplePrefix = "https://myanimelist.net/people/";
+            const string characterPrefix = "https://myanimelist.net/character/";
 
-            if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            string prefix;
+
+            if (value.StartsWith(peoplePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                prefix = peoplePrefix;
+                type = PersonCreditType.VoiceActors;
+            }
+            else if (value.StartsWith(characterPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                prefix = characterPrefix;
+                type = PersonCreditType.Characters;
+            }
+            else
             {
                 return false;
             }
 
             var remaining = value.AsSpan(prefix.Length);
 
-            // Find the end of the numeric ID
             var length = 0;
+
             while (length < remaining.Length && char.IsDigit(remaining[length]))
             {
                 length++;
@@ -70,7 +93,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                 return false;
             }
 
-            return long.TryParse(remaining[..length], out id);
+            return long.TryParse(remaining[..length], out id) && id > 0;
         }
     }
 }
