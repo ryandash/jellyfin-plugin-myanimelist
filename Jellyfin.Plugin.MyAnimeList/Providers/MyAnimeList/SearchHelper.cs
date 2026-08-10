@@ -12,7 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class SearchHelper
     {
-        private NameBuilder nameBuilder;
+        private readonly NameBuilder nameBuilder;
 
         private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? new PluginConfiguration
         {

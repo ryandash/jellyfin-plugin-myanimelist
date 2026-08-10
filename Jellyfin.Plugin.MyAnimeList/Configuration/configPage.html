@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>MyAnimeList</title>
-</head>
-<body>
+    <head>
+        <meta charset="utf-8" />
+        <title>MyAnimeList</title>
+    </head>
+    <body>
         <div id="MyAnimeListConfigurationPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
             <div data-role="content">
                 <div class="content-primary">
@@ -87,74 +87,81 @@
                             <input id="chkEnableBestAttempt" name="chkEnableBestAttempt" type="checkbox" is="emby-checkbox" />
                             <span>Enable fallback to the first search result from Jikan.</span>
                         </label>
-                        <div class="fieldDescription" style="margin-left: 40px; color: #999;">
-                            <p style="margin: 0 0 4px 0;">Only enable this if you are experiencing failed or missing matches.</p>
-                            <p style="margin: 0 0 4px 0;">For best results, ensure:</p>
-                            <ul style="margin: 0 0 0 18px; padding: 0;">
+                        <div class="fieldDescription" style="margin-left: 40px; color: #999">
+                            <p style="margin: 0 0 4px 0">Only enable this if you are experiencing failed or missing matches.</p>
+                            <p style="margin: 0 0 4px 0">For best results, ensure:</p>
+                            <ul style="margin: 0 0 0 18px; padding: 0">
                                 <li>Library providers are ordered correctly (preferred source first)</li>
                                 <li>Anime and non-anime content are separated into different libraries</li>
                             </ul>
                         </div>
-                        <details open style="margin-top: 1em;">
-                            <summary style="cursor: pointer; font-weight: bold;">
-                                Metadata Field Selection
-                            </summary>
+                        <details style="margin-top: 1em">
+                            <summary style="cursor: pointer; font-weight: bold">Metadata Field Selection</summary>
 
-                            <div style="margin-left: 20px; margin-top: 10px;">
+                            <div style="margin-top: 10px; width: 100%; overflow-x: auto; margin-left: 20px">
+                                <table style="width: 100%; border-collapse: collapse; table-layout: fixed">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%; text-align: left; padding: 0 5px 5px 0">
+                                                Series Metadata
+                                                <label class="emby-checkbox-label metadataSelectAll" style="display: inline-flex">
+                                                    <input id="seriesMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                                    <span>Select All</span>
+                                                </label>
+                                            </th>
 
-                                <details>
-                                    <summary>
-                                        Series Metadata
-                                        <label class="emby-checkbox-label metadataSelectAll">
-                                            <input id="seriesMetadataSelectAll" type="checkbox" is="emby-checkbox" />
-                                            <span>Select All</span>
-                                        </label>
-                                    </summary>
-                                    <div id="seriesMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
-                                </details>
+                                            <th style="width: 25%; text-align: left; padding: 0 5px 5px 0">
+                                                Season Metadata
+                                                <label class="emby-checkbox-label metadataSelectAll" style="display: inline-flex">
+                                                    <input id="seasonMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                                    <span>Select All</span>
+                                                </label>
+                                            </th>
 
-                                <details>
-                                    <summary>
-                                        Season Metadata
-                                        <label class="emby-checkbox-label metadataSelectAll">
-                                            <input id="seasonMetadataSelectAll" type="checkbox" is="emby-checkbox" />
-                                            <span>Select All</span>
-                                        </label>
-                                    </summary>
-                                    <div id="seasonMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
-                                </details>
+                                            <th style="width: 25%; text-align: left; padding: 0 5px 5px 0">
+                                                Episode Metadata
+                                                <label class="emby-checkbox-label metadataSelectAll" style="display: inline-flex">
+                                                    <input id="episodeMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                                    <span>Select All</span>
+                                                </label>
+                                            </th>
 
-                                <details>
-                                    <summary>
-                                        Episode Metadata
-                                        <label class="emby-checkbox-label metadataSelectAll">
-                                            <input id="episodeMetadataSelectAll" type="checkbox" is="emby-checkbox" />
-                                            <span>Select All</span>
-                                        </label>
-                                    </summary>
-                                    <div id="episodeMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
-                                </details>
+                                            <th style="width: 25%; text-align: left; padding: 0 5px 5px 0">
+                                                Movie Metadata
+                                                <label class="emby-checkbox-label metadataSelectAll" style="display: inline-flex">
+                                                    <input id="movieMetadataSelectAll" type="checkbox" is="emby-checkbox" />
+                                                    <span>Select All</span>
+                                                </label>
+                                            </th>
+                                        </tr>
+                                    </thead>
 
-                                <details>
-                                    <summary>
-                                        Movie Metadata
-                                        <label class="emby-checkbox-label metadataSelectAll">
-                                            <input id="movieMetadataSelectAll" type="checkbox" is="emby-checkbox" />
-                                            <span>Select All</span>
-                                        </label>
-                                    </summary>
-                                    <div id="movieMetadataFields" style="margin-left: 20px; margin-top: 10px;"></div>
-                                </details>
+                                    <tbody>
+                                        <tr>
+                                            <td style="vertical-align: top; padding-right: 15px">
+                                                <div id="seriesMetadataFields"></div>
+                                            </td>
 
+                                            <td style="vertical-align: top; padding-right: 15px">
+                                                <div id="seasonMetadataFields"></div>
+                                            </td>
+
+                                            <td style="vertical-align: top; padding-right: 15px">
+                                                <div id="episodeMetadataFields"></div>
+                                            </td>
+
+                                            <td style="vertical-align: top; padding-right: 15px">
+                                                <div id="movieMetadataFields"></div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </details>
-                        <details style="margin-top: 1em;">
-                            <summary style="cursor: pointer; font-weight: bold;">
-                                Advanced / Debug Options
-                            </summary>
+                        <details style="margin-top: 1em">
+                            <summary style="cursor: pointer; font-weight: bold">Advanced / Debug Options</summary>
 
-                            <div style="margin-left: 20px; margin-top: 10px;">
-
+                            <div style="margin-left: 20px; margin-top: 10px">
                                 <label class="emby-checkbox-label">
                                     <input id="chkEnableDebug" name="chkEnableDebug" type="checkbox" is="emby-checkbox" />
                                     <span>Enable additional debug logging.</span>
@@ -174,7 +181,6 @@
                     </form>
                 </div>
             </div>
-
             <script type="text/javascript">
                 const commonMetadataFields = [
                     { key: "Name", label: "Name" },
@@ -184,62 +190,45 @@
                     { key: "PremiereDate", label: "Premiere Date" },
                     { key: "EndDate", label: "End Date" },
                     { key: "CommunityRating", label: "Community Rating" },
-                    { key: "RunTime", label: "Runtime" }
+                    { key: "RunTime", label: "Runtime" },
                 ];
 
                 const metadataFields = {
-                    Series: [
-                        ...commonMetadataFields,
-                        { key: "Genres", label: "Genres" },
-                        { key: "Studios", label: "Studios" },
-                        { key: "Status", label: "Status" },
-                        { key: "AirDays", label: "Air Days" },
-                        { key: "AirTime", label: "Air Time" },
-                        { key: "People", label: "People" }
-                    ],
+                    Series: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "Status", label: "Status" }, { key: "AirDays", label: "Air Days" }, { key: "AirTime", label: "Air Time" }, { key: "People", label: "People" }],
 
-                    Season: [
-                        ...commonMetadataFields,
-                        { key: "Genres", label: "Genres" },
-                        { key: "Studios", label: "Studios" }
-                    ],
+                    Season: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }],
 
-                    Episode: [
-                        ...commonMetadataFields
-                    ],
+                    Episode: [...commonMetadataFields],
 
-                    Movie: [
-                        ...commonMetadataFields,
-                        { key: "Genres", label: "Genres" },
-                        { key: "Studios", label: "Studios" }
-                    ]
+                    Movie: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }],
                 };
 
                 function createMetadataCheckboxes(type, config) {
-                    const container = document.getElementById(
-                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields"
-                    );
+                    const container = document.getElementById(type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields");
 
-                    const selectAll = document.getElementById(
-                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataSelectAll"
-                    );
+                    const selectAll = document.getElementById(type.charAt(0).toLowerCase() + type.slice(1) + "MetadataSelectAll");
+
+                    if (!container || !selectAll) {
+                        console.error("MyAnimeList: Could not find metadata controls for " + type);
+                        return;
+                    }
 
                     container.innerHTML = "";
 
                     config = config || {};
 
-                    // Metadata checkboxes
                     metadataFields[type].forEach(function (field) {
                         const label = document.createElement("label");
                         label.className = "emby-checkbox-label";
 
                         const checkbox = document.createElement("input");
+
                         checkbox.type = "checkbox";
                         checkbox.setAttribute("is", "emby-checkbox");
+
                         checkbox.dataset.metadataType = type;
                         checkbox.dataset.metadataField = field.key;
 
-                        // Default to enabled if the property doesn't exist.
                         checkbox.checked = config[field.key] !== false;
 
                         const span = document.createElement("span");
@@ -251,21 +240,16 @@
                         container.appendChild(label);
                     });
 
-                    const fieldCheckboxes = container.querySelectorAll(
-                        "input[data-metadata-field]"
-                    );
+                    const fieldCheckboxes = container.querySelectorAll("input[data-metadata-field]");
 
                     function updateSelectAllState() {
-                        const checkedCount = Array.from(fieldCheckboxes)
-                            .filter(function (checkbox) {
-                                return checkbox.checked;
-                            }).length;
+                        const checkedCount = Array.from(fieldCheckboxes).filter(function (checkbox) {
+                            return checkbox.checked;
+                        }).length;
 
                         selectAll.checked = checkedCount === fieldCheckboxes.length;
 
-                        selectAll.indeterminate =
-                            checkedCount > 0 &&
-                            checkedCount < fieldCheckboxes.length;
+                        selectAll.indeterminate = checkedCount > 0 && checkedCount < fieldCheckboxes.length;
                     }
 
                     selectAll.addEventListener("change", function () {
@@ -286,8 +270,7 @@
                 }
 
                 function saveMetadataConfiguration(type, config) {
-                    const containerId =
-                        type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields";
+                    const containerId = type.charAt(0).toLowerCase() + type.slice(1) + "MetadataFields";
 
                     const container = document.getElementById(containerId);
 
@@ -295,6 +278,7 @@
 
                     container.querySelectorAll("input[type=checkbox]").forEach(function (checkbox) {
                         const field = checkbox.dataset.metadataField;
+
                         config[field] = checkbox.checked;
                     });
 
@@ -302,93 +286,91 @@
                 }
 
                 var MyAnimeListConfigurationPage = {
-                pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
+                    pluginUniqueId: "ed04e975-f906-4b58-a250-705550810623",
 
-                loadConfiguration: function () {
-                Dashboard.showLoadingMsg();
+                    configurationLoadPromise: null,
 
-                ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                    loadConfiguration: function () {
+                        Dashboard.showLoadingMsg();
 
-                document.getElementById('primaryURL').value = config.PrimaryJikanUrl;
-                document.getElementById('backupURL').value = config.BackupJikanUrl;
+                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                            document.getElementById("primaryURL").value = config.PrimaryJikanUrl || "";
+                            document.getElementById("backupURL").value = config.BackupJikanUrl || "";
 
-                document.getElementById('titleLanguage').value = config.TitlePreference;
-                document.getElementById('originalTitleLanguage').value = config.OriginalTitlePreference;
-                document.getElementById('filterPeopleByLanguage').value = config.PersonLanguageFilterPreference;
+                            document.getElementById("titleLanguage").value = config.TitlePreference || "Localized";
+                            document.getElementById("originalTitleLanguage").value = config.OriginalTitlePreference || "Localized";
+                            document.getElementById("filterPeopleByLanguage").value = config.PersonLanguageFilterPreference || "Localized";
 
-                document.getElementById('chkMaxPeople').value = config.MaxPeople;
-                document.getElementById('chkMaxGenres').value = config.MaxGenres;
-                document.getElementById('chkCacheBackupOtherTime').value = config.CacheBackupOtherTime;
-                document.getElementById('chkCacheSearchTime').value = config.CacheSearchTime;
+                            document.getElementById("chkMaxPeople").value = config.MaxPeople ?? 0;
+                            document.getElementById("chkMaxGenres").value = config.MaxGenres ?? 0;
+                            document.getElementById("chkCacheBackupOtherTime").value = config.CacheBackupOtherTime ?? 0;
+                            document.getElementById("chkCacheSearchTime").value = config.CacheSearchTime ?? 0;
 
-                document.getElementById('chkForceNewMetadata').checked = config.ForceNewMetadata;
-                document.getElementById('chkEnableBestAttempt').checked = config.EnableBestAttempt;
+                            document.getElementById("chkForceNewMetadata").checked = !!config.ForceNewMetadata;
+                            document.getElementById("chkEnableBestAttempt").checked = !!config.EnableBestAttempt;
+                            document.getElementById("chkExcludeSpecials").checked = !!config.ExcludeSpecials;
+                            document.getElementById("chkDisableLocalCache").checked = !!config.DisableLocalCache;
+                            document.getElementById("chkUseExternalIDs").checked = !!config.UseExternalIDs;
+                            document.getElementById("chkEnableNSFW").checked = !!config.EnableNSFW;
+                            document.getElementById("chkSwapVoiceActorsAndCharacters").checked = !!config.SwapVoiceActorsAndCharacters;
+                            document.getElementById("chkEnableDebug").checked = !!config.EnableDebug;
 
-                document.getElementById('chkExcludeSpecials').checked = config.ExcludeSpecials;
-                document.getElementById('chkDisableLocalCache').checked = config.DisableLocalCache;
-                document.getElementById('chkUseExternalIDs').checked = config.UseExternalIDs;
-                document.getElementById('chkEnableNSFW').checked = config.EnableNSFW;
-                document.getElementById('chkSwapVoiceActorsAndCharacters').checked = config.SwapVoiceActorsAndCharacters;
-                document.getElementById('chkEnableDebug').checked = config.EnableDebug;
+                            createMetadataCheckboxes("Series", config.SeriesMetadata);
+                            createMetadataCheckboxes("Season", config.SeasonMetadata);
+                            createMetadataCheckboxes("Episode", config.EpisodeMetadata);
+                            createMetadataCheckboxes("Movie", config.MovieMetadata);
 
-                createMetadataCheckboxes("Series", config.SeriesMetadata);
-                createMetadataCheckboxes("Season", config.SeasonMetadata);
-                createMetadataCheckboxes("Episode", config.EpisodeMetadata);
-                createMetadataCheckboxes("Movie", config.MovieMetadata);
+                            Dashboard.hideLoadingMsg();
+                        });
+                    },
 
-                Dashboard.hideLoadingMsg();
-                });
-                },
+                    saveConfiguration: function () {
+                        Dashboard.showLoadingMsg();
 
-                saveConfiguration: function () {
-                Dashboard.showLoadingMsg();
+                        ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                            config.PrimaryJikanUrl = document.getElementById("primaryURL").value;
+                            config.BackupJikanUrl = document.getElementById("backupURL").value;
 
-                ApiClient.getPluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId).then(function (config) {
+                            config.TitlePreference = document.getElementById("titleLanguage").value;
+                            config.OriginalTitlePreference = document.getElementById("originalTitleLanguage").value;
+                            config.PersonLanguageFilterPreference = document.getElementById("filterPeopleByLanguage").value;
 
-                config.PrimaryJikanUrl = document.getElementById('primaryURL').value;
-                config.BackupJikanUrl = document.getElementById('backupURL').value;
+                            config.MaxPeople = document.getElementById("chkMaxPeople").value;
+                            config.MaxGenres = document.getElementById("chkMaxGenres").value;
 
-                config.TitlePreference = document.getElementById('titleLanguage').value;
-                config.OriginalTitlePreference = document.getElementById('originalTitleLanguage').value;
-                config.PersonLanguageFilterPreference = document.getElementById('filterPeopleByLanguage').value;
+                            config.CacheBackupOtherTime = document.getElementById("chkCacheBackupOtherTime").value;
+                            config.CacheSearchTime = document.getElementById("chkCacheSearchTime").value;
+                            config.ForceNewMetadata = document.getElementById("chkForceNewMetadata").checked;
+                            config.EnableBestAttempt = document.getElementById("chkEnableBestAttempt").checked;
+                            config.ExcludeSpecials = document.getElementById("chkExcludeSpecials").checked;
+                            config.DisableLocalCache = document.getElementById("chkDisableLocalCache").checked;
+                            config.UseExternalIDs = document.getElementById("chkUseExternalIDs").checked;
+                            config.EnableNSFW = document.getElementById("chkEnableNSFW").checked;
+                            config.SwapVoiceActorsAndCharacters = document.getElementById("chkSwapVoiceActorsAndCharacters").checked;
 
-                config.MaxPeople = document.getElementById('chkMaxPeople').value;
-                config.MaxGenres = document.getElementById('chkMaxGenres').value;
-                config.CacheBackupOtherTime = document.getElementById('chkCacheBackupOtherTime').value;
-                config.CacheSearchTime = document.getElementById('chkCacheSearchTime').value;
+                            config.EnableDebug = document.getElementById("chkEnableDebug").checked;
 
-                config.ForceNewMetadata = document.getElementById('chkForceNewMetadata').checked;
-                config.EnableBestAttempt = document.getElementById('chkEnableBestAttempt').checked;
+                            config.SeriesMetadata = saveMetadataConfiguration("Series", config.SeriesMetadata);
+                            config.SeasonMetadata = saveMetadataConfiguration("Season", config.SeasonMetadata);
+                            config.EpisodeMetadata = saveMetadataConfiguration("Episode", config.EpisodeMetadata);
+                            config.MovieMetadata = saveMetadataConfiguration("Movie", config.MovieMetadata);
 
-                config.ExcludeSpecials = document.getElementById('chkExcludeSpecials').checked;
-                config.DisableLocalCache = document.getElementById('chkDisableLocalCache').checked;
-                config.UseExternalIDs = document.getElementById('chkUseExternalIDs').checked;
-                config.EnableNSFW = document.getElementById('chkEnableNSFW').checked;
-                config.SwapVoiceActorsAndCharacters = document.getElementById('chkSwapVoiceActorsAndCharacters').checked;
-                config.EnableDebug = document.getElementById('chkEnableDebug').checked;
-
-                config.SeriesMetadata = saveMetadataConfiguration("Series", config.SeriesMetadata);
-                config.SeasonMetadata = saveMetadataConfiguration("Season", config.SeasonMetadata);
-                config.EpisodeMetadata = saveMetadataConfiguration("Episode", config.EpisodeMetadata);
-                config.MovieMetadata = saveMetadataConfiguration("Movie", config.MovieMetadata);
-
-                ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
-                Dashboard.processPluginConfigurationUpdateResult(result);
-                
-                });
-                });
-                }
+                            ApiClient.updatePluginConfiguration(MyAnimeListConfigurationPage.pluginUniqueId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                            });
+                        });
+                    },
                 };
 
-                document.getElementById('MyAnimeListConfigurationPage').addEventListener('pageshow', function () {
-                MyAnimeListConfigurationPage.loadConfiguration();
+                document.getElementById("MyAnimeListConfigurationPage").addEventListener("pageshow", function () {
+                    MyAnimeListConfigurationPage.loadConfiguration();
                 });
 
-                document.getElementById('MyAnimeListConfigurationForm').addEventListener('submit', function (e) {
-                e.preventDefault();
-                MyAnimeListConfigurationPage.saveConfiguration();
+                document.getElementById("MyAnimeListConfigurationForm").addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    MyAnimeListConfigurationPage.saveConfiguration();
                 });
             </script>
         </div>
     </body>
-    </html>
+</html>

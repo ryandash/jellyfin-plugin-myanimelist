@@ -107,7 +107,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        private static async Task<JikanResult<T>> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action)
+        private static async Task<JikanResult<T>> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action, CancellationToken token)
         {
             EnsureClients();
 
@@ -115,7 +115,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 return new JikanResult<T>
                 {
-                    Data = await action(_primaryClient),
+                    Data = await action(_primaryClient).ConfigureAwait(false),
                     IsTenrai = IsTenrai(_primaryUrl)
                 };
             }
@@ -129,7 +129,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 {
                     return new JikanResult<T>
                     {
-                        Data = await action(_backupClient),
+                        Data = await action(_backupClient).ConfigureAwait(false),
                         IsTenrai = IsTenrai(_backupUrl)
                     };
                 }
@@ -257,7 +257,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 URLs.AnimeFull(malId),
 
-                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeFullDataAsync(malId, token)),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeFullDataAsync(malId, token), token),
 
                 normalize: a => AnimeFullCacheDto.From(a.Data.Data),
 
@@ -271,7 +271,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.AnimeEpisode(malId, episodeNumber),
                 URLs.AnimeSpecificEpisodes(malId, episodeNumber),
 
-                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token)),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeEpisodeAsync(malId, episodeNumber, token), token),
 
                 normalize: e => EpisodeCacheDto.From(e.Data.Data),
 
@@ -287,7 +287,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.Person(malId),
                 URLs.People(malId),
 
-                fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token)),
+                fetch: () => TryPrimaryThenBackup(j => j.GetPersonAsync(malId, token), token),
 
                 normalize: p => PersonDto.From(p.Data.Data),
 
@@ -303,7 +303,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Keys.Character(malId),
                 URLs.Character(malId),
 
-                fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(malId, token)),
+                fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(malId, token), token),
 
                 normalize: c => CharacterCacheDto.From(c.Data.Data),
 
@@ -334,7 +334,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Sfw = !nsfw,
                 Type = isMovie ? AnimeType.Movie : AnimeType.EveryType,
             };
-            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token));
+            var search = await TryPrimaryThenBackup(j => j.SearchAnimeAsync(searchConfig, token), token);
             var ids = search.Data.Data.Where(a => a.MalId.HasValue).Select(a => (anime: a, id: a.MalId.Value)).ToList();
             var anime = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
@@ -372,7 +372,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Query = term,
                 Page = 1
             };
-            var search = await TryPrimaryThenBackup(j => j.SearchCharacterAsync(searchConfig, token));
+            var search = await TryPrimaryThenBackup(j => j.SearchCharacterAsync(searchConfig, token), token);
             var ids = search.Data.Data.Select(a => (character: a, id: a.MalId)).ToList();
             var characters = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
@@ -407,7 +407,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Query = term,
                 Page = 1
             };
-            var search = await TryPrimaryThenBackup(j => j.SearchPersonAsync(searchConfig, token));
+            var search = await TryPrimaryThenBackup(j => j.SearchPersonAsync(searchConfig, token), token);
             var ids = search.Data.Data.Select(a => (person: a, id: a.MalId)).ToList();
             var people = await Task.WhenAll(ids.Select(a =>
                     GetOrFetchAsync(
@@ -440,7 +440,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
                     while (true)
                     {
-                        var res = (await TryPrimaryThenBackup(j => j.GetAnimeEpisodesAsync(malId, page, token))).Data;
+                        var res = (await TryPrimaryThenBackup(j => j.GetAnimeEpisodesAsync(malId, page, token), token)).Data;
 
                         if (res?.Data is null || res.Data.Count == 0)
                             break;
@@ -483,7 +483,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 key,
                 URLs.AnimeCharacters(malId),
 
-                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeCharactersAsync(malId, token)),
+                fetch: () => TryPrimaryThenBackup(j => j.GetAnimeCharactersAsync(malId, token), token),
 
                 normalize: res =>
                 {
@@ -532,7 +532,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     Keys.Character(charID),
                     URLs.Character(charID),
 
-                    fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(charID, token)),
+                    fetch: () => TryPrimaryThenBackup(j => j.GetCharacterAsync(charID, token), token),
 
                     normalize: res => CharacterCacheDto.From(res.Data.Data)
                 );

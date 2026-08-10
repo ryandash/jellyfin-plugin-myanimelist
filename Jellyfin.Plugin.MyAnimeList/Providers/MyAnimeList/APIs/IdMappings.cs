@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -18,6 +19,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         {
             PropertyNameCaseInsensitive = true
         };
+        private static readonly ConcurrentDictionary<string, Task<List<MappingEntry>>> _mappingCache = new();
 
         public IdMappings(IHttpClientFactory httpClientFactory)
         {
@@ -34,6 +36,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs
         }
 
         private async Task<List<MappingEntry>> GetMappingsAsync(ILogger log, string tvdbId, CancellationToken token)
+        {
+            return await _mappingCache.GetOrAdd(tvdbId, _ => FetchMappingsAsync(log, tvdbId, token));
+        }
+
+        private async Task<List<MappingEntry>> FetchMappingsAsync(ILogger log, string tvdbId, CancellationToken token)
         {
             var url = $"{_baseUrl}thetvdb-episodes?id={tvdbId}";
 

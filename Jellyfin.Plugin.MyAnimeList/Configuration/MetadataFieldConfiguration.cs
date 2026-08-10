@@ -35,6 +35,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
     {
         public bool Genres { get; set; } = true;
         public bool Studios { get; set; } = true;
+        public bool People { get; set; } = true;
     }
 
     /// <summary>
@@ -51,5 +52,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
     {
         public bool Genres { get; set; } = true;
         public bool Studios { get; set; } = true;
+        public bool People { get; set; } = true;
     }
 }

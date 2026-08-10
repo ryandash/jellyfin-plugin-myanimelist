@@ -62,13 +62,19 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
                 _ = await JikanAPI.GetAnimeEpisodesAsync(anime.MalId.Value, cancellationToken).ConfigureAwait(false);
             }
 
-            return new MetadataResult<TItem>
+            var metadataResult = new MetadataResult<TItem>
             {
                 HasMetadata = true,
                 Item = ConvertToItem(media, info),
-                People = media.GetPeopleInfo(),
                 Provider = Name
             };
+
+            if (info is SeriesInfo && _config.SeriesMetadata.People || info is SeasonInfo && _config.SeasonMetadata.People || info is MovieInfo && _config.MovieMetadata.People)
+            {
+                metadataResult.People = media.GetPeopleInfo();
+            }
+
+            return metadataResult;
         }
 
         public async Task<IEnumerable<RemoteSearchResult>> GetSearchResults(TInfo info, CancellationToken cancellationToken)
