@@ -1,9 +1,17 @@
-caebd9e Adjust Metadata Fields + general cleanup
+ebf267b Bug fixes + add features
 
-- Use Columns for Metadata field selection (looks a little better and easier to configure)
+- Fix incorrectly using fallback title instead of user's selected preferred title
 
-- Add some missing "People" metadata field selections for Season and Movie
+- Add the ability to use Voice Actors, Characters, or Both for Cast and Crew
+
+- Add parental ratings
+
+- Database version bump
 
 - General cleanup
 
-927164d Update manifest
+1333855 Adjust setting description
+
+- Use a less technical description for the feature
+
+ee964ef Update manifest
