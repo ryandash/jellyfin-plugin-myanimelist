@@ -194,8 +194,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
         public List<PersonInfo> GetPeopleInfo()
         {
-            var actorGroups = new Dictionary<string, List<PersonInfo>>();
-            var actorOrder = new List<string>();
+            var people = new List<PersonInfo>();
 
             foreach (var edge in characters ?? Enumerable.Empty<AnimeCharacterDto>())
             {
@@ -209,59 +208,41 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     if (!IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    var actorName = va.Person.Name;
-
-                    if (!actorGroups.ContainsKey(actorName))
-                    {
-                        actorGroups[actorName] = new List<PersonInfo>();
-                        actorOrder.Add(actorName);
-                    }
-
                     if (_config.PersonCreditPreference == PersonCreditType.Characters || _config.PersonCreditPreference == PersonCreditType.Both)
                     {
-                        var newCharacter = new PersonInfo
+                        var characterImageUrl = edge.Character.Images?.Image;
+                        var characterMalUrl = edge.Character.Url;
+
+                        PersonInfo newCharacter = new PersonInfo
                         {
                             Name = role,
-                            Role = actorName,
+                            Role = va.Person.Name,
                             Type = PersonKind.Actor,
-                            ImageUrl = edge.Character.Images?.Image,
+                            ImageUrl = characterImageUrl,
                             ProviderIds = new Dictionary<string, string>
                             {
-                                { ProviderNames.MyAnimeList, edge.Character.Url }
+                                { ProviderNames.MyAnimeList, characterMalUrl }
                             }
                         };
 
-                        actorGroups[actorName].Add(newCharacter);
+                        people.Add(newCharacter);
                     }
-                }
-            }
 
-            var people = new List<PersonInfo>();
-
-            foreach (var actorName in actorOrder)
-            {
-                if (_config.PersonCreditPreference == PersonCreditType.Characters || _config.PersonCreditPreference == PersonCreditType.Both)
-                {
-                    people.AddRange(actorGroups[actorName]);
-                }
-
-                if (_config.PersonCreditPreference == PersonCreditType.VoiceActors || _config.PersonCreditPreference == PersonCreditType.Both)
-                {
-                    var va = characters?.SelectMany(c => c.VoiceActors).FirstOrDefault(va => IsAllowedLanguage(va.Language ?? string.Empty) && va.Person.Name == actorName);
-
-                    if (va != null)
+                    if (_config.PersonCreditPreference == PersonCreditType.VoiceActors || _config.PersonCreditPreference == PersonCreditType.Both)
                     {
-                        people.Add(new PersonInfo
+                        PersonInfo newPerson = new PersonInfo
                         {
                             Name = va.Person.Name,
-                            Role = actorGroups[actorName].FirstOrDefault()?.Name,
+                            Role = role,
                             Type = PersonKind.Actor,
                             ImageUrl = va.Person.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
                             {
                                 { ProviderNames.MyAnimeList, va.Person.Url }
                             }
-                        });
+                        };
+
+                        people.Add(newPerson);
                     }
                 }
             }
