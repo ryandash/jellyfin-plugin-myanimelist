@@ -208,6 +208,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 var characterMalUrl = edge.Character.Url;
                 var characterImageUrl = edge.Character.Images?.Image;
 
+                var gotCharacter = false;
+
                 foreach (var va in edge.VoiceActors)
                 {
                     if (va?.Person == null)
@@ -216,7 +218,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                     if (!IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    if (preference == PersonCreditType.Characters || preference == PersonCreditType.Both)
+                    if (!gotCharacter && (preference == PersonCreditType.Characters || preference == PersonCreditType.Both))
                     {
                         if (!string.IsNullOrEmpty(characterMalUrl))
                         {
@@ -233,7 +235,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             });
                         }
 
-                        // Only one VA is needed to establish the character credit.
+                        gotCharacter = true;
                         if (preference == PersonCreditType.Characters)
                             break;
                     }
