@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
+using Person = MediaBrowser.Controller.Entities.Person;
 using Season = MediaBrowser.Controller.Entities.TV.Season;
 using Series = MediaBrowser.Controller.Entities.TV.Series;
 
@@ -297,6 +298,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (metadata.Studios)
                 series.Studios = anime.Studios;
 
+            if (metadata.Tags)
+                series.Tags = anime.Tags;
+
             if (metadata.Status)
             {
                 series.Status = anime.Status switch
@@ -370,6 +374,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (metadata.Studios)
                 season.Studios = anime.Studios;
 
+            if (metadata.Tags)
+                season.Tags = anime.Tags;
+
             season.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
             return season;
@@ -414,6 +421,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 movie.Genres = anime.Genres?
                     .Take(_config.MaxGenres)
                     .ToArray();
+
+            if (metadata.Tags)
+                movie.Tags = anime.Tags;
 
             if (metadata.Studios)
                 movie.Studios = anime.Studios;

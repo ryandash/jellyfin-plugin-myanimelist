@@ -22,6 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public AnimeBroadcastDto Broadcast { get; set; }
         public string[] Studios { get; set; }
         public string[] Genres { get; set; }
+        public string[] Tags { get; set; }
         public List<RelatedEntryDto> Relations { get; set; }
         public bool NSFW { get; set; }
 
@@ -73,6 +74,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.Broadcast,
                 source.Studios,
                 source.Genres,
+                source.Themes,
+                source.Demographics,
                 RelatedEntryDto.FilterRelations(source.Relations)
             );
         }
@@ -99,6 +102,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.Broadcast,
                 source.Studios,
                 source.Genres,
+                source.Themes,
+                source.Demographics,
                 null
             );
         }
@@ -120,6 +125,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             AnimeBroadcast broadcast,
             ICollection<MalUrl> studios,
             ICollection<MalUrl> genres,
+            ICollection<MalUrl> themes,
+            ICollection<MalUrl> demographics,
             List<RelatedEntryDto> relations)
         {
             var genreNames = genres?.Select(g => Normalize(g?.Name)).ToArray() ?? Array.Empty<string>();
@@ -143,6 +150,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 Broadcast = airing ? AnimeBroadcastDto.From(broadcast) : null,
                 Studios = studioNames,
                 Genres = genreNames,
+                Tags = (themes ?? Enumerable.Empty<MalUrl>()).Concat(demographics ?? Enumerable.Empty<MalUrl>()).Select(t => Normalize(t?.Name)).Where(t => t != null).ToArray(),
                 Relations = relations,
                 NSFW = genreNames.Any(n => NSFWGenres.Contains(n))
             };

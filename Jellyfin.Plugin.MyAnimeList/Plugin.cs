@@ -12,10 +12,7 @@ namespace Jellyfin.Plugin.MyAnimeList
 {
     public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
-        public Plugin(
-            IApplicationPaths applicationPaths,
-            IXmlSerializer xmlSerializer)
-            : base(applicationPaths, xmlSerializer)
+        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer) : base(applicationPaths, xmlSerializer)
         {
             Instance = this;
             JikanAPI.Initialize(applicationPaths);

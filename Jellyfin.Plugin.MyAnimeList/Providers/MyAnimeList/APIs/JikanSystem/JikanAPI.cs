@@ -65,6 +65,17 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
+        private static bool IsTenrai(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                return false;
+
+            return string.Equals(
+                uri.Host,
+                defaultPrimaryBaseUrl,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
         private static Jikan CreateClient(string baseUrl)
         {
             var http = new HttpClient(new JikanHeaderHandler(new HttpClientHandler()))
@@ -73,7 +84,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Timeout = TimeSpan.FromMinutes(5)
             };
 
-            return new Jikan(new JikanClientConfiguration(), http);
+            JikanClientConfiguration config = new JikanClientConfiguration();
+
+            if (IsTenrai(baseUrl))
+            {
+                config.LimiterConfigurations = new List<TaskLimiterConfiguration>
+                {
+                    new TaskLimiterConfiguration(4, TimeSpan.FromSeconds(1)),
+                    new TaskLimiterConfiguration(120, TimeSpan.FromMinutes(1))
+                };
+            }
+
+            return new Jikan(config, http);
         }
 
         private static void EnsureClients()
@@ -94,17 +116,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 _primaryUrl = p;
                 _backupUrl = b;
             }
-        }
-
-        private static bool IsTenrai(string url)
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-                return false;
-
-            return string.Equals(
-                uri.Host,
-                defaultPrimaryBaseUrl,
-                StringComparison.OrdinalIgnoreCase);
         }
 
         private static async Task<JikanResult<T>> TryPrimaryThenBackup<T>(Func<Jikan, Task<T>> action, CancellationToken token)
