@@ -1,11 +1,7 @@
-f7a5ede Update Jellyfin.Plugin.MyAnimeList.csproj
+52b0f9e Update Jellyfin.Plugin.MyAnimeList.csproj
 
-9ddec41 Improve Tenrai rate limit + adjust cast order and groupings
+8218eb4 Update JellyfinEntityMapper.cs
 
-- More detailed rate limit for Tenrai API
+- Revert GetPeopleInfo()
 
-- Remove order by character ID
-
-- Group characters removing Voice Actor duplicates for an anime when "both" is used
-
-ff17cae Update manifest
+756cdc3 Update manifest
