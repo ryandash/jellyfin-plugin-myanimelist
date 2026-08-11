@@ -196,58 +196,71 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         {
             var people = new List<PersonInfo>();
 
+            var preference = _config.PersonCreditPreference;
+            var maxPeople = _config.MaxPeople;
+
             foreach (var edge in characters ?? Enumerable.Empty<AnimeCharacterDto>())
             {
-                if (edge.VoiceActors == null)
+                if (edge?.Character == null || edge.VoiceActors == null)
                     continue;
 
                 var role = edge.Character.Name;
+                var characterMalUrl = edge.Character.Url;
+                var characterImageUrl = edge.Character.Images?.Image;
 
                 foreach (var va in edge.VoiceActors)
                 {
+                    if (va?.Person == null)
+                        continue;
+
                     if (!IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    if (_config.PersonCreditPreference == PersonCreditType.Characters || _config.PersonCreditPreference == PersonCreditType.Both)
+                    if (preference == PersonCreditType.Characters || preference == PersonCreditType.Both)
                     {
-                        var characterImageUrl = edge.Character.Images?.Image;
-                        var characterMalUrl = edge.Character.Url;
-
-                        PersonInfo newCharacter = new PersonInfo
+                        if (!string.IsNullOrEmpty(characterMalUrl))
                         {
-                            Name = role,
-                            Role = va.Person.Name,
-                            Type = PersonKind.Actor,
-                            ImageUrl = characterImageUrl,
-                            ProviderIds = new Dictionary<string, string>
+                            people.Add(new PersonInfo
                             {
-                                { ProviderNames.MyAnimeList, characterMalUrl }
-                            }
-                        };
+                                Name = role,
+                                Role = va.Person.Name,
+                                Type = PersonKind.Actor,
+                                ImageUrl = characterImageUrl,
+                                ProviderIds = new Dictionary<string, string>
+                                {
+                                    { ProviderNames.MyAnimeList, characterMalUrl }
+                                }
+                            });
+                        }
 
-                        people.Add(newCharacter);
+                        // Only one VA is needed to establish the character credit.
+                        if (preference == PersonCreditType.Characters)
+                            break;
                     }
 
-                    if (_config.PersonCreditPreference == PersonCreditType.VoiceActors || _config.PersonCreditPreference == PersonCreditType.Both)
+                    if (preference == PersonCreditType.VoiceActors ||  preference == PersonCreditType.Both)
                     {
-                        PersonInfo newPerson = new PersonInfo
-                        {
-                            Name = va.Person.Name,
-                            Role = role,
-                            Type = PersonKind.Actor,
-                            ImageUrl = va.Person.Images?.Image,
-                            ProviderIds = new Dictionary<string, string>
-                            {
-                                { ProviderNames.MyAnimeList, va.Person.Url }
-                            }
-                        };
+                        var personMalUrl = va.Person.Url;
 
-                        people.Add(newPerson);
+                        if (!string.IsNullOrEmpty(personMalUrl))
+                        {
+                            people.Add(new PersonInfo
+                            {
+                                Name = va.Person.Name,
+                                Role = role,
+                                Type = PersonKind.Actor,
+                                ImageUrl = va.Person.Images?.Image,
+                                ProviderIds = new Dictionary<string, string>
+                                {
+                                    { ProviderNames.MyAnimeList, personMalUrl }
+                                }
+                            });
+                        }
                     }
                 }
             }
 
-            int limit = _config.MaxPeople > 0 ? _config.MaxPeople : int.MaxValue;
+            int limit = maxPeople > 0 ? maxPeople : int.MaxValue;
 
             return people.Take(limit).ToList();
         }
