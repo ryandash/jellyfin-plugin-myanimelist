@@ -55,20 +55,33 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         {
             _expiryScheduler = new CacheExpiryScheduler(CleanupMemory);
 
-            if (DisableLocalCache) return;
+            if (DisableLocalCache)
+                return;
+
+            Directory.CreateDirectory(path);
+
+            var dbFileName = $"cache_v{CacheSchemaVersion}.db";
+            var dbPath = Path.Combine(path, dbFileName);
 
             foreach (var file in Directory.GetFiles(path))
             {
-                if (!file.EndsWith($"cache_v{CacheSchemaVersion}.db"))
+                if (!string.Equals(Path.GetFileName(file), dbFileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    try { File.Delete(file); } catch { }
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
 
-            _db = new LiteDatabase($"Filename={path}\\cache_v{CacheSchemaVersion}.db;Connection=shared;");
+            _db = new LiteDatabase($"Filename={dbPath};Connection=shared;");
 
             _workerTask = Task.Run(ProcessQueue);
         }
+
 
         private void CleanupMemory()
         {
