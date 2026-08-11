@@ -1,13 +1,11 @@
-8fd7736 Update Jellyfin.Plugin.MyAnimeList.csproj
+f7a5ede Update Jellyfin.Plugin.MyAnimeList.csproj
 
-ae6822a Add Tags + Increase Tenrai rate limit
+9ddec41 Improve Tenrai rate limit + adjust cast order and groupings
 
-- Add Tags using demographic + themes
+- More detailed rate limit for Tenrai API
 
-- Increase Tenrai Rate limit making things faster
+- Remove order by character ID
 
-- Minor general cleanup
+- Group characters removing Voice Actor duplicates for an anime when "both" is used
 
-- Database version bump
-
-601e929 Update manifest
+ff17cae Update manifest
