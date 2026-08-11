@@ -1,7 +1,11 @@
-52b0f9e Update Jellyfin.Plugin.MyAnimeList.csproj
+50ad7de Update Jellyfin.Plugin.MyAnimeList.csproj
 
-8218eb4 Update JellyfinEntityMapper.cs
+d8bb93b Update JellyfinEntityMapper.cs
 
-- Revert GetPeopleInfo()
+- Fix bug with duplicate character entries  in GetPeopleInfo causing the limiter to remove good people info
 
-756cdc3 Update manifest
+0ef6f9d Update LiteDbCacheStore.cs
+
+- Make database path work in both Windows and Linux
+
+32da0c6 Update manifest
