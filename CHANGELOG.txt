@@ -1,17 +1,13 @@
-ebf267b Bug fixes + add features
+8fd7736 Update Jellyfin.Plugin.MyAnimeList.csproj
 
-- Fix incorrectly using fallback title instead of user's selected preferred title
+ae6822a Add Tags + Increase Tenrai rate limit
 
-- Add the ability to use Voice Actors, Characters, or Both for Cast and Crew
+- Add Tags using demographic + themes
 
-- Add parental ratings
+- Increase Tenrai Rate limit making things faster
+
+- Minor general cleanup
 
 - Database version bump
 
-- General cleanup
-
-1333855 Adjust setting description
-
-- Use a less technical description for the feature
-
-ee964ef Update manifest
+601e929 Update manifest
