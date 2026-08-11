@@ -90,6 +90,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             {
                 config.LimiterConfigurations = new List<TaskLimiterConfiguration>
                 {
+                    new TaskLimiterConfiguration(1, TimeSpan.FromMilliseconds(250)),
                     new TaskLimiterConfiguration(4, TimeSpan.FromSeconds(1)),
                     new TaskLimiterConfiguration(120, TimeSpan.FromMinutes(1))
                 };
@@ -530,7 +531,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                         }
                     }
 
-                    return res.Data.Data.Select(c => AnimeCharacterIdCacheDto.From(c)).Where(x => x is not null).OrderBy(x => x.CharacterId).ToList();
+                    return res.Data.Data.Select(c => AnimeCharacterIdCacheDto.From(c)).Where(x => x is not null).ToList();
                 });
         }
 
@@ -551,9 +552,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 var voiceActors = await Task.WhenAll(
                     r.VoiceActors.Select(async va =>
                     {
-                        var person = await GetPersonAsync(
-                            va.Person.MalId,
-                            token);
+                        var person = await GetPersonAsync(va.Person.MalId, token);
 
                         return person == null
                             ? null
