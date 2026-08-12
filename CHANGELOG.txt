@@ -1,11 +1,11 @@
-50ad7de Update Jellyfin.Plugin.MyAnimeList.csproj
+745199b Adjust Cast & Crew when using "Both"
 
-d8bb93b Update JellyfinEntityMapper.cs
+- Group characters by voice actor when using the "Both" option for People in Cast & Crew. All characters are shown first before their voice actor.
 
-- Fix bug with duplicate character entries  in GetPeopleInfo causing the limiter to remove good people info
+- Adjust how the maxPeople limit works when using the "Both" option for People in Cast & Crew to prevent cutting into groups. This will do the limit + any characters until the voice actor.
 
-0ef6f9d Update LiteDbCacheStore.cs
+8389b94 Update JellyfinEntityMapper.cs
 
-- Make database path work in both Windows and Linux
+- Deduplicate character information better
 
-32da0c6 Update manifest
+a09c20f Update manifest
