@@ -28,6 +28,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool AirTime { get; set; } = true;
         public bool People { get; set; } = true;
         public bool Tags { get; set; } = true;
+        public bool TrailerUrl { get; set; } = true;
     }
 
     /// <summary>
@@ -39,6 +40,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool Studios { get; set; } = true;
         public bool People { get; set; } = true;
         public bool Tags { get; set; } = true;
+        public bool TrailerUrl { get; set; } = true;
     }
 
     /// <summary>
@@ -57,5 +59,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool Studios { get; set; } = true;
         public bool People { get; set; } = true;
         public bool Tags { get; set; } = true;
+        public bool TrailerUrl { get; set; } = true;
     }
 }

@@ -204,13 +204,13 @@
                 ];
 
                 const metadataFields = {
-                    Series: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "Status", label: "Status" }, { key: "AirDays", label: "Air Days" }, { key: "AirTime", label: "Air Time" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }],
+                    Series: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "Status", label: "Status" }, { key: "AirDays", label: "Air Days" }, { key: "AirTime", label: "Air Time" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }, { key: "TrailerUrl", label: "Trailer Url" }],
 
-                    Season: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }],
+                    Season: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }, { key: "TrailerUrl", label: "Trailer Url" }],
 
                     Episode: [...commonMetadataFields],
 
-                    Movie: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }],
+                    Movie: [...commonMetadataFields, { key: "Genres", label: "Genres" }, { key: "Studios", label: "Studios" }, { key: "People", label: "People" }, { key: "Tags", label: "Tags" }, { key: "TrailerUrl", label: "Trailer Url" }],
                 };
 
                 function createMetadataCheckboxes(type, config) {

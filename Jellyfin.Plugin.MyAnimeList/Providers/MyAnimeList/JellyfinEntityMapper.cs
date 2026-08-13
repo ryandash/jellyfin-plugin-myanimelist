@@ -372,6 +372,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 }
             }
 
+            if (metadata.TrailerUrl)
+                series.AddTrailerUrl(anime.TrailerUrl);
+
             series.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
             return series;
@@ -423,6 +426,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (metadata.Tags)
                 season.Tags = anime.Tags;
 
+            if (metadata.TrailerUrl)
+                season.AddTrailerUrl(anime.TrailerUrl);
+
             season.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 
             return season;
@@ -473,6 +479,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (metadata.Studios)
                 movie.Studios = anime.Studios;
+
+            if (metadata.TrailerUrl)
+                movie.AddTrailerUrl(anime.TrailerUrl);
 
             movie.SetProviderId(ProviderNames.MyAnimeList, anime.MalId.ToString());
 

@@ -10,6 +10,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
         public long? MalId { get; set; }
         public string Url { get; set; }
         public ImagesSetDto Images { get; set; }
+        public string TrailerUrl { get; set; }
         public List<TitleEntryDto> Titles { get; set; }
         public string Type { get; set; }
         public int? Episodes { get; set; }
@@ -61,6 +62,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.MalId,
                 source.Url,
                 source.Images,
+                source.Trailer,
                 source.Titles,
                 source.Type,
                 source.Episodes,
@@ -89,6 +91,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 source.MalId,
                 source.Url,
                 source.Images,
+                source.Trailer,
                 source.Titles,
                 source.Type,
                 source.Episodes,
@@ -112,6 +115,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
             long? malId,
             string url,
             ImagesSet images,
+            AnimeTrailer trailer,
             ICollection<TitleEntry> titles,
             string type,
             int? episodes,
@@ -138,6 +142,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
                 MalId = malId,
                 Url = Normalize(url),
                 Images = ImagesSetDto.From(images),
+                TrailerUrl = trailer.Url,
                 Titles = titles?.Select(TitleEntryDto.From).ToList(),
                 Type = Normalize(type),
                 Episodes = episodes,
