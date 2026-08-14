@@ -7,7 +7,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         public static string AnimeEpisodes(long id) => $"anime/{id}/episodes";
         public static string AnimeSpecificEpisodes(long id, int ep) => $"anime/{id}/episodes/{ep}";
         public static string Character(long id) => $"characters/{id}";
-        public static string People(long id) => $"people/{id}";
+        public static string Person(long id) => $"people/{id}";
     }
     public static class Keys
     {

@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         private readonly ConcurrentDictionary<string, ILiteCollection<CacheRecord>> _collections = new();
         private readonly CacheExpiryScheduler _expiryScheduler;
         private readonly Task _workerTask;
-        private const int CacheSchemaVersion = 15;
+        private const int CacheSchemaVersion = 16;
         private static readonly PluginConfiguration DefaultConfig = new();
         private static PluginConfiguration _config => Plugin.Instance?.Configuration ?? DefaultConfig;
         private static bool DisableLocalCache => _config.DisableLocalCache;
@@ -111,7 +111,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                     if (_cts.IsCancellationRequested)
                         break;
 
-                    await Task.Delay(TimeSpan.FromSeconds(5), _cts.Token).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(15), _cts.Token).ConfigureAwait(false);
 
                     var batchMap = new Dictionary<(string type, string id), WriteItem>();
                     while (_writeQueue.TryDequeue(out var item))
@@ -244,9 +244,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             }
         }
 
+        private int _disposed;
+
         public void Put<T>(string key, T value, DateTime expiry)
         {
-            if (value is null) return;
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
+
+            if (value is null)
+                return;
+
             var expiryTicks = expiry.ToUniversalTime().Ticks;
 
             _memory[key] = new CacheItem
@@ -254,12 +261,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 Value = value,
                 ExpiryTicks = expiryTicks
             };
+
             _expiryScheduler.Schedule(expiryTicks);
 
             if (DisableLocalCache || _db is null)
             {
                 return;
             }
+
+            if (Volatile.Read(ref _disposed) != 0)
+                return;
 
             var (type, id) = ParseKey(key);
 
@@ -271,63 +282,48 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
                 ExpiryTicks = expiryTicks
             });
 
-            _signal.Release();
-        }
-
-        private void FlushRemaining()
-        {
-            if (DisableLocalCache || _db is null) return;
-
-            var batchMap = new Dictionary<(string type, string id), WriteItem>();
-            while (_writeQueue.TryDequeue(out var item))
+            try
             {
-                batchMap[(item.Type, item.Id)] = item;
+                _signal.Release();
             }
-
-            var batch = batchMap.Values.ToList();
-
-            if (batch.Count == 0)
-                return;
-
-            var grouped = batch.GroupBy(x => x.Type);
-
-            foreach (var group in grouped)
+            catch (ObjectDisposedException)
             {
-                var col = _collections.GetOrAdd(group.Key, k => _db.GetCollection<CacheRecord>(k));
 
-                var records = group.Select(x => new CacheRecord
-                {
-                    Key = x.Id,
-                    Data = JsonSerializer.Serialize(x.Value),
-                    ExpiryTicks = x.ExpiryTicks
-                });
-
-                col.Upsert(records);
-            }
-
-            var now = DateTime.UtcNow.Ticks;
-            foreach (var col in _collections.Values)
-            {
-                try
-                {
-                    col.DeleteMany(x => x.ExpiryTicks < now);
-                }
-                catch { /* collection may not exist or be empty */ }
             }
         }
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
             _cts.Cancel();
-            _signal.Release();
+
+            // Wake ProcessQueue if it is waiting on the semaphore.
+            try
+            {
+                _signal.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
             try
             {
                 _workerTask?.GetAwaiter().GetResult();
             }
-            catch { }
-            FlushRemaining();
+            catch (OperationCanceledException) when (_cts.IsCancellationRequested)
+            {
+                // Expected during shutdown.
+            }
+            catch
+            {
+                // Do not prevent Jellyfin/plugin shutdown.
+            }
 
             _expiryScheduler.Dispose();
+            _signal.Dispose();
+            _cts.Dispose();
             _db?.Dispose();
         }
     }
