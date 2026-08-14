@@ -1,5 +1,11 @@
-d64e094 Add Trailers
+173bf1f Optimizations + Bug Fixes
 
-- Add anime series, season, and movie trailers
+- Adjust frequency of cache saving to 15 seconds from 5 seconds. Better for slow hard drives.
 
-93db96b Update manifest
+- Add null check for trailer URL
+
+- Optimize JikanAPI class to use cache better
+
+- Database version bump
+
+a8a831c Update manifest
