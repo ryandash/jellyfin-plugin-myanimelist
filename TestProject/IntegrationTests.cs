@@ -9,8 +9,8 @@ using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NUnit.Framework;
 using TestProject;
-using Xunit.Abstractions;
 using EpisodeInfo = MediaBrowser.Controller.Providers.EpisodeInfo;
 using SeriesInfo = MediaBrowser.Controller.Providers.SeriesInfo;
 
@@ -21,24 +21,29 @@ namespace UnitTestProject
         private readonly ILogger _log;
         private readonly Mock<ILibraryManager> _libraryManagerMock;
         private readonly SearchHelper _searchHelper;
-        private readonly ITestOutputHelper _output;
         private readonly string libraryLocation = "D:\\Anime\\";
 
-        public MyAnimeListTests(ITestOutputHelper output)
+        public MyAnimeListTests()
         {
-            _log = new XUnitLogger(output);
+            _log = new NUnitLogger();
+
             _libraryManagerMock = new Mock<ILibraryManager>();
+
             var mockFolder = new VirtualFolderInfo
             {
                 Name = "Anime",
                 CollectionType = CollectionTypeOptions.tvshows,
                 Locations = [libraryLocation]
             };
-            _libraryManagerMock.Setup(m => m.GetVirtualFolders()).Returns(new List<VirtualFolderInfo> { mockFolder });
+
+            _libraryManagerMock
+                .Setup(m => m.GetVirtualFolders())
+                .Returns(new List<VirtualFolderInfo> { mockFolder });
 
             JikanAPI.Initialize(new FakeApplicationPaths());
 
             var services = new ServiceCollection();
+
             services.AddLogging(builder =>
             {
                 builder.AddConsole();
@@ -52,10 +57,10 @@ namespace UnitTestProject
             });
 
             _searchHelper = new SearchHelper(_libraryManagerMock.Object);
-            _output = output;
         }
 
-        [Fact]
+        [Test]
+        [Order(1)]
         public async Task GetSeriesNigetsuri()
         {
             // Synonym name search
@@ -66,14 +71,15 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Nigashita Sakana wa Ookikatta ga Tsuriageta Sakana ga Ookisugita Ke
-            Assert.Equal(62893, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(62893));
         }
 
-        [Fact]
+        [Test]
+        [Order(2)]
         public async Task GetSeriesInitialD()
         {
             // Non standard name for MyAnimeList
@@ -84,14 +90,15 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo2, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D First Stage
-            Assert.Equal(185, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(185));
         }
 
-        [Fact]
+        [Test]
+        [Order(3)]
         public async Task GetSeasonInitialDMovie()
         {
             // Movie season
@@ -102,15 +109,16 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D Third Stage (Movie)
-            Assert.Equal(187, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(187));
 
         }
 
-        [Fact]
+        [Test]
+        [Order(4)]
         public async Task GetSeasonInitialDFinal()
         {
             // Final season after movie
@@ -121,14 +129,15 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo2, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D Final Stage
-            Assert.Equal(22507, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(22507));
         }
 
-        [Fact]
+        [Test]
+        [Order(5)]
         public async Task GetSeasonDanmachi()
         {
             // seasons with parts
@@ -139,14 +148,15 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo3, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka 6th Season
-            Assert.Equal(63442, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(63442));
         }
 
-        [Fact]
+        [Test]
+        [Order(6)]
         public async Task GetSeasonKimetsu()
         {
 
@@ -158,14 +168,15 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo4, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Kimetsu no Yaiba: Hashira Geiko-hen
-            Assert.Equal(55701, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(55701));
         }
 
-        [Fact]
+        [Test]
+        [Order(7)]
         public async Task GetEpisodeDanmachi()
         {
             // season with parts
@@ -177,11 +188,11 @@ namespace UnitTestProject
             };
 
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, episodeInfo, CancellationToken.None, false);
-            Assert.NotNull(anime);
-            Assert.NotNull(anime.MalId);
-            _output.WriteLine(anime.MalId.Value.ToString());
+            Assert.That(anime, Is.Not.Null);
+            Assert.That(anime.MalId, Is.Not.Null);
+            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka IV: Shin Shou - Meikyuu-hen
-            Assert.Equal(47164, anime.MalId.Value);
+            Assert.That(anime.MalId.Value, Is.EqualTo(47164));
 
             (int episodeNumber, AnimeFullCacheDto updatedAnime) = await RelationsResolver.GetSeasonEpisodeNumberAsync(
                     _log,
@@ -190,13 +201,19 @@ namespace UnitTestProject
                     anime,
                     CancellationToken.None
                 );
-
-            Assert.NotNull(updatedAnime);
-            Assert.NotNull(updatedAnime.MalId);
-            Assert.NotEqual(0, episodeNumber);
+            Assert.That(updatedAnime, Is.Not.Null);
+            Assert.That(updatedAnime.MalId, Is.Not.Null);
+            Assert.That(episodeNumber, Is.Not.EqualTo(0));
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka IV: Shin Shou - Yakusai-hen
-            Assert.Equal(53111, updatedAnime.MalId.Value);
-            Assert.Equal(1, episodeNumber);
+            Assert.That(updatedAnime.MalId.Value, Is.EqualTo(53111));
+            Assert.That(episodeNumber, Is.EqualTo(1));
+        }
+
+        [Test]
+        [Order(8)]
+        public async Task SaveCache()
+        {
+            await Task.Delay(TimeSpan.FromSeconds(15));
         }
     }
 }
