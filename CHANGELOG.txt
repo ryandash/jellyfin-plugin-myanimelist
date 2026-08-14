@@ -1,11 +1,11 @@
-173bf1f Optimizations + Bug Fixes
+fd22823 Update Jellyfin.Plugin.MyAnimeList.csproj
 
-- Adjust frequency of cache saving to 15 seconds from 5 seconds. Better for slow hard drives.
+dc248cc Update JellyfinEntityMapper.cs
 
-- Add null check for trailer URL
+- Fix many to many relationship of Characters to Voice Actors when using "Filter People by Language Preference = Do Not Filter" and "People in Cast & Crew = Both"
 
-- Optimize JikanAPI class to use cache better
+8e6495c Fix tests to save cache
 
-- Database version bump
+- Change from XUnit to NUnit to enforce order of tests and save cache
 
-a8a831c Update manifest
+689d041 Update manifest
