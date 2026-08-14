@@ -1,11 +1,5 @@
-745199b Adjust Cast & Crew when using "Both"
+d64e094 Add Trailers
 
-- Group characters by voice actor when using the "Both" option for People in Cast & Crew. All characters are shown first before their voice actor.
+- Add anime series, season, and movie trailers
 
-- Adjust how the maxPeople limit works when using the "Both" option for People in Cast & Crew to prevent cutting into groups. This will do the limit + any characters until the voice actor.
-
-8389b94 Update JellyfinEntityMapper.cs
-
-- Deduplicate character information better
-
-a09c20f Update manifest
+93db96b Update manifest
