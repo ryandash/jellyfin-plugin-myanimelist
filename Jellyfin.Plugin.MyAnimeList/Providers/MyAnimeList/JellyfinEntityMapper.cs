@@ -196,52 +196,55 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         {
             var preference = _config.PersonCreditPreference;
             var maxPeople = _config.MaxPeople;
+            var limit = maxPeople > 0 ? maxPeople : int.MaxValue;
+
+            var includeCharacters = preference == PersonCreditType.Characters || preference == PersonCreditType.Both;
+            var includeVoiceActors = preference == PersonCreditType.VoiceActors || preference == PersonCreditType.Both;
 
             var characters = new List<PersonInfo>();
             var charactersByVoiceActor = new Dictionary<string, List<PersonInfo>>();
             var voiceActors = new Dictionary<string, PersonInfo>();
-
-            var includeCharacters =
-                preference == PersonCreditType.Characters ||
-                preference == PersonCreditType.Both;
-
-            var includeVoiceActors =
-                preference == PersonCreditType.VoiceActors ||
-                preference == PersonCreditType.Both;
 
             foreach (var edge in this.characters ?? Enumerable.Empty<AnimeCharacterDto>())
             {
                 if (edge?.Character == null || edge.VoiceActors == null)
                     continue;
 
+                var characterUrl = edge.Character.Url;
+
+                if (string.IsNullOrEmpty(characterUrl))
+                    continue;
+
+                PersonInfo? character = null;
+
                 foreach (var va in edge.VoiceActors)
                 {
-                    if (va?.Person == null ||
-                        !IsAllowedLanguage(va.Language ?? string.Empty))
+                    if (va?.Person == null || !IsAllowedLanguage(va.Language ?? string.Empty))
                         continue;
 
-                    var characterUrl = edge.Character.Url;
                     var personUrl = va.Person.Url;
 
-                    if (string.IsNullOrEmpty(characterUrl) ||
-                        string.IsNullOrEmpty(personUrl))
+                    if (string.IsNullOrEmpty(personUrl))
                         continue;
 
                     if (includeCharacters)
                     {
-                        var character = new PersonInfo
+                        character ??= new PersonInfo
                         {
                             Name = edge.Character.Name,
                             Role = va.Person.Name,
                             Type = PersonKind.Actor,
                             ImageUrl = edge.Character.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
-                    {
-                        { ProviderNames.MyAnimeList, characterUrl }
-                    }
+                            {
+                                { ProviderNames.MyAnimeList, characterUrl }
+                            }
                         };
 
-                        characters.Add(character);
+                        if (characters.Count == 0 || !ReferenceEquals(characters[^1], character))
+                        {
+                            characters.Add(character);
+                        }
 
                         if (!charactersByVoiceActor.TryGetValue(personUrl, out var characterList))
                         {
@@ -261,41 +264,63 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                             Type = PersonKind.Actor,
                             ImageUrl = va.Person.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
-                    {
-                        { ProviderNames.MyAnimeList, personUrl }
-                    }
+                            {
+                                { ProviderNames.MyAnimeList, personUrl }
+                            }
                         };
                     }
                 }
             }
 
-            var limit = maxPeople > 0 ? maxPeople : int.MaxValue;
-
-            if (preference == PersonCreditType.Both)
+            switch (preference)
             {
-                var people = new List<PersonInfo>();
+                case PersonCreditType.Characters:
+                    return characters.Take(limit).ToList();
 
-                foreach (var group in charactersByVoiceActor)
-                {
-                    people.AddRange(group.Value);
-                    people.Add(voiceActors[group.Key]);
+                case PersonCreditType.VoiceActors:
+                    return voiceActors.Values.Take(limit).ToList();
 
-                    // Stop after completing a group that reaches or exceeds the limit.
-                    if (people.Count >= limit)
-                        break;
-                }
+                case PersonCreditType.Both:
+                    {
+                        var people = new List<PersonInfo>(
+                            Math.Min(limit, characters.Count + voiceActors.Count));
 
-                return people;
+                        var addedCharacters = new HashSet<string>();
+                        var addedVoiceActors = new HashSet<string>();
+
+                        foreach (var group in charactersByVoiceActor)
+                        {
+                            foreach (var character in group.Value)
+                            {
+                                var characterUrl = character.ProviderIds[ProviderNames.MyAnimeList];
+
+                                if (!addedCharacters.Add(characterUrl))
+                                    continue;
+
+                                people.Add(character);
+                            }
+
+                            if (voiceActors.TryGetValue(group.Key, out var voiceActor))
+                            {
+                                var voiceActorUrl =
+                                    voiceActor.ProviderIds[ProviderNames.MyAnimeList];
+
+                                if (addedVoiceActors.Add(voiceActorUrl))
+                                {
+                                    people.Add(voiceActor);
+                                }
+                            }
+
+                            if (people.Count >= limit)
+                                return people;
+                        }
+
+                        return people;
+                    }
+
+                default:
+                    return [];
             }
-
-            IEnumerable<PersonInfo> result = preference switch
-            {
-                PersonCreditType.Characters => characters,
-                PersonCreditType.VoiceActors => voiceActors.Values,
-                _ => Enumerable.Empty<PersonInfo>()
-            };
-
-            return result.Take(limit).ToList();
         }
 
         public Series ToSeries(SeriesInfo info)
