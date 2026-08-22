@@ -1,4 +1,3 @@
-using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using JikanDotNet;
@@ -487,10 +486,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         // MORE ADVANCED GET METHODS
         public static async Task<List<EpisodeCacheDto>> GetAnimeEpisodesAsync(long malId, CancellationToken token)
         {
-            var key = Keys.AnimeEpisodes(malId);
-
             return await GetOrFetchAsync(
-                key,
+                Keys.AnimeEpisodes(malId),
                 URLs.AnimeEpisodes(malId),
 
                 fetch: async () =>
@@ -544,10 +541,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
 
         private static async Task<List<AnimeCharacterIdCacheDto>> GetAnimeCharacterIndexAsync(long malId, CancellationToken token)
         {
-            var key = Keys.Characters(malId);
-
             return await GetOrFetchAsync(
-                key,
+                Keys.Characters(malId),
                 URLs.AnimeCharacters(malId),
 
                 fetch: () => TryPrimaryThenBackup(j => j.GetAnimeCharactersAsync(malId, token), token),

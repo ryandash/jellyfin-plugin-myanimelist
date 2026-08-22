@@ -73,7 +73,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Nigashita Sakana wa Ookikatta ga Tsuriageta Sakana ga Ookisugita Ke
             Assert.That(anime.MalId.Value, Is.EqualTo(62893));
         }
@@ -92,7 +92,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seriesInfo2, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D First Stage
             Assert.That(anime.MalId.Value, Is.EqualTo(185));
         }
@@ -111,7 +111,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D Third Stage (Movie)
             Assert.That(anime.MalId.Value, Is.EqualTo(187));
 
@@ -131,7 +131,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo2, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Initial D Final Stage
             Assert.That(anime.MalId.Value, Is.EqualTo(22507));
         }
@@ -150,7 +150,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo3, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka 6th Season
             Assert.That(anime.MalId.Value, Is.EqualTo(63442));
         }
@@ -170,7 +170,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, seasonInfo4, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Kimetsu no Yaiba: Hashira Geiko-hen
             Assert.That(anime.MalId.Value, Is.EqualTo(55701));
         }
@@ -190,7 +190,7 @@ namespace UnitTestProject
             AnimeFullCacheDto anime = await _searchHelper.GetAnimeAsync(_log, episodeInfo, CancellationToken.None, false);
             Assert.That(anime, Is.Not.Null);
             Assert.That(anime.MalId, Is.Not.Null);
-            TestContext.Progress.WriteLine(anime.MalId.Value.ToString());
+            TestContext.Out.WriteLine(anime.MalId.Value.ToString());
             // Result: Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka IV: Shin Shou - Meikyuu-hen
             Assert.That(anime.MalId.Value, Is.EqualTo(47164));
 
@@ -211,6 +211,18 @@ namespace UnitTestProject
 
         [Test]
         [Order(8)]
+        public async Task GetEpisodesOnePiece()
+        {
+            List<EpisodeCacheDto> episodes = await JikanAPI.GetAnimeEpisodesAsync(21, CancellationToken.None);
+            Assert.That(episodes, Is.Not.Null);
+            EpisodeCacheDto episode1 = episodes.First();
+            Assert.That(episode1, Is.Not.Null);
+            Assert.That(episode1.Synopsis, Is.Not.Null);
+            Assert.That(episode1.HasFullDetails, Is.True);
+        }
+
+        [Test]
+        [Order(9)]
         public async Task SaveCache()
         {
             await Task.Delay(TimeSpan.FromSeconds(15));
