@@ -60,7 +60,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 
                 result.Item = new PersonSearchResult
                 {
-                    character = character
+                    Character = character
                 }.ToPerson(PersonCreditType.Characters);
             }
             else
@@ -72,7 +72,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 
                 result.Item = new PersonSearchResult
                 {
-                    person = person
+                    Person = person
                 }.ToPerson(PersonCreditType.VoiceActors);
             }
 
@@ -114,12 +114,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData_Providers
 
             await Task.WhenAll(charactersTask, peopleTask).ConfigureAwait(false);
 
-            var results = new List<RemoteSearchResult>();
-
-            results.AddRange(await charactersTask.ConfigureAwait(false));
-            results.AddRange(await peopleTask.ConfigureAwait(false));
-
-            return results;
+            return
+            [
+                .. await charactersTask.ConfigureAwait(false),
+                .. await peopleTask.ConfigureAwait(false)
+            ];
         }
 
         private async Task<RemoteSearchResult> GetById(long malId, PersonCreditType personType, CancellationToken cancellationToken)

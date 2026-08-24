@@ -17,48 +17,45 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
     }
 
     /// <summary>
-    /// Metadata configuration specific to Series.
-    /// </summary>
-    public class SeriesMetadataConfiguration : BaseMetadataConfiguration
-    {
-        public bool Genres { get; set; } = true;
-        public bool Studios { get; set; } = true;
-        public bool Status { get; set; } = true;
-        public bool AirDays { get; set; } = true;
-        public bool AirTime { get; set; } = true;
-        public bool People { get; set; } = true;
-        public bool Tags { get; set; } = true;
-        public bool TrailerUrl { get; set; } = true;
-    }
-
-    /// <summary>
-    /// Metadata configuration specific to Season.
-    /// </summary>
-    public class SeasonMetadataConfiguration : BaseMetadataConfiguration
-    {
-        public bool Genres { get; set; } = true;
-        public bool Studios { get; set; } = true;
-        public bool People { get; set; } = true;
-        public bool Tags { get; set; } = true;
-        public bool TrailerUrl { get; set; } = true;
-    }
-
-    /// <summary>
     /// Metadata configuration specific to Episode.
     /// </summary>
     public class EpisodeMetadataConfiguration : BaseMetadataConfiguration
     {
     }
 
-    /// <summary>
-    /// Metadata configuration specific to Movie.
-    /// </summary>
-    public class MovieMetadataConfiguration : BaseMetadataConfiguration
+    public class CommonMetadataConfiguration : BaseMetadataConfiguration
     {
         public bool Genres { get; set; } = true;
         public bool Studios { get; set; } = true;
         public bool People { get; set; } = true;
         public bool Tags { get; set; } = true;
         public bool TrailerUrl { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Metadata configuration specific to Series.
+    /// </summary>
+    public class SeriesMetadataConfiguration : CommonMetadataConfiguration
+    {
+        public bool Status { get; set; } = true;
+        public bool AirDays { get; set; } = true;
+        public bool AirTime { get; set; } = true;
+    }
+
+    /// <summary>
+    /// Metadata configuration specific to Season.
+    /// </summary>
+    public class SeasonMetadataConfiguration : CommonMetadataConfiguration
+    {
+
+    }
+
+    
+
+    /// <summary>
+    /// Metadata configuration specific to Movie.
+    /// </summary>
+    public class MovieMetadataConfiguration : CommonMetadataConfiguration
+    {
     }
 }
