@@ -1,11 +1,23 @@
-fd22823 Update Jellyfin.Plugin.MyAnimeList.csproj
+84a4ef5 Update LiteDbCacheStore.cs
 
-dc248cc Update JellyfinEntityMapper.cs
+- Bump cache version
 
-- Fix many to many relationship of Characters to Voice Actors when using "Filter People by Language Preference = Do Not Filter" and "People in Cast & Crew = Both"
+865e544 Fixes + adjustments
 
-8e6495c Fix tests to save cache
+- Adjust build and publish to prepare for net10.0
 
-- Change from XUnit to NUnit to enforce order of tests and save cache
+- Fix broken EpisodeProvider
 
-689d041 Update manifest
+- Change rating to be more acceptable
+
+d50d258 Cleanup
+
+- General cleanup
+
+7e6c2d2 Cleanup
+
+- Minor cleanup
+
+- Add test
+
+adf7eaa Update manifest
