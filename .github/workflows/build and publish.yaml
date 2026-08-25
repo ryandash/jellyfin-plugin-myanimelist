@@ -17,10 +17,25 @@ jobs:
           path: main_repo
           fetch-depth: 0
 
+      - name: Extract Version, ABI and Target Framework from csproj
+        id: extract_version_abi
+        run: |
+          CSPROJ="main_repo/Jellyfin.Plugin.MyAnimeList/Jellyfin.Plugin.MyAnimeList.csproj"
+
+          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" $CSPROJ)
+          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" $CSPROJ)
+          TARGET_FRAMEWORK=$(grep -oPm1 "(?<=<TargetFramework>)(.*)(?=</TargetFramework>)" $CSPROJ)
+          SDK_VERSION=$(echo $TARGET_FRAMEWORK | sed 's/net//' ).x
+
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
+          echo "TARGET_FRAMEWORK=${TARGET_FRAMEWORK}" >> $GITHUB_ENV
+          echo "SDK_VERSION=${SDK_VERSION}" >> $GITHUB_ENV
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: "9.0.x"
+          dotnet-version: ${{ env.SDK_VERSION }}
           cache: true
           cache-dependency-path: main_repo/Jellyfin.Plugin.MyAnimeList/packages.lock.json
 
@@ -30,18 +45,9 @@ jobs:
       - name: Build Plugin
         run: dotnet build main_repo/Jellyfin.Plugin.MyAnimeList -c Release
 
-      - name: Extract Version and ABI from csproj
-        id: extract_version_abi
-        run: |
-          CSPROJ="main_repo/Jellyfin.Plugin.MyAnimeList/Jellyfin.Plugin.MyAnimeList.csproj"
-          VERSION=$(grep -oPm1 "(?<=<Version>)(.*)(?=</Version>)" $CSPROJ)
-          TARGET_ABI=$(grep -oPm1 "(?<=<PackageReference Include=\"Jellyfin.Controller\" Version=\")(.*)(?=\")" $CSPROJ)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "TARGET_ABI=${TARGET_ABI}" >> $GITHUB_ENV
-
       - name: Create ZIP
         run: |
-          zip -j myanimelist_${VERSION}.zip main_repo/Jellyfin.Plugin.MyAnimeList/bin/Release/net9.0/*.dll
+          zip -j myanimelist_${VERSION}.zip main_repo/Jellyfin.Plugin.MyAnimeList/bin/Release/${TARGET_FRAMEWORK}/*.dll
 
       - name: Generate MD5 Checksum for ZIP
         id: checksum

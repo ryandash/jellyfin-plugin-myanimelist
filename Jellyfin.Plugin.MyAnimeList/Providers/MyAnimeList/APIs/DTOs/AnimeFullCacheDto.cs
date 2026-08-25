@@ -43,11 +43,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs
 
             return malRating switch
             {
-                "G - All Ages" => "G",
-                "PG - Children" => "PG",
-                "PG-13 - Teens 13 or older" => "13",
-                "R - 17+ (violence & profanity)" => "16+",
-                "R+ - Mild Nudity" => "TV-14",
+                "G - All Ages" => "0+",
+                "PG - Children" => "6+",
+                "PG-13 - Teens 13 or older" => "13+",
+                "R - 17+ (violence & profanity)" => "17+",
+                "R+ - Mild Nudity" => "16+",
                 "Rx - Hentai" => "18+",
                 _ => null
             };

@@ -20,17 +20,20 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 {
     public class EpisodeProvider : IRemoteMetadataProvider<Episode, EpisodeInfo>
     {
-        protected readonly ILogger _log;
-        protected readonly SearchHelper _searchHelper;
+        private readonly ILogger<EpisodeProvider> _log;
+        private readonly SearchHelper _searchHelper;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IdMappings _idMapping;
 
-        protected static PluginConfiguration Config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
+        private static PluginConfiguration Config => Plugin.Instance?.Configuration ?? new PluginConfiguration();
 
         public string Name => ProviderNames.MyAnimeList;
 
-        protected EpisodeProvider(ILogger logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
+        public EpisodeProvider(ILogger<EpisodeProvider> logger, ILibraryManager libraryManager, IHttpClientFactory httpClientFactory)
         {
+            _log = logger;
+            _searchHelper = new SearchHelper(libraryManager);
+            _httpClientFactory = httpClientFactory;
             _idMapping = new IdMappings(httpClientFactory);
         }
 
