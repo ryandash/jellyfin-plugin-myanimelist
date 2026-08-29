@@ -55,7 +55,59 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
             AnimeObject anime = null;
             int seasonnumber = info.ParentIndexNumber ?? 1;
 
-            if (Config.UseExternalIDs && info.ProviderIds.TryGetValue("Tvdb", out var tvdbid) && seasonnumber == 0)
+            // If a special lives in a subfolder directly under Specials/Season 00,
+            // allow the folder's [mal-ID] to identify the MAL anime/entry directly.
+            var specialFolderMalId = MalIdResolver.TryGetSpecialFolderMalId(info);
+            if (specialFolderMalId.HasValue)
+            {
+                if (enableDebug)
+                    _log.LogInformation(
+                        "Found MAL ID {MalId} in special folder for {Path}",
+                        specialFolderMalId.Value,
+                        info.Path);
+
+                var specialAnime = await JikanAPI
+                    .GetAnimeFullAsync(specialFolderMalId.Value, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (specialAnime?.MalId is not null)
+                {
+                    anime = new AnimeObject
+                    {
+                        Anime = specialAnime
+                    };
+
+                    // For single episode entry, use the MAL entry itself.
+                    // For multi-episode entries, use the Jellyfin episode number to
+                    // request the corresponding MAL episode.
+                    if (specialAnime.Episodes.GetValueOrDefault() == 1)
+                    {
+                        episodeData = anime.toEpisodeData();
+                    }
+                    else
+                    {
+                        episodeData = await JikanAPI
+                            .GetAnimeEpisodeAsync(
+                                specialAnime.MalId.Value,
+                                info.IndexNumber.Value,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+
+                    if (episodeData?.Url is null)
+                    {
+                        _log.LogInformation(
+                            "Episode data null for MAL ID {MalId}, episode {EpisodeNumber}",
+                            specialAnime.MalId.Value,
+                            info.IndexNumber.Value);
+                    }
+                }
+            }
+
+            if (episodeData is null &&
+                Config.UseExternalIDs &&
+                info.ProviderIds.TryGetValue("Tvdb", out var tvdbid) &&
+                seasonnumber == 0)
             {
                 if (enableDebug) _log.LogInformation("Found TVDB ID {TvdbId}", tvdbid);
 
