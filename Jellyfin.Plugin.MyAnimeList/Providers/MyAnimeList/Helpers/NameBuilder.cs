@@ -1,12 +1,10 @@
-using AnitomySharp;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using static AnitomySharp.AnitomySharp;
+using System.Text.RegularExpressions;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
 {
@@ -83,38 +81,97 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
             return itemPath;
         }
 
+        private static readonly Regex YearRegex = new Regex(
+            @"\((\d{4})\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex EpisodeTitleRegex = new Regex(
+            @"(?ix)
+                ^
+                (?<title>.*?)
+                \s*
+                (?:[-–—]\s*)?
+                (?:
+                    S00(?:E\d{1,4})?
+                  | EP?\s*\.?\s*\d{1,4}
+                  | special(?:\s+episode)?
+                  | ova
+                  | oad
+                  | ona
+                  | extra
+                  | bonus
+                )
+                \s*
+                [-–—:]\s*
+                (?<episodeTitle>.+?)
+                $
+            ",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex BracketJunkRegex = new Regex(
+            @"\[[^\]]*\]",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex ParenthesesJunkRegex = new Regex(
+            @"\([^)]*\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex TechnicalJunkRegex = new Regex(
+            @"(?ix)
+                \b(?:2160|1440|1080|720|576|480)[pi]\b
+              | \b(?:x264|x265|h264|h265|hevc|av1|avc)\b
+              | \b(?:aac|ac3|eac3|dts|flac|opus|vorbis|mp3|truehd|atmos)\b
+              | \b(?:web[-_. ]?dl|web[-_. ]?rip|webrip|bluray|blu[-_. ]?ray|bdrip|brrip|dvdrip|hdtv|hdrip|remux)\b
+              | \b(?:hdr10\+?|dolby[-_. ]?vision|10[-_. ]?bit|8[-_. ]?bit|hi10p)\b
+            ",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex ReleaseJunkRegex = new Regex(
+            @"(?ix)
+                \b(?:proper|repack|rerip|limited|complete|batch|uncensored|censored|retail|extended)\b
+              | \b(?:dual[-_. ]?audio|multi[-_. ]?audio|multi[-_. ]?sub|dubbed|subbed)\b
+              | \b[0-9A-F]{8}\b
+            ",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex WhitespaceRegex = new Regex(
+            @"\s+",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public static void ExtractTitleAndYear(string searchTerm, out string title, out string year, bool specialEpisode = false)
         {
             title = null;
             year = null;
 
-            IEnumerable<Element> elements = Parse(searchTerm);
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                return;
 
-            string episodeTitle = null;
-            string animeTitle = null;
+            string parseTerm = searchTerm.Trim();
 
-            foreach (var e in elements)
+            var yearMatch = YearRegex.Match(parseTerm);
+
+            if (yearMatch.Success)
             {
-                switch (e.Category)
-                {
-                    case Element.ElementCategory.ElementEpisodeTitle:
-                        episodeTitle ??= e.Value;
-                        break;
-
-                    case Element.ElementCategory.ElementAnimeTitle:
-                        animeTitle ??= e.Value;
-                        break;
-
-                    case Element.ElementCategory.ElementAnimeYear:
-                        year ??= e.Value;
-                        break;
-                }
-
-                if (year is not null && episodeTitle is not null && animeTitle is not null)
-                    break;
+                year = yearMatch.Groups[1].Value;
             }
 
-            title = (specialEpisode && !string.IsNullOrWhiteSpace(episodeTitle)) ? episodeTitle : animeTitle;
+            parseTerm = BracketJunkRegex.Replace(parseTerm, " ");
+            parseTerm = ParenthesesJunkRegex.Replace(parseTerm, " ");
+            parseTerm = TechnicalJunkRegex.Replace(parseTerm, " ");
+            parseTerm = ReleaseJunkRegex.Replace(parseTerm, " ");
+            parseTerm = WhitespaceRegex.Replace(parseTerm, " ").Trim();
+
+            if (specialEpisode)
+            {
+                var episodeMatch = EpisodeTitleRegex.Match(parseTerm);
+                if (episodeMatch.Success)
+                {
+                    title = episodeMatch.Groups["episodeTitle"].Value.Trim();
+                    return;
+                }
+            }
+
+            title = parseTerm;
         }
     }
 }

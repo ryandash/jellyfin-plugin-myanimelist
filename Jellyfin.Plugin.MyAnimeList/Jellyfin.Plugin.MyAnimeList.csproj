@@ -17,7 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AnitomySharp.NET6" Version="0.5.1" />
     <PackageReference Include="FuzzierSharp" Version="3.0.1" />
     <PackageReference Include="Jellyfin.Controller" Version="10.11.11" />
     <PackageReference Include="JikanDotNet" Version="2.10.4" />
@@ -30,7 +29,6 @@
     <ItemGroup>
       <PluginDeps Include="$(NuGetPackageRoot)fuzziersharp\*\lib\netstandard2.1\FuzzierSharp.dll" />
       <PluginDeps Include="$(NuGetPackageRoot)jikandotnet\*\lib\net8.0\JikanDotNet.dll" />
-      <PluginDeps Include="$(NuGetPackageRoot)anitomysharp.net6\*\lib\net6.0\AnitomySharp.dll" />
       <PluginDeps Include="$(NuGetPackageRoot)litedb\*\lib\netstandard2.0\LiteDB.dll" />
     </ItemGroup>
 
@@ -41,7 +39,6 @@
     <ItemGroup>
       <PluginDeps Include="$(OutDir)FuzzierSharp.dll" />
       <PluginDeps Include="$(OutDir)JikanDotNet.dll" />
-      <PluginDeps Include="$(OutDir)AnitomySharp.dll" />
       <PluginDeps Include="$(OutDir)LiteDB.dll" />
     </ItemGroup>
 

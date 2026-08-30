@@ -2,6 +2,7 @@ using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -20,15 +21,34 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
 
             NameBuilder.ExtractTitleAndYear(searchTerm, out string searchTitle, out string year, specialEpisode);
 
+            string Normalize(string input)
+            {
+                if (input == null)
+                {
+                    _log.LogWarning(
+                        "MyAnimeList: Cannot normalize null input. " +
+                        "SearchTerm='{SearchTerm}', SearchTitle='{SearchTitle}', " +
+                        "IsMovie={IsMovie}, SpecialEpisode={SpecialEpisode}",
+                        searchTerm,
+                        searchTitle,
+                        isMovie,
+                        specialEpisode);
+
+                    return string.Empty;
+                }
+
+                return NormalizeRegex.Replace(input, string.Empty).Trim().ToLowerInvariant();
+            }
+
+            string normalizedSearch = Normalize(searchTitle);
+
+            if (enableDebug) _log.LogInformation("Normalized Search using name: {name}", normalizedSearch);
+
             bool hasParsedYear = int.TryParse(year, out int parsedYear);
 
             var searchResults = (await JikanAPI.SearchAnimeAsync(searchTitle, enableNSFW, isMovie, cancellationToken).ConfigureAwait(false)).ToList();
 
             if (enableDebug) _log.LogInformation($"Found {searchResults.Count} search results");
-
-            string Normalize(string input) => NormalizeRegex.Replace(input, string.Empty).Trim().ToLowerInvariant();
-
-            string normalizedSearch = Normalize(searchTitle);
 
             long? bestMalId = null;
             int bestSimilarity = -1;
@@ -64,6 +84,8 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
                     }
 
                     int similarity = FuzzierSharp.Fuzz.Ratio(Normalize(cleanTitle), normalizedSearch);
+
+                    if (enableDebug && similarity > 50) _log.LogInformation($"{cleanTitle} has similarity {similarity}");
 
                     if (similarity == 100)
                         return (malId, similarity);
