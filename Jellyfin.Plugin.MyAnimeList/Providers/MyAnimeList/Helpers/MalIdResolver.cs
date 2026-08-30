@@ -1,4 +1,6 @@
+using System;
 using MediaBrowser.Controller.Providers;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
@@ -38,6 +40,35 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
             }
 
             return null;
+        }
+
+        // Gets a MAL ID from a folder's name directly inside a "Specials" (or Season 00) folder.
+        public static long? TryGetSpecialFolderMalId(ItemLookupInfo info)
+        {
+            if (info is not EpisodeInfo episode || episode.IndexNumber is null || episode.ParentIndexNumber != 0)
+                return null;
+
+            if (string.IsNullOrWhiteSpace(info.Path))
+                return null;
+
+            var specialFolder = Path.GetDirectoryName(info.Path);
+            if (string.IsNullOrWhiteSpace(specialFolder))
+                return null;
+
+            var specialFolderName = Path.GetFileName(specialFolder);
+            if (string.IsNullOrWhiteSpace(specialFolderName))
+                return null;
+
+            var containerFolder = Path.GetDirectoryName(specialFolder);
+            if (string.IsNullOrWhiteSpace(containerFolder))
+                return null;
+
+            var containerName = Path.GetFileName(containerFolder);
+            if (!string.Equals(containerName, "Specials", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(containerName, "Season 00", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            return ExtractMalIdFromSearchName(specialFolderName);
         }
 
         private static readonly Regex MalIdRegex = new Regex(@"\[mal-(\d+)\]", RegexOptions.IgnoreCase | RegexOptions.Compiled);
