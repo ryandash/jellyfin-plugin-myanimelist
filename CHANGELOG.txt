@@ -1,5 +1,11 @@
-2f87005 Update Jellyfin.Plugin.MyAnimeList.csproj
+6f01c4c Update Jellyfin.Plugin.MyAnimeList.csproj
 
-bebda4e allow mal-id recognition in Specials's subfolders
+bd4e890 Log improvement + Remove Anitopy
 
-607eadd Update manifest
+- Remove Anitopy for anime title searches due to too many bad title matches and no way to fix
+
+- Use Regex to filter titles (This can be improved more if necessary but at least I can fix issues)
+
+- Add more log info
+
+3654609 Update manifest
