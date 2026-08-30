@@ -1,23 +1,5 @@
-84a4ef5 Update LiteDbCacheStore.cs
+2f87005 Update Jellyfin.Plugin.MyAnimeList.csproj
 
-- Bump cache version
+bebda4e allow mal-id recognition in Specials's subfolders
 
-865e544 Fixes + adjustments
-
-- Adjust build and publish to prepare for net10.0
-
-- Fix broken EpisodeProvider
-
-- Change rating to be more acceptable
-
-d50d258 Cleanup
-
-- General cleanup
-
-7e6c2d2 Cleanup
-
-- Minor cleanup
-
-- Add test
-
-adf7eaa Update manifest
+607eadd Update manifest
