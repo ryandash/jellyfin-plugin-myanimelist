@@ -50,7 +50,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
 
     }
 
-    
+
 
     /// <summary>
     /// Metadata configuration specific to Movie.

@@ -388,7 +388,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
         public Series ToSeries(SeriesInfo info)
         {
             var metadata = Config.SeriesMetadata;
-            
+
             var series = new Series
             {
                 IndexNumber = info.IndexNumber,
