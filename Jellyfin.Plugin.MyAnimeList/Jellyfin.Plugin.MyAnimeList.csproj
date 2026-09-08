@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>11.11.8.1</Version>
+    <Version>12.0.0.0</Version>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>
@@ -18,11 +18,11 @@
 
   <ItemGroup>
     <PackageReference Include="FuzzierSharp" Version="3.0.1" />
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" />
+    <PackageReference Include="Jellyfin.Controller" Version="12.0.0" />
     <PackageReference Include="JikanDotNet" Version="2.10.4" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
   </ItemGroup>
 
   <Target Name="CopyPluginDependencies" AfterTargets="Build">
