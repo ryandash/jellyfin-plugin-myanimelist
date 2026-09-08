@@ -1,11 +1,11 @@
-6f01c4c Update Jellyfin.Plugin.MyAnimeList.csproj
+7e56eb0 Cleanup
 
-bd4e890 Log improvement + Remove Anitopy
+- Minor cleanup
 
-- Remove Anitopy for anime title searches due to too many bad title matches and no way to fix
+a42f66c Update to Jellyfin 12
 
-- Use Regex to filter titles (This can be improved more if necessary but at least I can fix issues)
+- Update dependencies for Jellyfin 12
 
-- Add more log info
+- Change from .Net 9 to .Net 10
 
-3654609 Update manifest
+92837ed Update manifest
