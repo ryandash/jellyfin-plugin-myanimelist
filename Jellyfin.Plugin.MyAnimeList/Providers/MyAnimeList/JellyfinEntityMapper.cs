@@ -367,9 +367,14 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 item.RunTimeTicks = Anime.Duration;
 
             if (metadata.Genres)
-                item.Genres = Anime.Genres?
-                    .Take(Config.MaxGenres)
-                    .ToArray();
+            {
+                var maxGenres = Config.MaxGenres;
+                var genres = maxGenres > 0
+                    ? Anime.Genres?.Take(maxGenres)
+                    : Anime.Genres;
+
+                item.Genres = genres?.ToArray();
+            }
 
             if (metadata.Studios)
                 item.Studios = Anime.Studios;

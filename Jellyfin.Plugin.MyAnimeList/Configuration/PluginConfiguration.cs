@@ -40,7 +40,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             PersonCreditPreference = PersonCreditType.VoiceActors;
 
             MaxPeople = 0;
-            MaxGenres = 5;
+            MaxGenres = 0;
             EnableBestAttempt = false;
             ExcludeSpecials = false;
             UseExternalIDs = false;
