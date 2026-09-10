@@ -1,11 +1,7 @@
-7e56eb0 Cleanup
+2369daf Fix Genres Bug
 
-- Minor cleanup
+- Fix MaxGenres set to 0 causing no genres to show
 
-a42f66c Update to Jellyfin 12
+- Change default MaxGenres to 0
 
-- Update dependencies for Jellyfin 12
-
-- Change from .Net 9 to .Net 10
-
-92837ed Update manifest
+b4842cb Update manifest
