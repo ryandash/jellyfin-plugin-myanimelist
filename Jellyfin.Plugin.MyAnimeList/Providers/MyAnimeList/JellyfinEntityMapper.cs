@@ -100,9 +100,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 episodeObject.RunTimeTicks = Episode.RunTimeTicks;
 
             if (metadata.CommunityRating)
-            {
                 episodeObject.CommunityRating = Episode.Score.HasValue ? (float?)(Episode.Score.Value * 2) : null;
-            }
 
             episodeObject.SetProviderId(ProviderNames.MyAnimeList, Episode.Url);
 
@@ -363,6 +361,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             if (metadata.CommunityRating)
                 item.CommunityRating = Anime.Score;
 
+            if (metadata.ParentalRating)
+                item.OfficialRating = Anime.Rating;
+
             if (metadata.RunTime)
                 item.RunTimeTicks = Anime.Duration;
 
@@ -401,9 +402,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             ApplyCommonMetadata(series, metadata);
-
-            if (metadata.ParentalRating)
-                series.OfficialRating = Anime.Rating;
 
             if (metadata.Status)
             {

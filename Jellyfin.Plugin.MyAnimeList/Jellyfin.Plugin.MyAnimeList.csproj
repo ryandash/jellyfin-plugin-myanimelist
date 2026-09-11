@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>12.0.0.1</Version>
+    <Version>12.0.0.2</Version>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>

@@ -12,7 +12,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool PremiereDate { get; set; } = true;
         public bool EndDate { get; set; } = true;
         public bool CommunityRating { get; set; } = true;
-        public bool ParentalRating { get; set; } = true;
         public bool RunTime { get; set; } = true;
     }
 
@@ -30,6 +29,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool People { get; set; } = true;
         public bool Tags { get; set; } = true;
         public bool TrailerUrl { get; set; } = true;
+        public bool ParentalRating { get; set; } = true;
     }
 
     /// <summary>
