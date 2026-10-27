@@ -1,7 +1,5 @@
-ba1bcc3 Fix Missing Episode titles
+d656c87 Update Jellyfin.Plugin.MyAnimeList.csproj
 
-- Fix Missing episode titles when a season 0 or anime with no episodes data is used
+- Version bump
 
-- Updated some packages
-
-9bcbc9b Update manifest
+4ba8a7d Update manifest
