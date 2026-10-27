@@ -1,7 +1,7 @@
-c261b6f Fix parental rating
+ba1bcc3 Fix Missing Episode titles
 
-- Fix Parental rating not working in Season and movie
-- Remove Parental rating from episode
-- Cleanup
+- Fix Missing episode titles when a season 0 or anime with no episodes data is used
 
-607e140 Update manifest
+- Updated some packages
+
+9bcbc9b Update manifest
