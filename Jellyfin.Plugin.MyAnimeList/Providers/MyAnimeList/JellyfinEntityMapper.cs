@@ -171,7 +171,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             return new EpisodeCacheDto
             {
                 Url = Anime.Url,
-                Title = GetPreferredTitle(Config.TitlePreference),
+                Title = Anime.Titles.FirstOrDefault()?.Title,
+                TitleJapanese = Anime.Titles.FirstOrDefault(t => t.Type == "Japanese")?.Title,
+                TitleRomanji = Anime.Titles.FirstOrDefault(t => t.Type == "Default")?.Title,
                 RunTimeTicks = Anime.Duration,
                 Aired = Anime.Aired?.From,
                 Synopsis = Anime.Synopsis
