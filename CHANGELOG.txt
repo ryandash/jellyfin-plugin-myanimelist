@@ -1,5 +1,7 @@
-d656c87 Update Jellyfin.Plugin.MyAnimeList.csproj
+a61d91e Add Basic Manga Support
 
+- Add manga Search, mapping, metadata, and config settings
+- Some refactoring and cleanup
 - Version bump
 
-4ba8a7d Update manifest
+e78f2a0 Update manifest
