@@ -2,20 +2,22 @@
 
 ## About
 
-This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe) and [Tenrai](https://tenrai.org).
+This plugin adds the metadata provider for MyAnimeList using [Jikan](https://jikan.moe) and [Tenrai](https://tenrai.org). It supports anime metadata and a Jikan-backed manga provider that follows the same title-based search flow as the anime lookup.
 
 #### Please report any issues you find.
 
 To automate syncing with MyAnimeList using this metadata you can try using [MyAnimeList Sync](https://github.com/ryandash/jellyfin-myanimelist-sync) which is a fork of [vosmiic/jellyfin-ani-sync](https://github.com/vosmiic/jellyfin-ani-sync) customized to use the MyAnimeList metadata.
 
-Folders must be formatted as shown below to get the best results.\
+Folders must be formatted as shown below to get the best results. \
 For accurate data use the anime name from MyAnimeList and Season 01 or the first season anime's name with the anime's season number.
 
 ```bash
 Anime
 └── Anime Name A
     ├── Specials
-    │   └── Anime Name - S00E0# - Special Title.mkv
+    │   ├── Anime Name - S00E0# - Special Title.mkv
+    │   └── Anime Name [mal-#]
+    │       └── Anime Name - S00E0# - Special Title.mkv
     ├── Season 01
     │   ├── Anime Name A - S01E01-E02.mkv
     │   └── Anime Name A - S01E03.mkv
@@ -23,9 +25,14 @@ Anime
         ├── Anime Name A - S02E01.mkv
         ├── Anime Name A - S02E02 Part 1.mkv
         └── Anime Name A - S02E02 Part 2.mkv
+
+Manga
+└── Manga Name A
+    └── Manga.pdf
 ```
 
 #### Example Special episode + special movie:
+
 ```bash
 Anime
 └── Violet Evergarden
@@ -33,6 +40,7 @@ Anime
         ├── Violet Evergarden - S00E01 - The Day You Understand I Love You Will Surely Come.mkv
         └── Violet Evergarden - S00E01 - Recollections.mkv
 ```
+
 ###### Note: If a special has multiple episodes the episode number needs to be incremented to select the correct special.
 
 #### Optional: MyAnimeList ID in Folder Name
@@ -42,6 +50,7 @@ You can optionally include a MyAnimeList ID directly in the series folder name w
 Format:
 Anime Name [mal-<mal_id>]
 Example:
+
 ```bash
 Anime
 └── Attack on Titan [mal-16498]
@@ -55,11 +64,11 @@ Anime
 
 1. Open **Settings** → **Dashboard** → **Plugins** → **Repositories**
 2. Click **Add Repository**, then enter:
-   - **Name:** Any name you prefer (e.g. `MyAnimeList Metadata Plugin`)
-   - **Repository URL:**
-     ```bash
-     https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json
-     ```
+    - **Name:** Any name you prefer (e.g. `MyAnimeList Metadata Plugin`)
+    - **Repository URL:**
+        ```bash
+        https://raw.githubusercontent.com/ryandash/jellyfin-plugin-myanimelist/refs/heads/main/manifest.json
+        ```
 3. Click **Save**
 4. Restart **Jellyfin Server**
 5. Go to **Settings** → **Dashboard** → **Plugins** → **Available**
@@ -85,17 +94,19 @@ Anime
 ### Building from Visual Studio
 
 1. Clone this repository:
+
 ```bash
 git clone https://github.com/ryandash/jellyfin-plugin-myanimelist.git
 ```
+
 2. Install Visual Studio with the .NET Desktop Development workload
-4. Open the solution file in Visual Studio
-5. Restore any missing dependencies, build the project, and check the Jellyfin plugin directory
+3. Open the solution file in Visual Studio
+4. Restore any missing dependencies, build the project, and check the Jellyfin plugin directory
     > Refer to the [official plugin directory guide](https://jellyfin.org/docs/general/server/plugins/) if you're unsure where this folder is located
     - Default output path for building was set in the project file as: `C:\ProgramData\Jellyfin\Server\plugins\Jellyfin.Plugin.MyAnimeList`
     - If the plugin is not output to the correct plugin location check the log for the output directory or change the default debug build location
-7. Restart **Jellyfin Server**
-8. Go to **Settings** → **Dashboard** → **Plugins** to confirm the plugin is installed and Active
+5. Restart **Jellyfin Server**
+6. Go to **Settings** → **Dashboard** → **Plugins** to confirm the plugin is installed and Active
 
 ## Licence
 

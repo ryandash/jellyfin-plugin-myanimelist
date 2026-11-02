@@ -1,8 +1,5 @@
 namespace Jellyfin.Plugin.MyAnimeList.Configuration
 {
-    /// <summary>
-    /// Contains metadata fields common to Series, Season, Episode, and Movie.
-    /// </summary>
     public class BaseMetadataConfiguration
     {
         public bool Name { get; set; } = true;
@@ -15,9 +12,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool RunTime { get; set; } = true;
     }
 
-    /// <summary>
-    /// Metadata configuration specific to Episode.
-    /// </summary>
     public class EpisodeMetadataConfiguration : BaseMetadataConfiguration
     {
     }
@@ -32,9 +26,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool ParentalRating { get; set; } = true;
     }
 
-    /// <summary>
-    /// Metadata configuration specific to Series.
-    /// </summary>
     public class SeriesMetadataConfiguration : CommonMetadataConfiguration
     {
         public bool Status { get; set; } = true;
@@ -42,20 +33,27 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public bool AirTime { get; set; } = true;
     }
 
-    /// <summary>
-    /// Metadata configuration specific to Season.
-    /// </summary>
     public class SeasonMetadataConfiguration : CommonMetadataConfiguration
     {
 
     }
 
-
-
-    /// <summary>
-    /// Metadata configuration specific to Movie.
-    /// </summary>
     public class MovieMetadataConfiguration : CommonMetadataConfiguration
     {
+    }
+
+    public class BookMetadataConfiguration
+    {
+        public bool SeriesName { get; set; } = true;
+        public bool Name { get; set; } = true;
+        public bool Chapters { get; set; } = true;
+        public bool Volumes { get; set; } = true;
+        public bool Overview { get; set; } = true;
+        public bool ProductionYear { get; set; } = true;
+        public bool CommunityRating { get; set; } = true;
+        public bool Genres { get; set; } = true;
+        public bool Studios { get; set; } = true;
+        public bool People { get; set; } = true;
+        public bool Tags { get; set; } = true;
     }
 }

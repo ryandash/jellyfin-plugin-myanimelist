@@ -29,6 +29,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
                     case Episode:
                         yield return externalId;
                         break;
+                    case Book:
+                        yield return $"https://myanimelist.net/manga/{externalId}/";
+                        break;
                 }
             }
         }

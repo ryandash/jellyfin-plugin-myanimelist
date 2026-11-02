@@ -298,6 +298,18 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             );
         }
 
+        public static async Task<MangaFullCacheDto> GetMangaFullAsync(long malId, CancellationToken token, bool needRelations = false)
+        {
+            return await GetOrFetchAsync(
+                Keys.MangaFull(malId),
+                URLs.MangaFull(malId),
+
+                fetch: () => TryPrimaryThenBackup(j => j.GetMangaFullDataAsync(malId, token), token),
+
+                normalize: a => MangaFullCacheDto.From(a.Data.Data)
+            );
+        }
+
         public static async Task<EpisodeCacheDto> GetAnimeEpisodeAsync(long malId, int episodeNumber, CancellationToken token)
         {
             return await GetMergedAsync(
@@ -393,6 +405,109 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
             Cache.Put(key, ids.Select(a => a.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
 
             return anime.ToList();
+        }
+
+        public static async Task<List<MangaFullCacheDto>> SearchMangaAsync(string query, bool nsfw, CancellationToken token)
+        {
+            var key = Keys.SearchManga(query, nsfw);
+
+            var cached = Cache.Get<List<long>>(key);
+            if (cached is not null)
+            {
+                var results = new List<MangaFullCacheDto>();
+
+                foreach (var id in cached)
+                {
+                    var result = await GetMangaFullAsync(id, token, false).ConfigureAwait(false);
+
+                    if (result is not null)
+                        results.Add(result);
+                }
+
+                return results;
+            }
+
+            MangaSearchConfig searchConfig = new MangaSearchConfig
+            {
+                Query = query,
+                Page = 1,
+                Sfw = !nsfw,
+                Type = MangaType.EveryType,
+            };
+
+            var search = await TryPrimaryThenBackup(j => j.SearchMangaAsync(searchConfig, token), token);
+            var ids = search.Data.Data.Where(m => m.MalId > 0).Select(m => (manga: m, id: m.MalId)).ToList();
+            var manga = new List<MangaFullCacheDto>();
+
+            foreach (var m in ids)
+            {
+                var mangaCache = MangaFullCacheDto.From(m.manga);
+
+                if (mangaCache is not null)
+                {
+                    Cache.Put(Keys.MangaFull(m.id), mangaCache, GetExpiry(URLs.MangaFull(m.id)));
+                    manga.Add(mangaCache);
+                }
+            }
+
+            Cache.Put(key, ids.Select(m => m.id).ToList(), DateTime.UtcNow.Add(SearchExpiry));
+
+            return manga.ToList();
+        }
+
+        public static async Task<List<AnimeCharacterDto>> GetMangaCharactersAsync(long malId, CancellationToken token)
+        {
+            var cacheKey = Keys.Characters(malId);
+            var cached = Cache.Get<List<AnimeCharacterIdCacheDto>>(cacheKey);
+
+            if (cached is not null)
+            {
+                var results = new List<AnimeCharacterDto>();
+
+                foreach (var entry in cached)
+                {
+                    if (entry?.CharacterId <= 0)
+                        continue;
+
+                    var character = await GetCharacterAsync(entry.CharacterId, token).ConfigureAwait(false);
+                    if (character is null)
+                        continue;
+
+                    results.Add(new AnimeCharacterDto
+                    {
+                        Character = character,
+                        Role = entry.Role,
+                        VoiceActors = []
+                    });
+                }
+
+                return results;
+            }
+
+            var result = await TryPrimaryThenBackup(j => j.GetMangaCharactersAsync(malId, token), token).ConfigureAwait(false);
+
+            if (result.Data?.Data is null)
+                return [];
+
+            var entries = result.Data.Data
+                .Where(c => c.Character != null && c.Character.MalId > 0)
+                .Select(c => new AnimeCharacterDto
+                {
+                    Character = CharacterCacheDto.From(c.Character),
+                    Role = c.Role,
+                    VoiceActors = []
+                })
+                .Where(c => c.Character != null)
+                .ToList();
+
+            Cache.Put(cacheKey, entries.Select(c => new AnimeCharacterIdCacheDto
+            {
+                CharacterId = c.Character.MalId,
+                Role = c.Role,
+                VoiceActors = []
+            }).ToList(), GetExpiry(URLs.AnimeCharacters(malId)));
+
+            return entries;
         }
 
         public static async Task<List<CharacterCacheDto>> SearchCharacterAsync(string term, CancellationToken token)

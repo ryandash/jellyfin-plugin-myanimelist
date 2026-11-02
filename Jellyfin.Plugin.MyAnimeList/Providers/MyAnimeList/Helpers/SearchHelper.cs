@@ -97,5 +97,67 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             return await RelationsResolver.GetCurrentAnimeSeasonAsync(_log, malId.Value, conf, seasonNumber, cancellationToken).ConfigureAwait(false);
         }
+
+        public async Task<MangaFullCacheDto> GetMangaAsync(ILogger _log, BookInfo info, CancellationToken cancellationToken, bool SearchResult)
+        {
+            bool debug = _config.EnableDebug;
+            bool forceNew = _config.ForceNewMetadata;
+
+            long? malId = MalIdResolver.TryGetDirectMalId(info);
+
+            if (malId.HasValue && (!forceNew || SearchResult))
+            {
+                if (debug) _log.LogInformation("Returned MAL ID: {malID} for type {type}", malId, info.GetType().ToString());
+                return await JikanAPI.GetMangaFullAsync(malId.Value, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (debug)
+            {
+                _log.LogInformation("Original path: {path}", info.Path);
+                _log.LogInformation("Original name: {name}", info.Name);
+                _log.LogInformation("Original series name: {seriesName}", info.SeriesName);
+            }
+
+            (string searchTerm, bool specialEpisode) = nameBuilder.GetSearchName(info, _log, debug);
+
+            int? confidence = null;
+
+            if (!specialEpisode) malId ??= MalIdResolver.TryGetSeriesMalId(info, out confidence);
+
+            if (!malId.HasValue && !string.IsNullOrWhiteSpace(searchTerm))
+            {
+                malId = MalIdResolver.ExtractMalIdFromSearchName(searchTerm);
+                if (malId.HasValue)
+                {
+                    confidence = 100;
+                    if (debug) _log.LogInformation("Extracted MAL ID {MalId} from name", malId);
+                }
+            }
+
+            string searchName = !string.IsNullOrWhiteSpace(info.SeriesName) && !forceNew
+                ? info.SeriesName
+                : (!string.IsNullOrWhiteSpace(info.Name) && !forceNew ? info.Name : searchTerm);
+
+            if (!malId.HasValue && !string.IsNullOrWhiteSpace(searchName))
+            {
+                if (debug) _log.LogInformation("Manga search using name: {name}", searchName);
+                (malId, int similarity) = await SearchService.SearchForBestMangaID(_log, searchName, specialEpisode, _config, cancellationToken).ConfigureAwait(false);
+                if (malId.HasValue)
+                {
+                    confidence = similarity;
+                }
+                else if (debug) _log.LogError("Could not find MAL ID using Name: {name}", searchName);
+            }
+
+            if (!malId.HasValue)
+            {
+                if (debug) _log.LogError("Failed to find MAL ID for manga");
+                return null;
+            }
+
+            if (debug) _log.LogInformation("Found MAL ID: {MalId}", malId);
+
+            return await JikanAPI.GetMangaFullAsync(malId.Value, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

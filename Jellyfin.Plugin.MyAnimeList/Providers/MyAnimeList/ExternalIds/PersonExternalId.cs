@@ -7,8 +7,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
     public class PersonExternalId : IExternalId
     {
-        public bool Supports(IHasProviderIds item) =>
-            item is Person;
+        public bool Supports(IHasProviderIds item) => item is Person;
 
         public string ProviderName => ProviderNames.MyAnimeList;
 

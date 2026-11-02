@@ -111,5 +111,98 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.Helpers
 
             return searchResults.Count > 0 ? (searchResults[0].MalId, 50) : (null, 0);
         }
+
+        public static async Task<(long?, int)> SearchForBestMangaID(ILogger _log, string searchTerm, bool specialEpisode, PluginConfiguration config, CancellationToken cancellationToken)
+        {
+            bool enableDebug = config.EnableDebug;
+            bool enableNSFW = config.EnableNSFW;
+
+            NameBuilder.ExtractTitleAndYear(searchTerm, out string searchTitle, out string year, specialEpisode);
+
+            string Normalize(string input)
+            {
+                if (input == null)
+                {
+                    _log.LogWarning(
+                        "MyAnimeList: Cannot normalize null input. " +
+                        "SearchTerm='{SearchTerm}', SearchTitle='{SearchTitle}', " +
+                        "SpecialEpisode={SpecialEpisode}",
+                        searchTerm,
+                        searchTitle,
+                        specialEpisode);
+
+                    return string.Empty;
+                }
+
+                return NormalizeRegex.Replace(input, string.Empty).Trim().ToLowerInvariant();
+            }
+
+            string normalizedSearch = Normalize(searchTitle);
+
+            if (enableDebug) _log.LogInformation("Normalized manga search using name: {name}", normalizedSearch);
+
+            bool hasParsedYear = int.TryParse(year, out int parsedYear);
+            var searchResults = (await JikanAPI.SearchMangaAsync(searchTitle, enableNSFW, cancellationToken).ConfigureAwait(false)).ToList();
+
+            if (enableDebug) _log.LogInformation($"Found {searchResults.Count} manga search results");
+
+            long? bestMalId = null;
+            int bestSimilarity = -1;
+
+            var orderedSearchResults = searchResults.OrderBy(m => m.MalId).ToList();
+
+            foreach (var manga in orderedSearchResults)
+            {
+                int? mangaYear = manga.Published?.From?.Year;
+
+                if (hasParsedYear && mangaYear.HasValue && Math.Abs(mangaYear.Value - parsedYear) > 1)
+                    continue;
+
+                var malId = manga.MalId;
+
+                foreach (var titleObj in manga.Titles)
+                {
+                    var rawTitle = titleObj.Title;
+                    if (string.IsNullOrWhiteSpace(rawTitle))
+                        continue;
+
+                    string cleanTitle;
+                    if (rawTitle.Contains('('))
+                    {
+                        NameBuilder.ExtractTitleAndYear(rawTitle, out cleanTitle, out _);
+
+                        if (string.IsNullOrWhiteSpace(cleanTitle)) continue;
+                    }
+                    else
+                    {
+                        cleanTitle = rawTitle;
+                    }
+
+                    int similarity = FuzzierSharp.Fuzz.Ratio(Normalize(cleanTitle), normalizedSearch);
+
+                    if (enableDebug && similarity > 50) _log.LogInformation($"{cleanTitle} has similarity {similarity}");
+
+                    if (similarity == 100)
+                        return (malId, similarity);
+
+                    if (similarity >= 90 && similarity > bestSimilarity)
+                    {
+                        bestSimilarity = similarity;
+                        bestMalId = malId;
+                    }
+                }
+            }
+
+            if (bestMalId.HasValue)
+                return (bestMalId, bestSimilarity);
+
+            if (!config.EnableBestAttempt) return (null, 0);
+
+            var firstFallback = orderedSearchResults.FirstOrDefault(m => m.Titles.Any(t => t.Title.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)));
+
+            if (firstFallback != null) return (firstFallback.MalId, 50);
+
+            return searchResults.Count > 0 ? (searchResults[0].MalId, 50) : (null, 0);
+        }
     }
 }

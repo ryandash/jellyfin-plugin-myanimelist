@@ -1,172 +1,22 @@
-using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.MyAnimeList.Configuration;
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.Providers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Episode = MediaBrowser.Controller.Entities.TV.Episode;
 using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
-using Person = MediaBrowser.Controller.Entities.Person;
 using Season = MediaBrowser.Controller.Entities.TV.Season;
 using Series = MediaBrowser.Controller.Entities.TV.Series;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 {
-    public class PersonSearchResult
-    {
-        public CharacterCacheDto Character { get; set; }
-        public PersonDto Person { get; set; }
-
-        internal Person ToPerson(PersonCreditType type)
-        {
-            return type switch
-            {
-                PersonCreditType.Characters when Character != null => new Person
-                {
-                    Name = Character.Name,
-                    Overview = Character.Description,
-                    ProviderIds =
-                    {
-                        { ProviderNames.MyAnimeList, Character.Url }
-                    }
-                },
-                PersonCreditType.VoiceActors when Person != null => new Person
-                {
-                    Name = Person.Name,
-                    Overview = Person.Description,
-                    ProviderIds =
-                    {
-                        { ProviderNames.MyAnimeList, Person.Url }
-                    }
-                },
-                _ => null
-            };
-        }
-    }
-
-    public class EpisodeSearchResult
-    {
-        public static PluginConfiguration Config => Plugin.Instance.Configuration;
-        public EpisodeCacheDto Episode { get; set; }
-
-        public string GetPreferredTitle(TitlePreferenceType preference)
-        {
-            if (Episode == null) return null;
-
-            return preference switch
-            {
-                TitlePreferenceType.Localized => !string.IsNullOrWhiteSpace(Episode.Title) ? Episode.Title : Episode.TitleJapanese ?? Episode.TitleRomanji,
-                TitlePreferenceType.Japanese => !string.IsNullOrWhiteSpace(Episode.TitleJapanese) ? Episode.TitleJapanese : Episode.Title ?? Episode.TitleRomanji,
-                TitlePreferenceType.JapaneseRomaji => !string.IsNullOrWhiteSpace(Episode.TitleRomanji) ? Episode.TitleRomanji : Episode.Title ?? Episode.TitleJapanese,
-                _ => Episode.Title
-            };
-        }
-
-        internal Episode ToEpisode(EpisodeInfo info)
-        {
-            var metadata = Config.EpisodeMetadata;
-            var aired = Episode.Aired;
-
-            Episode episodeObject = new Episode
-            {
-                IndexNumber = info.IndexNumber,
-                ParentIndexNumber = info.ParentIndexNumber,
-                IndexNumberEnd = info.IndexNumberEnd
-            };
-
-            if (metadata.Name)
-                episodeObject.Name = GetPreferredTitle(Config.TitlePreference);
-
-            if (metadata.OriginalTitle)
-                episodeObject.OriginalTitle = GetPreferredTitle(Config.OriginalTitlePreference);
-
-            if (metadata.Overview)
-                episodeObject.Overview = Episode.Synopsis;
-
-            if (metadata.ProductionYear)
-                episodeObject.ProductionYear = aired?.Year;
-
-            if (metadata.PremiereDate)
-                episodeObject.PremiereDate = aired;
-
-            if (metadata.EndDate)
-                episodeObject.EndDate = aired;
-
-            if (metadata.RunTime)
-                episodeObject.RunTimeTicks = Episode.RunTimeTicks;
-
-            if (metadata.CommunityRating)
-                episodeObject.CommunityRating = Episode.Score.HasValue ? (float?)(Episode.Score.Value * 2) : null;
-
-            episodeObject.SetProviderId(ProviderNames.MyAnimeList, Episode.Url);
-
-            return episodeObject;
-        }
-    }
-
-    public class AnimeSearchResult
-    {
-        public static PluginConfiguration Config => Plugin.Instance.Configuration;
-        public AnimeFullCacheDto Anime { get; set; }
-
-        public string GetPreferredTitle(TitlePreferenceType preference)
-        {
-            if (Anime?.Titles == null || Anime.Titles.Count == 0)
-                return null;
-
-            string preferredType = preference switch
-            {
-                TitlePreferenceType.Localized => "English",
-                TitlePreferenceType.Japanese => "Japanese",
-                TitlePreferenceType.JapaneseRomaji => "Default",
-                _ => "Default"
-            };
-
-            var title = Anime.Titles
-                .FirstOrDefault(t =>
-                    t?.Type != null &&
-                    t.Type.Equals(preferredType, StringComparison.OrdinalIgnoreCase))
-                ?.Title;
-
-            if (!string.IsNullOrWhiteSpace(title))
-                return title;
-
-            // English/Japanese may not exist for every entry,
-            // so always fall back to Jikan's Default/Romaji title.
-            return Anime.Titles
-                .FirstOrDefault(t =>
-                    t?.Type != null &&
-                    t.Type.Equals("Default", StringComparison.OrdinalIgnoreCase))
-                ?.Title
-                ?? Anime.Titles.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t?.Title))?.Title;
-        }
-
-        public DateTime? GetAiredDate(bool isStartDate = true) => isStartDate ? Anime.Aired.From : Anime.Aired.To;
-
-        public RemoteSearchResult ToSearchResult()
-        {
-            var aired = GetAiredDate();
-            return new RemoteSearchResult
-            {
-                Name = GetPreferredTitle(Config.TitlePreference),
-                ProductionYear = aired.HasValue ? aired.Value.Year : null,
-                PremiereDate = aired,
-                ImageUrl = Anime.Images.Image,
-                SearchProviderName = ProviderNames.MyAnimeList,
-                ProviderIds = new Dictionary<string, string> { { ProviderNames.MyAnimeList, Anime.MalId.ToString() } }
-            };
-        }
-    }
-
     public class AnimeObject : AnimeSearchResult
     {
         public List<AnimeCharacterDto> Characters { get; set; }
 
-        public EpisodeCacheDto toEpisodeData()
+        public EpisodeCacheDto ToEpisodeData()
         {
             return new EpisodeCacheDto
             {
@@ -180,16 +30,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
         }
 
-        private bool IsAllowedLanguage(string lang)
-        {
-            return Config.PersonLanguageFilterPreference switch
-            {
-                LanguageFilterType.All => true,
-                LanguageFilterType.Japanese => lang == "Japanese",
-                LanguageFilterType.Localized => lang != "Japanese",
-                _ => true
-            };
-        }
+        public EpisodeCacheDto toEpisodeData() => ToEpisodeData();
 
         public List<PersonInfo> GetPeopleInfo()
         {
@@ -204,7 +45,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             var charactersByVoiceActor = new Dictionary<string, List<PersonInfo>>();
             var voiceActors = new Dictionary<string, PersonInfo>();
 
-            foreach (var edge in this.Characters ?? Enumerable.Empty<AnimeCharacterDto>())
+            foreach (var edge in Characters ?? Enumerable.Empty<AnimeCharacterDto>())
             {
                 if (edge?.Character == null || edge.VoiceActors == null)
                     continue;
@@ -218,7 +59,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                 foreach (var va in edge.VoiceActors)
                 {
-                    if (va?.Person == null || !IsAllowedLanguage(va.Language ?? string.Empty))
+                    if (va?.Person == null || !IsAllowedLanguage(va.Language ?? string.Empty, Config.PersonLanguageFilterPreference))
                         continue;
 
                     var personUrl = va.Person.Url;
@@ -232,7 +73,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         {
                             Name = edge.Character.Name,
                             Role = va.Person.Name,
-                            Type = PersonKind.Actor,
+                            Type = default,
                             ImageUrl = edge.Character.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
                             {
@@ -260,7 +101,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                         {
                             Name = va.Person.Name,
                             Role = edge.Character.Name,
-                            Type = PersonKind.Actor,
+                            Type = default,
                             ImageUrl = va.Person.Images?.Image,
                             ProviderIds = new Dictionary<string, string>
                             {
@@ -281,9 +122,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                 case PersonCreditType.Both:
                     {
-                        var people = new List<PersonInfo>(
-                            Math.Min(limit, characters.Count + voiceActors.Count));
-
+                        var people = new List<PersonInfo>(Math.Min(limit, characters.Count + voiceActors.Count));
                         var addedCharacters = new HashSet<string>();
                         var addedVoiceActors = new HashSet<string>();
 
@@ -301,8 +140,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
                             if (voiceActors.TryGetValue(group.Key, out var voiceActor))
                             {
-                                var voiceActorUrl =
-                                    voiceActor.ProviderIds[ProviderNames.MyAnimeList];
+                                var voiceActorUrl = voiceActor.ProviderIds[ProviderNames.MyAnimeList];
 
                                 if (addedVoiceActors.Add(voiceActorUrl))
                                 {
@@ -322,20 +160,12 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             }
         }
 
-        public interface IMetadataOptions
+        private static string[] NormalizeStringArray(IEnumerable<string> values)
         {
-            bool Name { get; }
-            bool OriginalTitle { get; }
-            bool Overview { get; }
-            bool ProductionYear { get; }
-            bool PremiereDate { get; }
-            bool EndDate { get; }
-            bool CommunityRating { get; }
-            bool RunTime { get; }
-            bool Genres { get; }
-            bool Studios { get; }
-            bool Tags { get; }
-            bool TrailerUrl { get; }
+            return values?
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray() ?? Array.Empty<string>();
         }
 
         private void ApplyCommonMetadata(BaseItem item, CommonMetadataConfiguration metadata)
@@ -367,30 +197,22 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
                 item.OfficialRating = Anime.Rating;
 
             if (metadata.RunTime)
-                item.RunTimeTicks = Anime.Duration;
+                item.RunTimeTicks = Anime.Duration ?? 0;
 
             if (metadata.Genres)
-            {
-                var maxGenres = Config.MaxGenres;
-                var genres = maxGenres > 0
-                    ? Anime.Genres?.Take(maxGenres)
-                    : Anime.Genres;
-
-                item.Genres = genres?.ToArray();
-            }
+                item.Genres = NormalizeStringArray(Config.MaxGenres > 0 ? Anime.Genres?.Take(Config.MaxGenres) : Anime.Genres);
 
             if (metadata.Studios)
-                item.Studios = Anime.Studios;
+                item.Studios = NormalizeStringArray(Anime.Studios);
 
             if (metadata.Tags)
-                item.Tags = Anime.Tags;
+                item.Tags = NormalizeStringArray(Anime.Tags);
 
-            if (metadata.TrailerUrl && !string.IsNullOrEmpty(Anime.TrailerUrl))
+            if (metadata.TrailerUrl)
                 item.AddTrailerUrl(Anime.TrailerUrl);
 
-            item.SetProviderId(
-                ProviderNames.MyAnimeList,
-                Anime.MalId.ToString());
+            if (!string.IsNullOrEmpty(Anime.MalId.ToString()))
+                item.SetProviderId(ProviderNames.MyAnimeList, Anime.MalId.ToString());
         }
 
         public Series ToSeries(SeriesInfo info)
@@ -441,7 +263,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             ApplyCommonMetadata(season, Config.SeasonMetadata);
-
             return season;
         }
 
@@ -454,7 +275,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
             };
 
             ApplyCommonMetadata(movie, Config.MovieMetadata);
-
             return movie;
         }
     }

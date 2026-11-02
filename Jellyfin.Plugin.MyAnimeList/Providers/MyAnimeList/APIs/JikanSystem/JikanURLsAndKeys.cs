@@ -3,6 +3,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
     public static class URLs
     {
         public static string AnimeFull(long id) => $"anime/{id}/full";
+        public static string MangaFull(long id) => $"manga/{id}/full";
         public static string AnimeCharacters(long id) => $"anime/{id}/characters";
         public static string AnimeEpisodes(long id) => $"anime/{id}/episodes";
         public static string AnimeSpecificEpisodes(long id, int ep) => $"anime/{id}/episodes/{ep}";
@@ -22,9 +23,11 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.JikanSystem
         }
 
         public static string AnimeFull(long id) => $"anime:{id}";
+        public static string MangaFull(long id) => $"manga:{id}";
         public static string AnimeEpisode(long id, int ep) => $"episode:{id}:{ep}";
         public static string Person(long id) => $"person:{id}";
         public static string SearchAnime(string query, bool nsfw) => $"search:{NormalizeQuery(query)}:nsfw:{nsfw}";
+        public static string SearchManga(string query, bool nsfw) => $"search:manga:{NormalizeQuery(query)}:nsfw:{nsfw}";
         public static string SearchCharacter(string query) => $"search:character:{NormalizeQuery(query)}";
         public static string SearchPerson(string query) => $"search:person:{NormalizeQuery(query)}";
         public static string AnimeEpisodes(long id) => $"episodes:{id}";

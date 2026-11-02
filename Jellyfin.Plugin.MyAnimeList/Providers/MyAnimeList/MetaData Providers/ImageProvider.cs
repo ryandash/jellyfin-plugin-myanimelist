@@ -22,7 +22,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
         public string Name => ProviderNames.MyAnimeList;
 
-        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Person;
+        public bool Supports(BaseItem item) => item is Series || item is Season || item is Movie || item is Person || item is Book;
 
         public ImageProvider(IHttpClientFactory httpClientFactory)
         {
@@ -62,6 +62,16 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.MetaData
 
                     mainImageUrl = person?.Images?.Image;
                 }
+            }
+            else if (item is Book)
+            {
+                if (!long.TryParse(malId, out var aid))
+                {
+                    return Array.Empty<RemoteImageInfo>();
+                }
+
+                var manga = await JikanAPI.GetMangaFullAsync(aid, cancellationToken).ConfigureAwait(false);
+                mainImageUrl = manga?.Images?.Image;
             }
             else
             {

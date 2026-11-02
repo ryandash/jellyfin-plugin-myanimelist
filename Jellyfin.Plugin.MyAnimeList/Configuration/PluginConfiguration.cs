@@ -55,6 +55,7 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
             SeasonMetadata = new SeasonMetadataConfiguration();
             EpisodeMetadata = new EpisodeMetadataConfiguration();
             MovieMetadata = new MovieMetadataConfiguration();
+            BookMetadata = new BookMetadataConfiguration();
         }
 
         public string PrimaryJikanUrl { get; set; }
@@ -89,5 +90,6 @@ namespace Jellyfin.Plugin.MyAnimeList.Configuration
         public SeasonMetadataConfiguration SeasonMetadata { get; set; }
         public EpisodeMetadataConfiguration EpisodeMetadata { get; set; }
         public MovieMetadataConfiguration MovieMetadata { get; set; }
+        public BookMetadataConfiguration BookMetadata { get; set; }
     }
 }

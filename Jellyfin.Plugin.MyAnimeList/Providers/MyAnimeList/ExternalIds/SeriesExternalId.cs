@@ -1,4 +1,3 @@
-using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -6,10 +5,9 @@ using MediaBrowser.Model.Providers;
 
 namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.ExternalIds
 {
-    public class BaseExternalId : IExternalId
+    public class SeriesExternalId : IExternalId
     {
-        public bool Supports(IHasProviderIds item) =>
-            item is Series || item is Movie || item is Season;
+        public bool Supports(IHasProviderIds item) => item is Series;
 
         public string ProviderName => ProviderNames.MyAnimeList;
 
