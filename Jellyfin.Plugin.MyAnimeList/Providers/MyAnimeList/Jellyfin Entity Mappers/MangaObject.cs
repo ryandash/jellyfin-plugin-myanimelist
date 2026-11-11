@@ -1,6 +1,7 @@
 using Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList.APIs.DTOs;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -75,6 +76,9 @@ namespace Jellyfin.Plugin.MyAnimeList.Providers.MyAnimeList
 
             if (metadata.Tags)
                 manga.Tags = Manga.Tags;
+
+            if (!string.IsNullOrEmpty(Manga.MalId.ToString()))
+                manga.SetProviderId(ProviderNames.MyAnimeList, Manga.MalId.ToString());
 
             return manga;
         }
