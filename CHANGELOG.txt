@@ -1,7 +1,5 @@
-a61d91e Add Basic Manga Support
+225bf3c Oops Manga Provider id
 
-- Add manga Search, mapping, metadata, and config settings
-- Some refactoring and cleanup
-- Version bump
+- Forgot to set manga provider id
 
-e78f2a0 Update manifest
+405e4fa Update manifest
