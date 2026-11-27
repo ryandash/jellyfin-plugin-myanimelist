@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Jellyfin.Plugin.MyAnimeList</RootNamespace>
     
-    <Version>12.4.1.1</Version>
+    <Version>12.4.1.2</Version>
 
     <DebugType>none</DebugType>
     <IsPublishable>false</IsPublishable>
@@ -21,8 +21,6 @@
     <PackageReference Include="Jellyfin.Controller" Version="12.4.0" />
     <PackageReference Include="JikanDotNet" Version="2.10.4" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
   </ItemGroup>
 
   <Target Name="CopyPluginDependencies" AfterTargets="Build">
